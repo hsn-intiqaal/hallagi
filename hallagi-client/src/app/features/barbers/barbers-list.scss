@@ -1,0 +1,22 @@
+.rows { display: flex; flex-direction: column; gap: 10px; }
+.b-row {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 14px 16px; text-align: start; width: 100%;
+}
+.b-row:hover { border-color: var(--blue); }
+.b-row .av {
+  width: 46px; height: 46px; border-radius: 50%;
+  background: var(--navy); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 1.1rem; flex-shrink: 0;
+}
+.b-row .who { flex: 1; min-width: 0; }
+.b-row .who .n { font-weight: 700; }
+.b-row .who .s { font-size: .84rem; color: var(--text-2); }
+.b-row .stat { text-align: center; min-width: 110px; }
+.b-row .stat .l { font-size: .78rem; color: var(--text-2); }
+.b-row .stat .v { font-weight: 800; }
+.b-row .comp { text-align: end; min-width: 130px; }
+.b-row .comp .l { font-size: .78rem; color: var(--text-2); }
+.b-row .comp .v { font-weight: 700; font-size: .92rem; }

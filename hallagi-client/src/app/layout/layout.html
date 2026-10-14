@@ -1,0 +1,71 @@
+<header class="topbar no-print">
+  <div class="brand">
+    <span class="logo">حلاقي</span>
+    <span class="org-name">{{ auth.me()?.organization?.name }}</span>
+  </div>
+
+  <div class="branch-switch" *ngIf="auth.isLoggedIn()">
+    <button class="branch-btn" (click)="toggleMenu()">
+      <app-icon name="building" [size]="17"></app-icon>
+      <span>{{ branches.currentBranch()?.name ?? 'كل الفروع' }}</span>
+      <app-icon name="chevronDown" [size]="16"></app-icon>
+    </button>
+    <div class="branch-menu" *ngIf="menuOpen()">
+      <div class="menu-title">الفرع الحالي</div>
+      <button *ngIf="allBranches()" [class.active]="branches.currentBranchId() === null" (click)="selectBranch(null)">
+        <span>كل الفروع</span>
+        <app-icon *ngIf="branches.currentBranchId() === null" name="check" [size]="16"></app-icon>
+      </button>
+      <button *ngFor="let b of branches.branches()"
+        [class.active]="branches.currentBranchId() === b.id"
+        (click)="selectBranch(b.id)">
+        <span>{{ b.name }} — {{ b.city }}</span>
+        <app-icon *ngIf="branches.currentBranchId() === b.id" name="check" [size]="16"></app-icon>
+      </button>
+    </div>
+  </div>
+
+  <div class="grow"></div>
+
+  <div class="user-chip">
+    <span class="avatar">{{ initials(auth.profile()?.fullName ?? '') }}</span>
+    <span>
+      <b>{{ auth.profile()?.fullName }}</b>
+      <span class="text-2"> · {{ roleLabel() }}</span>
+    </span>
+  </div>
+
+  <button class="icon-btn" title="تسجيل الخروج" (click)="logout()">
+    <app-icon name="logout" [size]="20"></app-icon>
+  </button>
+</header>
+
+<div class="body">
+  <aside class="sidebar no-print">
+    <a *ngFor="let item of visibleItems()" class="side-link"
+       [routerLink]="item.path" routerLinkActive="active">
+      <app-icon class="nav-icon" [name]="item.icon" [size]="20"></app-icon>
+      <span>{{ item.label }}</span>
+    </a>
+    <div class="grow"></div>
+    <div class="side-section">الإصدار التجريبي</div>
+    <div class="text-2 text-sm" style="padding: 0 14px 8px">حلاقي — محلك في يدك</div>
+  </aside>
+
+  <main class="main">
+    <router-outlet />
+  </main>
+</div>
+
+<nav class="bottom-nav no-print">
+  <a *ngFor="let item of bottomItems()" class="bnav-item"
+     [class.fab]="item.path === 'pos'" [class.active]="item.path === 'pos'"
+     [routerLink]="item.path" routerLinkActive="active">
+    <app-icon [name]="item.icon" [size]="item.path === 'pos' ? 26 : 20"></app-icon>
+    <span>{{ item.label }}</span>
+  </a>
+  <a class="bnav-item" routerLink="/settings" routerLinkActive="active">
+    <app-icon name="settings" [size]="20"></app-icon>
+    <span>الإعدادات</span>
+  </a>
+</nav>

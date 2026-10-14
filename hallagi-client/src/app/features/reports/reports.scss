@@ -1,0 +1,8 @@
+.filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-bottom: 16px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.chart-box { height: 240px; margin-top: 10px; }
+.grid-2 { display: grid; grid-template-columns: 1fr; gap: 14px; }
+@media (min-width: 1000px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
+.bar-track { background: var(--navy-soft); border-radius: 6px; height: 10px; overflow: hidden; }
+.bar-fill { background: var(--blue); height: 100%; border-radius: 6px; }
+.hint { background: var(--blue-soft); color: var(--navy); border-radius: var(--radius-sm); padding: 10px 14px; font-size: .88rem; font-weight: 600; margin-bottom: 14px; }

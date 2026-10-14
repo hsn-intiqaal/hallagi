@@ -1,0 +1,88 @@
+<div class="page">
+  <div class="page-title">
+    <div>
+      <h1>المصروفات</h1>
+      <p class="text-2 text-sm">المصروف من درج النقدية يقلل رصيد الدرج — المدفوع من حساب بنكي لا يؤثر على الدرج</p>
+    </div>
+    <button class="btn btn-primary" *ngIf="canCreate()" (click)="openAdd()">
+      <app-icon name="plus" [size]="18"></app-icon> تسجيل مصروف
+    </button>
+  </div>
+
+  <div *ngIf="loading()"><app-loading /></div>
+
+  <app-empty *ngIf="!loading() && expenses().length === 0" icon="wallet"
+    title="لا توجد مصروفات مسجلة"
+    message="سجّل مصروفات المحل لمتابعة صافي التشغيل التقديري بدقة."
+    actionLabel="تسجيل مصروف" (action)="openAdd()" />
+
+  <div class="flex-col gap-8" *ngIf="expenses().length > 0">
+    <div class="expense-row" *ngFor="let e of expenses()" [class.voided]="e.status !== 'Active'">
+      <span class="when">{{ e.expenseDate | dateShort }}</span>
+      <span class="badge badge-gray">{{ e.categoryText }}</span>
+      <span class="cat">{{ e.description || '—' }}</span>
+      <span class="desc">{{ e.branchName }} · سجّلها {{ e.createdByName }}</span>
+      <span class="badge" [class]="e.sourceText === 'درج النقدية' ? 'badge-orange' : 'badge-blue'">{{ e.sourceText }}</span>
+      <span class="amt money">{{ e.amount | sar }}</span>
+      <span class="badge" [class]="e.statusText === 'معتمد' ? 'badge-green' : 'badge-red'">{{ e.statusText }}</span>
+      <button *ngIf="canVoid() && e.statusText === 'معتمد'" class="btn btn-ghost btn-sm" style="color: var(--red)" (click)="askVoid(e)">
+        <app-icon name="x" [size]="15"></app-icon> إلغاء
+      </button>
+    </div>
+  </div>
+
+  <div class="flex gap-12" style="justify-content: center; margin-top: 16px" *ngIf="pages > 1">
+    <button class="btn btn-outline btn-sm" [disabled]="page === 1" (click)="prevPage()">السابق</button>
+    <span class="text-2">صفحة {{ page }} من {{ pages }}</span>
+    <button class="btn btn-outline btn-sm" [disabled]="page === pages" (click)="nextPage()">التالي</button>
+  </div>
+</div>
+
+<app-modal *ngIf="showForm()" title="تسجيل مصروف" (close)="showForm.set(false)">
+  <div class="field">
+    <label>الفئة</label>
+    <select class="select" [(ngModel)]="form.category">
+      <option *ngFor="let c of categories" [value]="c.value">{{ c.label }}</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>المبلغ (ريال)</label>
+    <input class="input" type="number" min="0" step="0.5" [(ngModel)]="form.amount" placeholder="50">
+  </div>
+  <div class="field">
+    <label>التاريخ</label>
+    <input class="input" type="date" [(ngModel)]="form.expenseDate">
+  </div>
+  <div class="field">
+    <label>مصدر الدفع</label>
+    <select class="select" [(ngModel)]="form.source">
+      <option *ngFor="let s of sources" [value]="s.value">{{ s.label }}</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>الوصف</label>
+    <input class="input" [(ngModel)]="form.description" placeholder="مثال: شراء مستلزمات">
+  </div>
+  <div class="field-error" *ngIf="formError">{{ formError }}</div>
+  <div footer class="flex gap-8">
+    <button class="btn btn-primary" (click)="save()">حفظ المصروف</button>
+    <button class="btn btn-outline" (click)="showForm.set(false)">إلغاء</button>
+  </div>
+</app-modal>
+
+<div class="modal-backdrop" *ngIf="voidTarget" (click)="voidTarget = null">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-head"><h2>إلغاء مصروف موثق</h2></div>
+    <div class="modal-body">
+      <p class="mb-16">لن يُحذف المصروف الأصلي. سيُسجَّل تصحيح مقابل في سجل التدقيق، وتُعاد قيمة المصروف إلى الدرج إن كان مدفوعًا نقدًا.</p>
+      <div class="field">
+        <label>سبب الإلغاء</label>
+        <input class="input" [(ngModel)]="voidReason" placeholder="مثال: سُجل بالخطأ">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-danger" (click)="confirmVoid()">تأكيد الإلغاء</button>
+      <button class="btn btn-outline" (click)="voidTarget = null">تراجع</button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,68 @@
+<div class="page">
+  <div class="fles" style="max-width: 680px; margin: 0 auto;">
+    <h1 class="mb-8">إعداد سريع للمحل</h1>
+    <p class="text-2 mb-16">تقدر تتخطى أي خطوة وتكملها لاحقًا من الإعدادات. أهم شيء: تبدأ أول عملية بيع.</p>
+
+    <div class="steps">
+      <div class="step" [class.done]="step() > 1">
+        <span class="num">{{ step() > 1 ? '✓' : '1' }}</span>
+        <span class="l">الخدمات الأساسية</span>
+      </div>
+      <div class="step" [class.done]="step() > 2">
+        <span class="num">{{ step() > 2 ? '✓' : '2' }}</span>
+        <span class="l">الحلاقون</span>
+      </div>
+      <div class="step" [class.done]="step() === 3">
+        <span class="num">3</span>
+        <span class="l">جاهز للبيع</span>
+      </div>
+    </div>
+
+    <!-- الخطوة 1: الخدمات -->
+    <div class="card" *ngIf="step() === 1">
+      <h2 class="mb-16">اختر خدماتك (الأسعار قابلة للتعديل لاحقًا)</h2>
+      <div class="suggested">
+        <button class="pill" *ngFor="let s of suggested"
+                [class.selected]="selectedServices.includes(s.name)"
+                (click)="toggleService(s.name)">
+          {{ s.name }} — {{ s.price | sar }}
+        </button>
+      </div>
+      <div class="field mt-16">
+        <label>خدمات إضافية (افصل بينها بفاصلة)</label>
+        <textarea class="textarea" [(ngModel)]="customServices" placeholder="مثال: تمشيط، عناية باللحية"></textarea>
+      </div>
+    </div>
+
+    <!-- الخطوة 2: الحلاقون -->
+    <div class="card" *ngIf="step() === 2">
+      <h2 class="mb-16">أضف حلاقًا واحدًا على الأقل</h2>
+      <div class="field">
+        <label>اسم الحلاق</label>
+        <input class="input" [(ngModel)]="barberName" placeholder="مثال: أحمد العتيبي">
+      </div>
+      <p class="text-2 text-sm">يمكنك إضافة بقية الحلاقين وطرق تعويضهم (راتب، عمولة، تأجير كرسي) لاحقًا من صفحة الحلاقين.</p>
+    </div>
+
+    <!-- الخطوة 3: جاهز -->
+    <div class="card" *ngIf="step() === 3">
+      <h2 class="mb-16">كل شيء جاهز</h2>
+      <div class="flex gap-8" style="align-items: flex-start">
+        <app-icon name="checkCircle" [size]="26" style="color: var(--green)"></app-icon>
+        <div>
+          <p>خدماتك محددة: <b>{{ selectedServices.length }}</b> خدمة.</p>
+          <p *ngIf="barberName.trim()">الحلاق الأول: <b>{{ barberName }}</b></p>
+          <p class="text-2 mt-8">اضغط «حفظ وبدء البيع» للانتقال لشاشة البيع.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex gap-12 mt-16">
+      <button class="btn btn-outline" (click)="back()">رجوع</button>
+      <button class="btn btn-primary grow" (click)="next()">
+        {{ step() === 3 ? 'حفظ وبدء البيع' : 'التالي' }}
+      </button>
+      <button class="btn btn-ghost" (click)="skip()">تخطي وبدء البيع</button>
+    </div>
+  </div>
+</div>

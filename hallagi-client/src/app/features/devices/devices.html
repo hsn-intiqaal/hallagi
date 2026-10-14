@@ -1,0 +1,50 @@
+<div class="page">
+  <div class="page-title">
+    <div>
+      <h1>أجهزة POS</h1>
+      <p class="text-2 text-sm">تسجيل أجهزة الكاشير — الجهاز منفصل عن المستخدم والوردية</p>
+    </div>
+    <button class="btn btn-primary" (click)="openAdd()"><app-icon name="plus" [size]="17"></app-icon> إضافة جهاز</button>
+  </div>
+
+  <div *ngIf="loading()"><app-loading /></div>
+
+  <app-empty *ngIf="!loading() && items().length === 0" icon="settings" title="لا توجد أجهزة"
+    message="أضف أجهزة الكاشير لربط الورديات بالأجهزة." />
+
+  <div class="flex-col gap-8" *ngIf="items().length > 0">
+    <div class="d-row" *ngFor="let d of items()">
+      <span class="ic"><app-icon name="card" [size]="22"></app-icon></span>
+      <div class="info">
+        <div class="n">{{ d.name }} <span class="text-2" *ngIf="d.deviceCode">({{ d.deviceCode }})</span></div>
+        <div class="s">{{ d.branchName }}</div>
+      </div>
+      <span class="badge" [class]="d.status === 'Active' ? 'badge-green' : 'badge-red'">{{ d.statusText }}</span>
+      <span class="text-2 text-sm" *ngIf="d.openShifts > 0">● وردية مفتوحة عليه</span>
+      <button class="btn btn-outline btn-sm" (click)="toggleStatus(d)">
+        {{ d.status === 'Active' ? 'تعطيل' : 'تفعيل' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<app-modal *ngIf="showForm()" title="إضافة جهاز" (close)="showForm.set(false)">
+  <div class="field">
+    <label>الفرع</label>
+    <select class="select" [(ngModel)]="form.branchId">
+      <option *ngFor="let b of branchesList()" [value]="b.id">{{ b.name }}</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>اسم الجهاز</label>
+    <input class="input" [(ngModel)]="form.name" placeholder="مثال: كاشير 2">
+  </div>
+  <div class="field">
+    <label>رمز الجهاز (اختياري)</label>
+    <input class="input" [(ngModel)]="form.deviceCode" placeholder="POS-002" dir="ltr">
+  </div>
+  <div footer class="flex gap-8">
+    <button class="btn btn-primary" (click)="save()">إضافة</button>
+    <button class="btn btn-outline" (click)="showForm.set(false)">إلغاء</button>
+  </div>
+</app-modal>

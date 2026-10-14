@@ -1,0 +1,64 @@
+<div class="page">
+  <div class="page-title">
+    <div>
+      <h1>العملاء</h1>
+      <p class="text-2 text-sm">تسجيل العميل اختياري — البيع يكمل بدون عميل</p>
+    </div>
+    <button class="btn btn-primary" (click)="showAdd.set(true)">
+      <app-icon name="plus" [size]="18"></app-icon> إضافة عميل
+    </button>
+  </div>
+
+  <div class="card mb-16">
+    <div class="flex gap-8">
+      <input class="input" [(ngModel)]="search" (keyup.enter)="searchNow()" placeholder="بحث فوري بالاسم أو رقم الجوال…">
+      <button class="btn btn-navy" (click)="searchNow()"><app-icon name="search" [size]="17"></app-icon></button>
+    </div>
+  </div>
+
+  <div *ngIf="loading()"><app-loading /></div>
+
+  <app-empty *ngIf="!loading() && customers().length === 0" icon="users"
+    title="لم نجد عميلًا بهذا الاسم"
+    message="أضف العميل الآن أو تابع البيع بدون تسجيل عميل."
+    actionLabel="إضافة عميل" (action)="showAdd.set(true)" />
+
+  <div class="rows" *ngIf="customers().length > 0">
+    <button class="c-row" *ngFor="let c of customers()" (click)="open(c.id)">
+      <span class="av">{{ c.fullName.charAt(0) }}</span>
+      <div class="who">
+        <div class="n">{{ c.fullName }}</div>
+        <div class="s">{{ c.phone || 'بدون رقم جوال' }}</div>
+      </div>
+      <div class="num"><div class="l">الزيارات</div><div class="v">{{ c.visitCount }}</div></div>
+      <div class="num"><div class="l">إجمالي الإنفاق</div><div class="v money">{{ c.totalSpend | sar }}</div></div>
+      <div class="num"><div class="l">آخر زيارة</div><div class="v" style="font-size: .9rem">{{ c.lastVisit | dateShort }}</div></div>
+      <app-icon name="chevronLeft" [size]="18" class="text-2"></app-icon>
+    </button>
+  </div>
+
+  <div class="pager flex gap-12" style="justify-content: center; margin-top: 16px" *ngIf="pages > 1">
+    <button class="btn btn-outline btn-sm" [disabled]="page === 1" (click)="prevPage()">السابق</button>
+    <span class="text-2">صفحة {{ page }} من {{ pages }}</span>
+    <button class="btn btn-outline btn-sm" [disabled]="page === pages" (click)="nextPage()">التالي</button>
+  </div>
+</div>
+
+<app-modal *ngIf="showAdd()" title="إضافة عميل" (close)="showAdd.set(false)">
+  <div class="field">
+    <label>اسم العميل</label>
+    <input class="input" [(ngModel)]="form.fullName" placeholder="مثال: عبدالله الدوسري">
+  </div>
+  <div class="field">
+    <label>رقم الجوال (اختياري)</label>
+    <input class="input" [(ngModel)]="form.phone" placeholder="05xxxxxxxx" dir="ltr">
+  </div>
+  <div class="field">
+    <label>ملاحظات (اختياري)</label>
+    <input class="input" [(ngModel)]="form.notes" placeholder="مثال: يفضل حلاقة قصيرة">
+  </div>
+  <div footer class="flex gap-8">
+    <button class="btn btn-primary" (click)="save()">حفظ</button>
+    <button class="btn btn-outline" (click)="showAdd.set(false)">إلغاء</button>
+  </div>
+</app-modal>

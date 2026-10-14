@@ -1,0 +1,61 @@
+<div class="page">
+  <div class="page-title">
+    <div>
+      <h1>التسليمات النقدية</h1>
+      <p class="text-2 text-sm">تسليم النقدية بين الأشخاص (حلاق ← مالك، كاشير ← مدير) مع تأكيد وتوثيق</p>
+    </div>
+    <button class="btn btn-primary" (click)="showForm.set(true)">
+      <app-icon name="plus" [size]="17"></app-icon> تسليم نقدي
+    </button>
+  </div>
+
+  <div *ngIf="loading()"><app-loading /></div>
+
+  <app-empty *ngIf="!loading() && items().length === 0" icon="cash"
+    title="لا توجد تسليمات نقدية"
+    message="سجّل أول تسليم نقدي لتتبع من يحتفظ بالنقدية." />
+
+  <div class="flex-col gap-8" *ngIf="items().length > 0">
+    <div class="h-row" *ngFor="let h of items()">
+      <span class="badge badge-blue">{{ h.branchName }}</span>
+      <span class="arrow">
+        {{ h.fromUserName }}
+        <app-icon name="arrowRight" [size]="16"></app-icon>
+        {{ h.toUserName }}
+      </span>
+      <span class="text-2 text-sm">{{ h.handoverDate | dateAr }}</span>
+      <span *ngIf="h.note" class="text-2 text-sm">{{ h.note }}</span>
+      <span class="badge" [class]="h.statusText === 'مؤكد' ? 'badge-green' : 'badge-orange'">{{ h.statusText }}</span>
+      <span class="amt money">{{ h.amount | sar }}</span>
+    </div>
+  </div>
+</div>
+
+<app-modal *ngIf="showForm()" title="تسليم نقدي" (close)="showForm.set(false)">
+  <div class="field">
+    <label>من (المسلِّم)</label>
+    <select class="select" [(ngModel)]="form.fromUserId">
+      <option value="">اختر المستخدم</option>
+      <option *ngFor="let u of users()" [value]="u.id">{{ u.fullName }}</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>إلى (المستلم)</label>
+    <select class="select" [(ngModel)]="form.toUserId">
+      <option value="">اختر المستخدم</option>
+      <option *ngFor="let u of users()" [value]="u.id">{{ u.fullName }}</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>المبلغ (ريال)</label>
+    <input class="input" type="number" min="0" [(ngModel)]="form.amount">
+  </div>
+  <div class="field">
+    <label>ملاحظة (اختياري)</label>
+    <input class="input" [(ngModel)]="form.note" placeholder="مثال: تسليم نقدية الوردية">
+  </div>
+  <div footer class="flex gap-8">
+    <button class="btn btn-primary" (click)="save()">تسجيل</button>
+    <button class="btn btn-outline" (click)="showForm.set(false)">إلغاء</button>
+  </div>
+</app-modal>

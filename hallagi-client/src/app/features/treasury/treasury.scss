@@ -1,0 +1,23 @@
+.shift-card {
+  background: var(--navy); color: #fff; border-radius: var(--radius);
+  padding: 20px; margin-bottom: 16px;
+}
+.shift-card .head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.shift-card .head .badge { background: rgba(255,255,255,.18); color: #fff; }
+.shift-card .opened { opacity: .8; font-size: .88rem; }
+.shift-card .expected { display: flex; align-items: baseline; gap: 10px; margin: 14px 0 4px; }
+.shift-card .expected .l { font-size: .95rem; opacity: .85; }
+.shift-card .expected .v { font-size: 2.2rem; font-weight: 800; }
+.shift-card .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 16px; }
+.shift-card .grid .item { background: rgba(255,255,255,.1); border-radius: var(--radius-sm); padding: 10px 12px; }
+.shift-card .grid .item .l { font-size: .8rem; opacity: .8; }
+.shift-card .grid .item .v { font-size: 1.15rem; font-weight: 800; margin-top: 2px; }
+.shift-card .actions { display: flex; gap: 10px; margin-top: 16px; }
+
+.closed-box { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+.formula { background: var(--bg); border-radius: var(--radius-sm); padding: 12px 14px; font-size: .9rem; color: var(--text-2); line-height: 1.9; }
+
+.diff-box { border-radius: var(--radius-sm); padding: 14px 16px; margin-top: 12px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+.diff-box.ok { background: var(--green-soft); color: var(--green); }
+.diff-box.short { background: var(--red-soft); color: var(--red); }
+.diff-box.over { background: var(--orange-soft); color: #8A5A08; }

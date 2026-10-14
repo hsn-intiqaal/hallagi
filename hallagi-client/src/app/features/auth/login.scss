@@ -1,0 +1,56 @@
+.wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: linear-gradient(160deg, #173653 0%, #10314f 55%, #0b2438 100%);
+}
+
+.card {
+  width: 100%;
+  max-width: 440px;
+  background: var(--card);
+  border-radius: 20px;
+  padding: 30px 26px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.35);
+}
+
+.brand { text-align: center; margin-bottom: 22px; }
+.brand .logo {
+  width: 76px; height: 76px;
+  border-radius: 22px;
+  background: var(--navy);
+  color: #fff;
+  font-size: 1.5rem; font-weight: 800;
+  display: inline-flex; align-items: center; justify-content: center;
+  margin-bottom: 12px;
+}
+.brand h1 { font-size: 1.6rem; }
+.brand .tagline { color: var(--text-2); font-weight: 600; margin-top: 2px; }
+.brand .demo {
+  margin-top: 12px;
+  font-size: .82rem;
+  color: #B06F0F;
+  background: var(--orange-soft);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  line-height: 1.7;
+}
+
+.tabs { display: flex; background: var(--navy-soft); border-radius: var(--radius-sm); padding: 4px; margin-bottom: 18px; }
+.tabs button {
+  flex: 1; min-height: 42px; border-radius: 8px;
+  font-weight: 700; color: var(--text-2);
+}
+.tabs button.active { background: #fff; color: var(--navy); box-shadow: var(--shadow); }
+
+.password-wrap { position: relative; }
+.password-wrap .toggle {
+  position: absolute;
+  inset-inline-end: 8px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-2);
+  padding: 8px;
+  border-radius: 8px;
+}

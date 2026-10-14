@@ -1,0 +1,65 @@
+<div class="page">
+  <div class="page-title">
+    <div>
+      <h1>الخدمات والأسعار</h1>
+      <p class="text-2 text-sm">الخدمات غير النشطة لا تظهر في عمليات البيع الجديدة وتبقى مرتبطة بالعمليات التاريخية.</p>
+    </div>
+    <button class="btn btn-primary" (click)="openAdd()">
+      <app-icon name="plus" [size]="18"></app-icon> إضافة خدمة
+    </button>
+  </div>
+
+  <div *ngIf="loading()"><app-loading message="جارٍ تحميل الخدمات…" /></div>
+
+  <app-empty *ngIf="!loading() && services().length === 0" icon="tag"
+    title="لا توجد خدمات بعد"
+    message="أضف خدماتك الأساسية لتتمكن من البيع."
+    actionLabel="إضافة خدمة" (action)="openAdd()" />
+
+  <div class="svc-list" *ngIf="!loading() && services().length > 0">
+    <div class="svc-row" *ngFor="let s of services()" [class.inactive]="s.status !== 'Active'">
+      <app-icon name="scissors" [size]="22" class="text-2"></app-icon>
+      <div class="info">
+        <div class="n">{{ s.name }}</div>
+        <div class="d">{{ s.description || 'بدون وصف' }}</div>
+      </div>
+      <span class="badge" [class]="s.status === 'Active' ? 'badge-green' : 'badge-gray'">{{ s.statusText }}</span>
+      <div class="price">
+        {{ s.price | sar }}<span class="unit" *ngIf="s.hasBranchPrice"> · سعر الفرع</span>
+      </div>
+      <button class="btn btn-outline btn-sm" (click)="openEdit(s)">
+        <app-icon name="edit" [size]="15"></app-icon> تعديل
+      </button>
+      <button class="btn btn-ghost btn-sm" [style.color]="s.status === 'Active' ? 'var(--red)' : 'var(--green)'"
+              (click)="toggleStatus(s)">
+        <app-icon [name]="s.status === 'Active' ? 'x' : 'check'" [size]="15"></app-icon>
+        {{ s.status === 'Active' ? 'إيقاف' : 'تنشيط' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<app-modal *ngIf="showForm()" [title]="editing() ? 'تعديل الخدمة' : 'إضافة خدمة'" (close)="showForm.set(false)">
+  <div class="field">
+    <label>اسم الخدمة</label>
+    <input class="input" [class.invalid]="formError && !form.name.trim()" [(ngModel)]="form.name" placeholder="مثال: حلاقة شعر">
+  </div>
+  <div class="field">
+    <label>وصف مختصر (اختياري)</label>
+    <input class="input" [(ngModel)]="form.description" placeholder="وصف يظهر لفريق المحل">
+  </div>
+  <div class="field">
+    <label>السعر الأساسي (ريال)</label>
+    <input class="input money" type="number" min="0" step="0.5" [class.invalid]="formError" [(ngModel)]="form.basePrice" placeholder="25">
+  </div>
+  <div class="field flex gap-8" style="align-items: center">
+    <input type="checkbox" id="svcActive" [(ngModel)]="form.active" style="width: 20px; height: 20px">
+    <label for="svcActive" style="margin: 0">الخدمة نشطة</label>
+  </div>
+  <div class="field-error" *ngIf="formError">{{ formError }}</div>
+
+  <div footer class="flex gap-8">
+    <button class="btn btn-primary" (click)="save()">حفظ</button>
+    <button class="btn btn-outline" (click)="showForm.set(false)">إلغاء</button>
+  </div>
+</app-modal>

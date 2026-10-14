@@ -1,0 +1,97 @@
+<div class="page">
+  <div class="page-title"><h1>التقارير</h1></div>
+
+  <div class="card filters">
+    <div class="field" style="margin-bottom: 0">
+      <label>من تاريخ</label>
+      <input class="input" type="date" [(ngModel)]="from">
+    </div>
+    <div class="field" style="margin-bottom: 0">
+      <label>إلى تاريخ</label>
+      <input class="input" type="date" [(ngModel)]="to">
+    </div>
+    <button class="btn btn-primary" (click)="load()"><app-icon name="search" [size]="17"></app-icon> عرض التقرير</button>
+  </div>
+
+  <div *ngIf="loading()"><app-loading message="جارٍ تحميل التقارير…" /></div>
+
+  <ng-container *ngIf="report() as r">
+    <div class="kpis">
+      <app-stat-card label="إجمالي المبيعات" [value]="r.summary.totalSales" icon="cash" tone="blue" />
+      <app-stat-card label="المدفوعات النقدية" [value]="r.summary.cashSales" icon="cash" tone="green" hint="تدخل رصيد الدرج" />
+      <app-stat-card label="المدفوعات بالبطاقة" [value]="r.summary.cardSales" icon="card" tone="navy" hint="لا تدخل رصيد الدرج" />
+      <app-stat-card label="المصروفات المسجلة" [value]="r.summary.expenses" icon="wallet" tone="orange" />
+      <app-stat-card label="نتيجة التشغيل التقديرية" [value]="r.summary.operatingResult" icon="chart" tone="green" [hint]="r.summary.hint" />
+    </div>
+
+    <div class="hint">{{ r.summary.hint }}</div>
+
+    <div class="card">
+      <h2>المبيعات حسب اليوم</h2>
+      <div class="chart-box"><canvas #chartCanvas></canvas></div>
+    </div>
+
+    <div class="grid-2 mt-16">
+      <div class="card">
+        <h2 class="mb-16">المبيعات حسب الخدمة</h2>
+        <app-empty *ngIf="!svcGroups(report()).length" icon="tag" title="لا توجد مبيعات" message="خلال الفترة المحددة" />
+        <div *ngFor="let g of svcGroups(report())" class="mb-16">
+          <div class="flex-between mb-8">
+            <span style="font-weight: 600">{{ g.label }}</span>
+            <span class="money">{{ g.total | sar }}</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill" [style.width.%]="g.total / maxSvc() * 100"></div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="mb-16">المصروفات حسب الفئة</h2>
+        <app-empty *ngIf="!expensesReport()?.items?.length" icon="wallet" title="لا توجد مصروفات" message="خلال الفترة المحددة" />
+        <div *ngFor="let e of expensesReport()?.items ?? []" class="flex-between mb-16">
+          <span style="font-weight: 600">{{ e.categoryText }}</span>
+          <span>
+            <span class="money">{{ e.total | sar }}</span>
+            <span class="text-2 text-sm"> · {{ e.share | pct }}</span>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mt-16" *ngIf="duesReport()">
+      <h2 class="mb-16">مستحقات الحلاقين التقديرية</h2>
+      <table class="table">
+        <thead><tr><th>الحلاق</th><th>الفروع</th><th>طريقة التعويض</th><th>مبيعات مؤهلة</th><th>العمولة التقديرية</th><th>راتب ثابت</th><th>إيجار كرسي</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let b of duesReport().items">
+            <td>{{ b.barberName }}</td>
+            <td>{{ b.branchNames.join(' · ') }}</td>
+            <td>{{ b.compensationTypeText }}</td>
+            <td class="money">{{ b.eligibleSales | sar }}</td>
+            <td class="money">{{ b.estimatedCommission | sar }}</td>
+            <td class="money" *ngIf="b.monthlySalary">{{ b.monthlySalary | sar }}</td>
+            <td *ngIf="!b.monthlySalary">—</td>
+            <td class="money" *ngIf="b.chairRent">{{ b.chairRent | sar }}</td>
+            <td *ngIf="!b.chairRent">—</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card mt-16" *ngIf="branchesReport()">
+      <h2 class="mb-16">مقارنة الفروع</h2>
+      <table class="table">
+        <thead><tr><th>الفرع</th><th>المدينة</th><th>عدد العمليات</th><th>إجمالي المبيعات</th><th>المصروفات</th><th>نتيجة التشغيل التقديرية</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let b of branchesReport().items">
+            <td>{{ b.branchName }}</td>
+            <td>{{ b.city }}</td>
+            <td>{{ b.salesCount }}</td>
+            <td class="money">{{ b.totalSales | sar }}</td>
+            <td class="money">{{ b.expenses | sar }}</td>
+            <td class="money">{{ b.operatingResult | sar }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </ng-container>
+</div>

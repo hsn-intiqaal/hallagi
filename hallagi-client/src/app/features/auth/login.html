@@ -1,0 +1,70 @@
+<div class="wrap">
+  <div class="card">
+    <div class="brand">
+      <div class="logo">حلاقي</div>
+      <h1>حلاقي</h1>
+      <div class="tagline">محلك في يدك</div>
+
+      <div class="demo" *ngIf="mode() === 'login'">
+        <b>حسابات تجريبية (بيانات عرض فقط):</b><br>
+        المالك: owner&#64;hallagi.sa — كلمة المرور: Hallagi&#64;123<br>
+        الكاشير: cashier&#64;hallagi.sa — الحلاق: barber&#64;hallagi.sa
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button [class.active]="mode() === 'login'" (click)="switchMode('login')">تسجيل الدخول</button>
+      <button [class.active]="mode() === 'register'" (click)="switchMode('register')">إنشاء محل جديد</button>
+    </div>
+
+    <form (ngSubmit)="submit()">
+      <div class="field" *ngIf="mode() === 'register'">
+        <label>اسمك الكامل</label>
+        <input class="input" [(ngModel)]="fullName" name="fullName" placeholder="مثال: عبدالله الدوسري" autocomplete="name">
+      </div>
+
+      <div class="field">
+        <label>البريد الإلكتروني</label>
+        <input class="input" type="email" [(ngModel)]="email" name="email" placeholder="name&#64;example.com" autocomplete="email" dir="ltr">
+      </div>
+
+      <div class="field" *ngIf="mode() === 'register'">
+        <label>رقم الجوال (اختياري)</label>
+        <input class="input" [(ngModel)]="phone" name="phone" placeholder="05xxxxxxxx" dir="ltr">
+      </div>
+
+      <div class="field">
+        <label>كلمة المرور</label>
+        <div class="password-wrap">
+          <input class="input" [type]="showPassword() ? 'text' : 'password'" [(ngModel)]="password" name="password"
+                 placeholder="••••••••" autocomplete="current-password" dir="ltr">
+          <button type="button" class="toggle" (click)="showPassword.set(!showPassword())">
+            <app-icon [name]="showPassword() ? 'eye' : 'eye'" [size]="19"></app-icon>
+          </button>
+        </div>
+      </div>
+
+      <ng-container *ngIf="mode() === 'register'">
+        <div class="field">
+          <label>اسم المحل</label>
+          <input class="input" [(ngModel)]="organizationName" name="organizationName" placeholder="مثال: صالون النخبة للحلاقة">
+        </div>
+        <div class="field">
+          <label>المدينة</label>
+          <input class="input" [(ngModel)]="city" name="city" placeholder="الرياض">
+        </div>
+        <div class="field">
+          <label>الفرع الأول</label>
+          <input class="input" [(ngModel)]="branchName" name="branchName" placeholder="مثال: فرع النرجس">
+        </div>
+      </ng-container>
+
+      <div class="field-error"></div>
+
+      <button type="submit" class="btn btn-primary btn-block btn-lg" [disabled]="loading()">
+        <span class="spinner" *ngIf="loading()"></span>
+        <span>{{ loading() ? 'جارٍ الدخول…' : mode() === 'login' ? 'تسجيل الدخول' : 'إنشاء المحل والدخول' }}</span>
+      </button>
+    </form>
+  </div>
+</div>

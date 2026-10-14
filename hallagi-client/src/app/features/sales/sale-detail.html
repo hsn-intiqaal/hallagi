@@ -1,0 +1,46 @@
+<div class="page">
+  <div class="actions no-print">
+    <button class="btn btn-outline" (click)="back()">
+      <app-icon name="arrowRight" [size]="18"></app-icon> رجوع
+    </button>
+    <button class="btn btn-primary" (click)="print()">
+      <app-icon name="printer" [size]="18"></app-icon> طباعة الإيصال
+    </button>
+  </div>
+
+  <div *ngIf="loading()"><app-loading message="جارٍ تحميل الإيصال…" /></div>
+
+  <div class="receipt" *ngIf="sale() as s">
+    <div class="r-head">
+      <div class="brand">حلاقي</div>
+      <div class="sub">محلك في يدك</div>
+    </div>
+
+    <div class="r-meta">
+      <div class="row"><span>رقم العملية</span><b>#{{ s.receiptNo }}</b></div>
+      <div class="row"><span>التاريخ</span><span>{{ s.createdAt | dateTimeAr }}</span></div>
+      <div class="row"><span>الفرع</span><span>{{ s.branchName }}</span></div>
+      <div class="row"><span>الحلاق</span><span>{{ s.barberName }}</span></div>
+      <div class="row"><span>العميل</span><span>{{ s.customerName }}</span></div>
+      <div class="row"><span>طريقة الدفع</span><span>{{ s.paymentText }}</span></div>
+      <div class="row"><span>الحالة</span><span>{{ s.statusText }}</span></div>
+    </div>
+
+    <div class="r-items">
+      <div class="r-item" *ngFor="let i of s.items">
+        <span>{{ i.serviceName }} <span class="qty">× {{ i.quantity }} · {{ i.unitPrice | sar }}</span></span>
+        <b class="money">{{ i.lineTotal | sar }}</b>
+      </div>
+    </div>
+
+    <div class="r-total">
+      <span>الإجمالي</span>
+      <span class="money">{{ s.totalAmount | sar }}</span>
+    </div>
+
+    <div class="r-foot">
+      إيصال داخلي غير ضريبي — هذا الإيصال ليس فاتورة ضريبية إلكترونية.
+      <br>شكرًا لزيارتكم
+    </div>
+  </div>
+</div>

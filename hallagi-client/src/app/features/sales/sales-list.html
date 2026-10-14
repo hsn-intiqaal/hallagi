@@ -1,0 +1,85 @@
+<div class="page">
+  <div class="page-title">
+    <h1>سجل المبيعات</h1>
+    <div class="flex gap-8">
+      <button class="btn btn-outline btn-sm" (click)="exportCsv()" *ngIf="auth.can('report.view')">
+        <app-icon name="chart" [size]="16"></app-icon> تصدير CSV
+      </button>
+      <button class="btn btn-primary btn-sm" routerLink="/pos">
+        <app-icon name="plus" [size]="16"></app-icon> بيع جديد
+      </button>
+    </div>
+  </div>
+
+  <div class="card filters">
+    <div class="field">
+      <label>بحث (رقم العملية / اسم العميل / الجوال)</label>
+      <input class="input" [(ngModel)]="search" (keyup.enter)="searchNow()" placeholder="اكتب ثم اضغط Enter">
+    </div>
+    <div class="field">
+      <label>من تاريخ</label>
+      <input class="input" type="date" [(ngModel)]="from">
+    </div>
+    <div class="field">
+      <label>إلى تاريخ</label>
+      <input class="input" type="date" [(ngModel)]="to">
+    </div>
+    <button class="btn btn-navy" (click)="searchNow()">
+      <app-icon name="search" [size]="17"></app-icon> عرض
+    </button>
+  </div>
+
+  <div *ngIf="loading()"><app-loading message="جارٍ تحميل المبيعات…" /></div>
+
+  <ng-container *ngIf="!loading()">
+    <app-empty *ngIf="sales().length === 0" icon="receipt"
+      title="لم تُسجل مبيعات خلال هذه الفترة"
+      message="غيّر الفترة أو سجّل عملية بيع جديدة."
+      actionLabel="بيع جديد" (action)="router.navigate(['/pos'])" />
+
+    <div class="rows" *ngIf="sales().length > 0">
+      <button class="row-item" *ngFor="let s of sales()" [class.cancelled]="s.status === 'Cancelled'" (click)="open(s)">
+        <span class="no">#{{ s.receiptNo }}</span>
+        <div class="who">
+          <div class="n">{{ s.barberName }} — {{ s.customerName }}</div>
+          <div class="s">{{ s.branchName }} · {{ s.paymentText }} · {{ servicesText(s) }}</div>
+        </div>
+        <span class="badge" [class]="s.status === 'Completed' ? 'badge-green' : 'badge-red'">{{ s.statusText }}</span>
+        <span class="when">{{ s.createdAt | dateTimeAr }}</span>
+        <span class="amt money">{{ s.totalAmount | sar }}</span>
+        <button *ngIf="canCancel() && s.status === 'Completed'" class="btn btn-ghost btn-sm" style="color: var(--red)"
+                (click)="askCancel(s, $event)">
+          <app-icon name="x" [size]="15"></app-icon> إلغاء
+        </button>
+      </button>
+    </div>
+
+    <div class="pager" *ngIf="pages > 1">
+      <button class="btn btn-outline btn-sm" [disabled]="page === 1" (click)="prevPage()">السابق</button>
+      <span class="p">صفحة {{ page }} من {{ pages }}</span>
+      <button class="btn btn-outline btn-sm" [disabled]="page === pages" (click)="nextPage()">التالي</button>
+    </div>
+  </ng-container>
+</div>
+
+<!-- نافذة إلغاء العملية -->
+<div class="modal-backdrop" *ngIf="cancelling" (click)="cancelling = null">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-head">
+      <h2>إلغاء العملية #{{ cancelling.receiptNo }}</h2>
+      <button class="icon-btn" style="color: var(--text-2)" (click)="cancelling = null"><app-icon name="x"></app-icon></button>
+    </div>
+    <div class="modal-body">
+      <p class="mb-16">لن تُحذف العملية الأصلية. سيتم حفظ سبب الإلغاء وحركة تصحيح في سجل التدقيق، وتُعكس الحركة النقدية إن كانت مدفوعة نقدًا.</p>
+      <div class="field">
+        <label>سبب الإلغاء</label>
+        <input class="input" [(ngModel)]="cancelReason" placeholder="مثال: خطأ في اختيار الخدمة">
+        <div class="field-error" *ngIf="!cancelReason.trim()">اكتب سبب الإلغاء</div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-danger" (click)="confirmCancel()">تأكيد الإلغاء</button>
+      <button class="btn btn-outline" (click)="cancelling = null">تراجع</button>
+    </div>
+  </div>
+</div>

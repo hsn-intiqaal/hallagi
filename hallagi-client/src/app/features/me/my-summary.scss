@@ -1,0 +1,9 @@
+.me-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.kpi { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+.kpi .l { font-size: .85rem; color: var(--text-2); font-weight: 600; }
+.kpi .v { font-size: 1.35rem; font-weight: 800; margin-top: 4px; }
+.txn { display: flex; align-items: center; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--border); }
+.txn:last-child { border-bottom: none; }
+.txn .grow { flex: 1; min-width: 0; }
+.txn .n { font-weight: 600; font-size: .95rem; }
+.txn .s { font-size: .82rem; color: var(--text-2); }

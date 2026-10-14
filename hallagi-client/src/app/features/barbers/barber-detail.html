@@ -1,0 +1,121 @@
+<div class="page">
+  <ng-container *ngIf="detail() as d2">
+    <div class="flex-between mb-16 wrap">
+      <div class="flex gap-12" style="align-items: center">
+        <button class="btn btn-outline btn-sm" (click)="router.navigate(['/barbers'])">
+          <app-icon name="arrowRight" [size]="17"></app-icon>
+        </button>
+        <h1>{{ d2.barber.fullName }}</h1>
+        <span class="badge" [class]="d2.barber.status === 'Active' ? 'badge-green' : 'badge-gray'">
+          {{ d2.barber.statusText }}
+        </span>
+      </div>
+      <button class="btn btn-primary btn-sm" *ngIf="canManage() && !editing()" (click)="startEdit()">
+        <app-icon name="edit" [size]="16"></app-icon> تعديل البيانات والتعويض
+      </button>
+    </div>
+  </ng-container>
+
+  <div *ngIf="loading()"><app-loading message="جارٍ التحميل…" /></div>
+
+  <ng-container *ngIf="detail() as d">
+    <div class="kpis">
+      <div class="kpi"><div class="l">مبيعات الخدمات (آخر ٣٠ يومًا)</div><div class="v money">{{ d.summary.total | sar }}</div></div>
+      <div class="kpi"><div class="l">عدد العمليات</div><div class="v">{{ d.summary.count }}</div></div>
+      <div class="kpi"><div class="l">عدد الخدمات المنفذة</div><div class="v">{{ d.summary.servicesCount }}</div></div>
+      <div class="kpi"><div class="l">الفروع</div><div class="v" style="font-size: 1rem">{{ d.barber.branchNames.join(' · ') }}</div></div>
+      <div class="kpi" *ngIf="auth.can('ledger.view')">
+        <div class="l">السجل المالي</div>
+        <button class="btn btn-outline btn-sm mt-8" (click)="router.navigate(['/finance/ledger', d.barber.id])">
+          <app-icon name="wallet" [size]="15"></app-icon> فتح السجل المالي
+        </button>
+      </div>
+    </div>
+
+    <!-- compensation card -->
+    <div class="card mb-16">
+      <div class="section-head"><h2>طريقة التعويض</h2></div>
+
+      <ng-container *ngIf="!editing()">
+        <div *ngIf="d.compensation; else noComp" class="comp-grid">
+          <div class="comp-item"><div class="l">النوع</div><div class="v">{{ d.compensation.typeText }}</div></div>
+          <div class="comp-item" *ngIf="d.compensation.monthlySalary !== null">
+            <div class="l">الراتب الشهري (قيمة اتفاقية مستقلة)</div><div class="v money">{{ d.compensation.monthlySalary | sar }}</div>
+          </div>
+          <div class="comp-item" *ngIf="d.compensation.commissionRate !== null">
+            <div class="l">نسبة العمولة</div><div class="v">{{ d.compensation.commissionRate | pct }}</div>
+          </div>
+          <div class="comp-item" *ngIf="d.compensation.chairRentAmount !== null">
+            <div class="l">إيجار الكرسي (اتفاق مستقل)</div><div class="v money">{{ d.compensation.chairRentAmount | sar }}</div>
+          </div>
+        </div>
+        <div class="explain" *ngIf="d.compensation?.explanation">{{ d.compensation?.explanation }}</div>
+        <ng-template #noComp><p class="text-2">لم تُحدد طريقة تعويض لهذا الحلاق بعد.</p></ng-template>
+      </ng-container>
+
+      <!-- edit form -->
+      <div *ngIf="editing() && form() as f">
+        <div class="field">
+          <label>الاسم الكامل</label>
+          <input class="input" [ngModel]="f.fullName" (ngModelChange)="updateField('fullName', $event)">
+        </div>
+        <div class="field">
+          <label>رقم الجوال (اختياري)</label>
+          <input class="input" [ngModel]="f.phone" (ngModelChange)="updateField('phone', $event)" dir="ltr">
+        </div>
+        <div class="field">
+          <label>الفروع</label>
+          <div class="branch-chips">
+            <button *ngFor="let b of branches()" class="branch-chip" [class.selected]="f.branchIds.includes(b.id)" (click)="toggleBranch(b.id)">
+              {{ b.name }}
+            </button>
+          </div>
+        </div>
+        <div class="field">
+          <label>طريقة التعويض</label>
+          <div class="pay-row">
+            <button *ngFor="let t of compTypes" class="pay-btn" [class.selected]="f.compensation?.type === t.value"
+                    (click)="setCompType(t.value)">{{ t.label }}</button>
+          </div>
+        </div>
+        <div class="field" *ngIf="f.compensation?.type === 'FixedSalary' || f.compensation?.type === 'FixedPlusCommission'">
+          <label>الراتب الشهري (ريال)</label>
+          <input class="input" type="number" min="0" [ngModel]="f.compensation?.monthlySalary ?? 0"
+                 (ngModelChange)="updateComp('monthlySalary', $event)">
+        </div>
+        <div class="field" *ngIf="f.compensation?.type === 'Commission' || f.compensation?.type === 'FixedPlusCommission'">
+          <label>نسبة العمولة (%)</label>
+          <input class="input" type="number" min="0" max="100" [ngModel]="commissionInput()"
+                 (ngModelChange)="setCommissionPercent($event)">
+        </div>
+        <div class="field" *ngIf="f.compensation?.type === 'ChairRental'">
+          <label>مبلغ إيجار الكرسي الدوري (ريال)</label>
+          <input class="input" type="number" min="0" [ngModel]="f.compensation?.chairRentAmount ?? 0"
+                 (ngModelChange)="updateComp('chairRentAmount', $event)">
+        </div>
+        <div class="flex gap-8">
+          <button class="btn btn-primary" (click)="save()">حفظ</button>
+          <button class="btn btn-outline" (click)="editing.set(false)">إلغاء</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-head"><h2>سجل العمليات</h2></div>
+      <div *ngIf="d.sales.length === 0" class="text-2 text-sm">لا توجد عمليات خلال آخر ٣٠ يومًا.</div>
+      <table class="table" *ngIf="d.sales.length > 0">
+        <thead><tr><th>#</th><th>التاريخ</th><th>الخدمات</th><th>العميل</th><th>الفرع</th><th>الإجمالي</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let s of d.sales">
+            <td>#{{ s.receiptNo }}</td>
+            <td>{{ s.createdAt | dateShort }}</td>
+            <td>{{ s.servicesText }}</td>
+            <td>{{ s.customerName }}</td>
+            <td>{{ s.branchName }}</td>
+            <td class="money">{{ s.totalAmount | sar }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </ng-container>
+</div>

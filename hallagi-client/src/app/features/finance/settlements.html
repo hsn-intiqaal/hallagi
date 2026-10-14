@@ -1,0 +1,129 @@
+<div class="page">
+  <div class="page-title">
+    <div>
+      <h1>التسويات المالية</h1>
+      <p class="text-2 text-sm">حساب مستحقات كل حلاق وفق اتفاقه (راتب، عمولة، تأجير كرسي) — مع اعتماد ودفع</p>
+    </div>
+    <div class="flex gap-8">
+      <button class="btn btn-outline" (click)="openNewPeriod()"><app-icon name="plus" [size]="17"></app-icon> فترة جديدة</button>
+      <button class="btn btn-primary" (click)="preview()" [disabled]="previewing() || !selectedPeriod()">
+        <span class="spinner" *ngIf="previewing()"></span>
+        {{ previewing() ? 'جارٍ الحساب…' : 'حساب التسويات' }}
+      </button>
+    </div>
+  </div>
+
+  <div class="field" *ngIf="periods().length > 0" style="max-width: 320px">
+    <label>الفترة المالية</label>
+    <select class="select" [ngModel]="selectedPeriod()?.id" (ngModelChange)="selectPeriodById($event)">
+      <option *ngFor="let p of periods()" [value]="p.id">{{ p.name }} ({{ p.startDate | dateShort }} — {{ p.endDate | dateShort }})</option>
+    </select>
+  </div>
+
+  <div *ngIf="loading()"><app-loading message="جارٍ تحميل التسويات…" /></div>
+
+  <app-empty *ngIf="!loading() && periods().length === 0" icon="wallet"
+    title="لا توجد فترات مالية"
+    message="أنشئ فترة (مثل الشهر الحالي) ثم اضغط «حساب التسويات»."
+    actionLabel="فترة جديدة" (action)="openNewPeriod()" />
+
+  <app-empty *ngIf="!loading() && periods().length > 0 && settlements().length === 0" icon="chart"
+    title="لا توجد تسويات في هذه الفترة"
+    message="اضغط «حساب التسويات» لإنشاء مسودات لكل الحلاقين النشطين." />
+
+  <div class="s-grid" *ngIf="settlements().length > 0">
+    <div class="card" *ngFor="let s of settlements()">
+      <div class="flex-between mb-16">
+        <div class="flex gap-12" style="align-items: center">
+          <span class="self-barber av" style="width:42px;height:42px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800">{{ s.barberName.charAt(0) }}</span>
+          <div>
+            <div style="font-weight: 800">{{ s.barberName }}</div>
+            <span class="badge" [class]="statusClass(s.status)">{{ s.statusText }}</span>
+          </div>
+        </div>
+        <span class="net-pill" [class]="s.netPayable >= 0 ? 'net-positive' : 'net-negative'">
+          {{ s.netPayable | sar }}
+        </span>
+      </div>
+
+      <div class="calc-row" *ngIf="s.salaryEarned !== 0"><span class="text-2">راتب</span><span class="money">{{ s.salaryEarned | sar }}</span></div>
+      <div class="calc-row" *ngIf="s.commissionEarned !== 0"><span class="text-2">عمولة</span><span class="money">{{ s.commissionEarned | sar }}</span></div>
+      <div class="calc-row" *ngIf="s.bonus !== 0"><span class="text-2">مكافأة</span><span class="money">{{ s.bonus | sar }}</span></div>
+      <div class="calc-row" *ngIf="s.reimbursements !== 0"><span class="text-2">مبالغ مستردة</span><span class="money">{{ s.reimbursements | sar }}</span></div>
+      <div class="calc-row" *ngIf="s.deductions !== 0"><span class="text-2">خصومات</span><span class="money text-red">-{{ s.deductions | sar }}</span></div>
+      <div class="calc-row" *ngIf="s.chairRent !== 0"><span class="text-2">إيجار كرسي</span><span class="money text-red">-{{ s.chairRent | sar }}</span></div>
+      <div class="calc-row" *ngIf="s.advancesRepaid !== 0"><span class="text-2">رصيد سلف</span><span class="money text-red">-{{ s.advancesRepaid | sar }}</span></div>
+      <div class="calc-row" *ngIf="s.alreadyPaid !== 0"><span class="text-2">مدفوع</span><span class="money text-green">{{ s.alreadyPaid | sar }}</span></div>
+      <div class="calc-row total"><span>المتبقي</span><span class="money">{{ s.remaining | sar }}</span></div>
+
+      <div class="items-list" *ngIf="(s.items?.length ?? 0) > 0">
+        <div class="line" *ngFor="let i of s.items">
+          <span>{{ i.component }}<span *ngIf="i.explanation"> — {{ i.explanation }}</span></span>
+          <span class="money">{{ i.amount | sar }}</span>
+        </div>
+      </div>
+
+      <div class="flex gap-8 mt-16 wrap">
+        <button *ngIf="s.status === 'Draft' && canApprove()" class="btn btn-success btn-sm" (click)="approve(s)" [disabled]="workingId() === s.id">
+          <span class="spinner" *ngIf="workingId() === s.id"></span> اعتماد وقفل
+        </button>
+        <button *ngIf="(s.status === 'Approved' || s.status === 'Paid') && canPay() && s.remaining > 0" class="btn btn-primary btn-sm" (click)="askPay(s)">
+          تسجيل دفعة
+        </button>
+        <button *ngIf="(s.status === 'Draft' || s.status === 'Approved') && canApprove()" class="btn btn-ghost btn-sm" style="color: var(--red)" (click)="askCancel(s)">
+          إلغاء
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<app-modal *ngIf="showNewPeriod()" title="فترة مالية جديدة" (close)="showNewPeriod.set(false)">
+  <div class="field">
+    <label>اسم الفترة</label>
+    <input class="input" [(ngModel)]="newPeriod.name" placeholder="مثال: أكتوبر 2026">
+  </div>
+  <div class="field">
+    <label>من تاريخ</label>
+    <input class="input" type="date" [(ngModel)]="newPeriod.startDate">
+  </div>
+  <div class="field">
+    <label>إلى تاريخ</label>
+    <input class="input" type="date" [(ngModel)]="newPeriod.endDate">
+  </div>
+  <div footer class="flex gap-8">
+    <button class="btn btn-primary" (click)="createPeriod()">إنشاء</button>
+    <button class="btn btn-outline" (click)="showNewPeriod.set(false)">إلغاء</button>
+  </div>
+</app-modal>
+
+<app-modal *ngIf="payTarget()" title="تسجيل دفعة — {{ payTarget()?.barberName }}" (close)="payTarget.set(null)">
+  <p class="mb-16">المتبقي على التسوية: <b class="money">{{ payTarget()?.remaining | sar }}</b></p>
+  <div class="field">
+    <label>المبلغ المدفوع</label>
+    <input class="input" type="number" min="0" [(ngModel)]="payAmount">
+  </div>
+  <div class="field">
+    <label>طريقة الدفع</label>
+    <select class="select" [(ngModel)]="payMethod">
+      <option value="Cash">نقدي</option>
+      <option value="Bank">تحويل بنكي</option>
+    </select>
+  </div>
+  <div footer class="flex gap-8">
+    <button class="btn btn-primary" (click)="confirmPay()">تسجيل الدفعة</button>
+    <button class="btn btn-outline" (click)="payTarget.set(null)">إلغاء</button>
+  </div>
+</app-modal>
+
+<app-modal *ngIf="cancelTarget()" title="إلغاء تسوية" (close)="cancelTarget.set(null)">
+  <p class="mb-16">إلغاء التسوية لا يمس الدفعات المسجّلة سابقًا — يتم بتصحيح موثق.</p>
+  <div class="field">
+    <label>سبب الإلغاء</label>
+    <input class="input" [(ngModel)]="cancelReason">
+  </div>
+  <div footer class="flex gap-8">
+    <button class="btn btn-danger" (click)="confirmCancel()">تأكيد الإلغاء</button>
+    <button class="btn btn-outline" (click)="cancelTarget.set(null)">تراجع</button>
+  </div>
+</app-modal>

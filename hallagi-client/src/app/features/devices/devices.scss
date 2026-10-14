@@ -1,0 +1,5 @@
+.d-row { display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); flex-wrap: wrap; }
+.d-row .ic { width: 44px; height: 44px; border-radius: 12px; background: var(--navy-soft); color: var(--navy); display: flex; align-items: center; justify-content: center; }
+.d-row .info { flex: 1; }
+.d-row .info .n { font-weight: 700; }
+.d-row .info .s { font-size: .85rem; color: var(--text-2); }

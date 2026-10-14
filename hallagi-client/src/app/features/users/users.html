@@ -1,0 +1,147 @@
+<div class="page">
+  <div class="page-title">
+    <div>
+      <h1>المستخدمون والصلاحيات</h1>
+      <p class="text-2 text-sm">غيّر الدور والفروع المسموح بها والصلاحيات الدقيقة لكل مستخدم</p>
+    </div>
+    <button class="btn btn-primary" (click)="openInvite()"><app-icon name="plus" [size]="18"></app-icon> دعوة مستخدم</button>
+  </div>
+
+  <div *ngIf="loading()"><app-loading /></div>
+
+  <div class="card u-table-wrap" *ngIf="users().length > 0">
+    <table class="table">
+      <thead>
+        <tr><th>المستخدم</th><th>الدور</th><th>الفروع</th><th>الحالة</th><th>الصلاحيات المخصصة</th><th></th></tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let u of users()">
+          <td>
+            <b>{{ u.fullName }}</b>
+            <div class="text-2 text-sm">{{ u.email }}<span *ngIf="u.phone"> · {{ u.phone }}</span></div>
+          </td>
+          <td>{{ u.roleText }}</td>
+          <td>{{ branchNames(u.branchIds) }}</td>
+          <td><span class="badge" [class]="u.status === 'Active' ? 'badge-green' : 'badge-red'">{{ u.statusText }}</span></td>
+          <td class="text-2 text-sm">
+            <ng-container *ngIf="u.permissions && objectKeys(u.permissions).length > 0">
+              <span class="badge badge-blue">{{ objectKeys(u.permissions).length }} مخصصة</span>
+            </ng-container>
+            <ng-container *ngIf="!u.permissions || objectKeys(u.permissions).length === 0">افتراضي الدور</ng-container>
+          </td>
+          <td>
+            <div class="flex gap-8">
+              <button class="btn btn-outline btn-sm" (click)="openEdit(u)"><app-icon name="edit" [size]="14"></app-icon> تعديل</button>
+              <button class="btn btn-ghost btn-sm" (click)="resetTarget = u; resetPassword = ''"><app-icon name="safe" [size]="14"></app-icon> كلمة المرور</button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- دعوة مستخدم -->
+<app-modal *ngIf="showInvite()" title="دعوة مستخدم جديد" (close)="showInvite.set(false)">
+  <div class="field">
+    <label>الاسم الكامل</label>
+    <input class="input" [(ngModel)]="inviteForm.fullName" placeholder="مثال: سالم الغامدي">
+  </div>
+  <div class="field">
+    <label>البريد الإلكتروني</label>
+    <input class="input" type="email" [(ngModel)]="inviteForm.email" placeholder="name@example.com" dir="ltr">
+  </div>
+  <div class="field">
+    <label>رقم الجوال (اختياري)</label>
+    <input class="input" [(ngModel)]="inviteForm.phone" dir="ltr" placeholder="05xxxxxxxx">
+  </div>
+  <div class="field">
+    <label>كلمة مرور مؤقتة (٦ أحرف على الأقل)</label>
+    <input class="input" [(ngModel)]="inviteForm.password" dir="ltr" placeholder="••••••">
+  </div>
+  <div class="field">
+    <label>الدور</label>
+    <select class="select" [(ngModel)]="inviteForm.role">
+      <option *ngFor="let r of roles" [value]="r.value">{{ r.label }}</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>الفروع المسموح بها</label>
+    <div class="branch-chips">
+      <button *ngFor="let b of branchesList()" class="branch-chip"
+              [class.selected]="inviteForm.branchIds.includes(b.id)"
+              (click)="inviteForm.branchIds = toggleBranch(inviteForm.branchIds, b.id)">
+        {{ b.name }}
+      </button>
+    </div>
+    <div class="field-error" *ngIf="inviteForm.role !== 'Owner' && inviteForm.branchIds.length === 0">اختر فرعًا واحدًا على الأقل</div>
+  </div>
+  <div footer class="flex gap-8">
+    <button class="btn btn-primary" (click)="invite()">إنشاء المستخدم</button>
+    <button class="btn btn-outline" (click)="showInvite.set(false)">إلغاء</button>
+  </div>
+</app-modal>
+
+<!-- تعديل مستخدم -->
+<app-modal *ngIf="editing()" title="تعديل المستخدم والصلاحيات" (close)="editing.set(null)">
+  <div class="field">
+    <label>الاسم</label>
+    <input class="input" [(ngModel)]="editForm.fullName">
+  </div>
+  <div class="field">
+    <label>الدور</label>
+    <select class="select" [(ngModel)]="editForm.role">
+      <option *ngFor="let r of roles" [value]="r.value">{{ r.label }}</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>الحالة</label>
+    <select class="select" [(ngModel)]="editForm.status">
+      <option value="Active">مفعّل</option>
+      <option value="Disabled">معطّل</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>الفروع</label>
+    <div class="branch-chips">
+      <button *ngFor="let b of branchesList()" class="branch-chip"
+              [class.selected]="editForm.branchIds.includes(b.id)"
+              (click)="editForm.branchIds = toggleBranch(editForm.branchIds, b.id)">
+        {{ b.name }}
+      </button>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>الصلاحيات الدقيقة (افتراضي = إعداد الدور)</label>
+    <div class="perm-grid">
+      <div class="perm-row" *ngFor="let key of objectKeys(permissionLabels)">
+        <span class="lbl">{{ permissionLabels[key] }}</span>
+        <select [ngModel]="editForm.permissions[key] ?? null"
+                (ngModelChange)="editForm.permissions = setPerm(editForm.permissions, key, $event)">
+          <option [ngValue]="null">افتراضي</option>
+          <option [ngValue]="true">مسموح</option>
+          <option [ngValue]="false">ممنوع</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div footer class="flex gap-8">
+    <button class="btn btn-primary" (click)="saveEdit()">حفظ التغييرات</button>
+    <button class="btn btn-outline" (click)="editing.set(null)">إلغاء</button>
+  </div>
+</app-modal>
+
+<!-- إعادة تعيين كلمة المرور -->
+<app-modal *ngIf="resetTarget" title="إعادة تعيين كلمة المرور" (close)="resetTarget = null">
+  <p class="mb-16">سيتم تعيين كلمة مرور جديدة للمستخدم <b>{{ resetTarget?.fullName }}</b>. شاركها معه بخصوصية واطلب تغييرها بعد الدخول.</p>
+  <div class="field">
+    <label>كلمة المرور الجديدة</label>
+    <input class="input" [(ngModel)]="resetPassword" dir="ltr" placeholder="••••••">
+  </div>
+  <div footer class="flex gap-8">
+    <button class="btn btn-primary" (click)="confirmResetPassword()">تعيين كلمة المرور</button>
+    <button class="btn btn-outline" (click)="resetTarget = null">إلغاء</button>
+  </div>
+</app-modal>

@@ -1,0 +1,31 @@
+# ===== .NET =====
+bin/
+obj/
+*.user
+*.suo
+*.db
+*.db-shm
+*.db-wal
+appsettings.*.local.json
+
+# ===== Node / Angular =====
+node_modules/
+dist/
+.angular/cache/
+npm-debug.log*
+
+# ===== Playwright =====
+test-results/
+playwright-report/
+blob-report/
+
+# ===== IDE / OS =====
+.vs/
+.idea/
+*.swp
+Thumbs.db
+
+# ===== Environment =====
+.env
+.env.local
+.env.*.local

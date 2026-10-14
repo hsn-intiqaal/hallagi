@@ -1,0 +1,61 @@
+<div class="page">
+  <div class="page-title">
+    <div>
+      <h1>الفروع</h1>
+      <p class="text-2 text-sm">لكل فرع خزينة ووردية مستقلة — بدّل الفرع الحالي من الشريط العلوي</p>
+    </div>
+    <button class="btn btn-primary" (click)="openAdd()"><app-icon name="plus" [size]="18"></app-icon> إضافة فرع</button>
+  </div>
+
+  <div *ngIf="loading()"><app-loading /></div>
+
+  <div class="b-grid">
+    <div class="b-card" *ngFor="let b of items()">
+      <div class="head">
+        <span class="ic"><app-icon name="building" [size]="21"></app-icon></span>
+        <div>
+          <div class="name">{{ b.name }}</div>
+          <div class="city">{{ b.city }}</div>
+        </div>
+        <div class="grow"></div>
+        <span class="badge" [class]="(b.status ?? 'Active') === 'Active' ? 'badge-green' : 'badge-gray'">
+          {{ (b.status ?? 'Active') === 'Active' ? 'نشط' : 'غير نشط' }}
+        </span>
+      </div>
+      <div class="meta">
+        <span *ngIf="b.address">📍 {{ b.address }}</span>
+        <span>عدد الحلاقين المسندين: {{ b.barberCount ?? 0 }}</span>
+        <span>عدد المستخدمين المرتبطين: {{ b.userCount ?? 0 }}</span>
+        <span *ngIf="b.hasOpenShift" class="text-green">● وردية مفتوحة حاليًا</span>
+      </div>
+      <div class="actions">
+        <button class="btn btn-outline btn-sm" (click)="switchTo(b.id)">تبديل لهذا الفرع</button>
+        <button class="btn btn-ghost btn-sm" (click)="openEdit(b)"><app-icon name="edit" [size]="15"></app-icon> تعديل</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<app-modal *ngIf="showForm()" [title]="editing() ? 'تعديل الفرع' : 'إضافة فرع'" (close)="showForm.set(false)">
+  <div class="field">
+    <label>اسم الفرع</label>
+    <input class="input" [(ngModel)]="form.name" placeholder="مثال: فرع النرجس">
+  </div>
+  <div class="field">
+    <label>المدينة</label>
+    <input class="input" [(ngModel)]="form.city" placeholder="الرياض">
+  </div>
+  <div class="field">
+    <label>العنوان (اختياري)</label>
+    <input class="input" [(ngModel)]="form.address" placeholder="الحي، الشارع">
+  </div>
+  <div class="field flex gap-8" style="align-items: center">
+    <input type="checkbox" id="bActive" [(ngModel)]="form.active" style="width: 20px; height: 20px">
+    <label for="bActive" style="margin: 0">الفرع نشط</label>
+  </div>
+  <div class="field-error" *ngIf="formError">{{ formError }}</div>
+  <div footer class="flex gap-8">
+    <button class="btn btn-primary" (click)="save()">حفظ</button>
+    <button class="btn btn-outline" (click)="showForm.set(false)">إلغاء</button>
+  </div>
+</app-modal>

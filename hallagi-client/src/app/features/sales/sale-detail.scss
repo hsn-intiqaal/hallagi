@@ -1,0 +1,21 @@
+.actions { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+
+.receipt {
+  max-width: 460px;
+  margin: 0 auto;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+}
+.receipt .r-head { text-align: center; border-bottom: 2px dashed var(--border); padding-bottom: 14px; margin-bottom: 14px; }
+.receipt .r-head .brand { font-size: 1.4rem; font-weight: 800; color: var(--navy); }
+.receipt .r-head .sub { color: var(--text-2); font-size: .88rem; }
+.receipt .r-meta { font-size: .88rem; margin-bottom: 14px; }
+.receipt .r-meta .row { display: flex; justify-content: space-between; padding: 4px 0; }
+.receipt .r-meta .row span:first-child { color: var(--text-2); }
+.receipt .r-items { border-top: 1px solid var(--border); border-bottom: 2px dashed var(--border); padding: 10px 0; margin-bottom: 12px; }
+.receipt .r-item { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; font-size: .95rem; }
+.receipt .r-item .qty { color: var(--text-2); }
+.receipt .r-total { display: flex; justify-content: space-between; align-items: center; font-size: 1.25rem; font-weight: 800; }
+.receipt .r-foot { margin-top: 18px; text-align: center; color: var(--text-2); font-size: .82rem; border-top: 1px solid var(--border); padding-top: 12px; }

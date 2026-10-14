@@ -1,0 +1,6 @@
+.s2 { display: grid; grid-template-columns: 1fr; gap: 14px; }
+@media (min-width: 900px) { .s2 { grid-template-columns: 1fr 1fr; } }
+.branch-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.branch-chip { border: 1.5px solid var(--border); border-radius: 999px; padding: 8px 14px; font-weight: 600; font-size: .9rem; background: #fff; min-height: 40px; }
+.branch-chip.selected { border-color: var(--blue); background: var(--blue-soft); color: var(--blue); }
+.explain { background: var(--blue-soft); color: var(--navy); border-radius: var(--radius-sm); padding: 12px 14px; font-size: .9rem; font-weight: 600; margin-top: 10px; }

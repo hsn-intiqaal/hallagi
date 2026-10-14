@@ -1,0 +1,124 @@
+<div class="page dashboard">
+  <div class="greeting">
+    <div>
+      <h1>مرحبًا {{ auth.profile()?.fullName }} 👋</h1>
+      <div class="date"><app-icon name="calendar" [size]="16"></app-icon>{{ today | dateAr }}</div>
+    </div>
+    <div class="flex gap-12 wrap" style="align-items: center">
+      <div class="period-tabs">
+        <button [class.active]="period() === 'today'" (click)="setPeriod('today')">اليوم</button>
+        <button [class.active]="period() === 'week'" (click)="setPeriod('week')">هذا الأسبوع</button>
+        <button [class.active]="period() === 'month'" (click)="setPeriod('month')">هذا الشهر</button>
+      </div>
+      <button class="btn btn-primary" (click)="newSale()">
+        <app-icon name="plus" [size]="19"></app-icon> بيع جديد
+      </button>
+    </div>
+  </div>
+
+  <div class="alert" *ngIf="data()?.staleOpenShift">
+    <app-icon name="alert" [size]="19"></app-icon>
+    <span class="grow">هناك وردية سابقة لم تُغلق بعد. أغلق الوردية من شاشة الخزينة لتحديث رصيد الدرج.</span>
+    <a class="btn btn-sm btn-navy" routerLink="/treasury">فتح الخزينة</a>
+  </div>
+
+  <div *ngIf="loading()"><app-loading message="جارٍ تحميل مبيعات اليوم…" /></div>
+
+  <ng-container *ngIf="!loading() && data() as d">
+    <div class="stats-grid">
+      <app-stat-card label="مبيعات {{ periodLabel() }}" [value]="d.metrics.totalSales" hint="إجمالي المبيعات المسجلة" icon="cash" tone="blue" />
+      <app-stat-card label="عدد الخدمات المكتملة" [value]="d.metrics.servicesCount" hint="عدد الخدمات المنفذة خلال الفترة" icon="scissors" tone="navy" />
+      <app-stat-card label="المصروفات المسجلة" [value]="d.metrics.expensesTotal" hint="المصروفات المعتمدة في الفترة" icon="wallet" tone="orange" />
+      <app-stat-card label="صافي التشغيل التقديري" [value]="d.metrics.netOperatingEstimate"
+                     [hint]="d.metrics.netOperatingHint" icon="chart" tone="green" />
+    </div>
+
+    <div class="split-grid">
+      <div class="flex-col gap-16">
+        <div class="card">
+          <div class="section-head">
+            <h2>الفلوس اليوم</h2>
+            <span class="text-2 text-sm">منفصلة حسب طريقة الدفع</span>
+          </div>
+          <div class="money-split">
+            <div class="item cash">
+              <div class="l">مدفوعات نقدية</div>
+              <div class="v money">{{ d.metrics.cashSales | sar }}</div>
+            </div>
+            <div class="item card">
+              <div class="l">مدفوعات بالبطاقة</div>
+              <div class="v money">{{ d.metrics.cardSales | sar }}</div>
+            </div>
+          </div>
+          <div class="drawer-note mt-16" *ngIf="d.drawer; else noDrawer">
+            <app-icon name="safe" [size]="26"></app-icon>
+            <div class="grow">
+              <div class="l">رصيد الدرج النقدي المتوقع — الوردية المفتوحة</div>
+              <div class="v money">{{ d.drawer.expectedCash | sar }}</div>
+            </div>
+            <a class="btn btn-sm btn-outline" routerLink="/treasury" style="background:#fff">إدارة الوردية</a>
+          </div>
+          <ng-template #noDrawer>
+            <div class="alert mt-16" *ngIf="!d.drawer">
+              <app-icon name="alert" [size]="18"></app-icon>
+              <span>لا توجد وردية مفتوحة على هذا الفرع — العدد الافتتاحي عند فتح الوردية يُحدد رصيد الدرج.</span>
+            </div>
+          </ng-template>
+        </div>
+
+        <div class="card">
+          <div class="section-head">
+            <h2>مبيعات آخر ٧ أيام</h2>
+            <span class="text-2 text-sm">إجمالي كل يوم</span>
+          </div>
+          <div class="chart">
+            <div class="bar" *ngFor="let b of chartBars()" [class.today]="b.label !== 'الخميس' ? false : b.day === todayStr">
+              <div class="fill" [style.height.%]="b.pct"></div>
+              <div class="lbl">{{ b.label }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex-col gap-16">
+        <div class="card">
+          <div class="section-head">
+            <h2>آخر المعاملات</h2>
+            <a routerLink="/sales" class="text-blue text-sm">عرض الكل</a>
+          </div>
+          <div *ngIf="d.lastSales.length === 0" class="text-2 text-sm">لم تُسجل مبيعات خلال هذه الفترة.</div>
+          <div class="txn" *ngFor="let s of d.lastSales">
+            <app-icon [name]="s.paymentText === 'نقدي' ? 'cash' : 'card'" [size]="19" class="text-2"></app-icon>
+            <div class="who">
+              <div class="n">{{ s.barberName }} — {{ s.customerName }}</div>
+              <div class="s">#{{ s.receiptNo }} · {{ s.branchName }} · {{ s.paymentText }}</div>
+            </div>
+            <div class="amt money">{{ s.totalAmount | sar }}</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-head"><h2>أكثر الخدمات مبيعًا</h2></div>
+          <div *ngIf="d.topServices.length === 0" class="text-2 text-sm">لا توجد بيانات كافية.</div>
+          <div class="top-svc" *ngFor="let s of d.topServices">
+            <app-icon name="scissors" [size]="17" class="text-2"></app-icon>
+            <span class="name">{{ s.serviceName }}</span>
+            <span class="qty">{{ s.quantity }} مرة</span>
+            <span class="money">{{ s.total | sar }}</span>
+          </div>
+        </div>
+
+        <div class="card" *ngIf="d.branches.length > 1">
+          <div class="section-head"><h2>الفروع</h2></div>
+          <div class="text-2 text-sm">{{ d.branches.length }} فروع تابعة للمنشأة — بدّل الفرع من الأعلى لعرض بيانات كل فرع.</div>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="d.metrics.totalSales === 0" class="card mt-16">
+      <app-empty icon="scissors" title="لم تُسجل مبيعات اليوم بعد"
+        message="ابدأ بأول عملية بيع وسيتم تحديث الأرقام هنا تلقائيًا."
+        actionLabel="بيع جديد" (action)="newSale()" />
+    </div>
+  </ng-container>
+</div>

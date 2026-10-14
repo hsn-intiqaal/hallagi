@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Hallagi.Api/Hallagi.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Hallagi.Tests/Hallagi.Tests.csproj" />
+  </Folder>
+</Solution>

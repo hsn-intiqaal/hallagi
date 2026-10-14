@@ -1,0 +1,19 @@
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.kpi { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+.kpi .l { font-size: .84rem; color: var(--text-2); font-weight: 600; }
+.kpi .v { font-size: 1.35rem; font-weight: 800; margin-top: 2px; }
+
+.explain {
+  background: var(--blue-soft); color: var(--navy);
+  border-radius: var(--radius-sm); padding: 12px 14px;
+  font-size: .9rem; font-weight: 600;
+  margin-top: 10px;
+}
+
+.comp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.comp-item .l { font-size: .82rem; color: var(--text-2); }
+.comp-item .v { font-weight: 700; font-size: 1.08rem; }
+
+.branch-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.branch-chip { border: 1.5px solid var(--border); border-radius: 999px; padding: 8px 14px; font-weight: 600; font-size: .9rem; background: #fff; min-height: 40px; }
+.branch-chip.selected { border-color: var(--blue); background: var(--blue-soft); color: var(--blue); }

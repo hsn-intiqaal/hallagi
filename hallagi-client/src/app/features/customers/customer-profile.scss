@@ -1,0 +1,12 @@
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.kpi { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+.kpi .l { font-size: .84rem; color: var(--text-2); font-weight: 600; }
+.kpi .v { font-size: 1.3rem; font-weight: 800; margin-top: 2px; }
+.visit { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); width: 100%; text-align: start; }
+.visit:last-child { border-bottom: none; }
+.visit:hover { background: var(--bg); }
+.visit .when { min-width: 150px; color: var(--text-2); font-size: .88rem; }
+.visit .what { flex: 1; min-width: 0; }
+.visit .what .n { font-weight: 600; font-size: .95rem; }
+.visit .what .s { font-size: .82rem; color: var(--text-2); }
+.visit .amt { font-weight: 800; }

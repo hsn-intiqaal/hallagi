@@ -1,0 +1,14 @@
+.balance-card { background: var(--navy); color: #fff; border-radius: var(--radius); padding: 18px; margin-bottom: 16px; }
+.balance-card .l { opacity: .85; font-size: .9rem; }
+.balance-card .v { font-size: 2rem; font-weight: 800; margin-top: 2px; }
+.entry { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--border); }
+.entry:last-child { border-bottom: none; }
+.entry .what { flex: 1; min-width: 0; }
+.entry .what .n { font-weight: 700; font-size: .95rem; }
+.entry .what .s { font-size: .82rem; color: var(--text-2); }
+.entry .amt { font-weight: 800; }
+.entry .amt.credit { color: var(--green); }
+.entry .amt.debit { color: var(--red); }
+.dir-chip { font-size: .75rem; padding: 2px 8px; border-radius: 999px; font-weight: 700; }
+.dir-chip.credit { background: var(--green-soft); color: var(--green); }
+.dir-chip.debit { background: var(--red-soft); color: var(--red); }

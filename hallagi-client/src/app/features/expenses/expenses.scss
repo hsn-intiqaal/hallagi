@@ -1,0 +1,10 @@
+.expense-row {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 13px 16px; flex-wrap: wrap;
+}
+.expense-row .when { min-width: 120px; color: var(--text-2); font-size: .88rem; }
+.expense-row .cat { font-weight: 700; min-width: 130px; }
+.expense-row .desc { flex: 1; min-width: 140px; color: var(--text-2); font-size: .9rem; }
+.expense-row .amt { font-weight: 800; font-size: 1.05rem; }
+.expense-row.voided { opacity: .6; }

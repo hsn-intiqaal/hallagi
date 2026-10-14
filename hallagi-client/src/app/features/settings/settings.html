@@ -1,0 +1,108 @@
+<div class="page">
+  <div class="page-title"><h1>الإعدادات</h1></div>
+
+  <div *ngIf="loading()"><app-loading /></div>
+
+  <ng-container *ngIf="!loading()">
+    <div class="card mb-16">
+      <h2 class="mb-16">بيانات المنشأة</h2>
+      <div class="field">
+        <label>اسم المنشأة</label>
+        <input class="input" [(ngModel)]="form.organizationName" [disabled]="!canManage()">
+      </div>
+      <div class="flex gap-16 wrap">
+        <div class="field grow">
+          <label>العملة</label>
+          <input class="input" [(ngModel)]="form.currency" [disabled]="!canManage()" dir="ltr">
+        </div>
+        <div class="field grow">
+          <label>المنطقة الزمنية</label>
+          <input class="input" [(ngModel)]="form.timeZone" [disabled]="!canManage()" dir="ltr">
+        </div>
+      </div>
+      <div class="alert" *ngIf="!canManage()">
+        <app-icon name="alert" [size]="18"></app-icon>
+        <span>تعديل إعدادات المنشأة يتطلب صلاحية «إدارة الإعدادات». يمكنك تغيير كلمة مرور حسابك أدناه.</span>
+      </div>
+    </div>
+
+    <div class="card mb-16" *ngIf="subscription()?.hasSubscription">
+      <h2 class="mb-16">الاشتراك</h2>
+      <div class="flex gap-16 wrap" style="align-items: flex-end">
+        <div>
+          <div class="text-2 text-sm">الخطة الحالية</div>
+          <div style="font-weight: 800; font-size: 1.2rem">{{ subscription()?.plan?.name }}</div>
+          <div class="text-2 text-sm">{{ subscription()?.plan?.description }}</div>
+        </div>
+        <div>
+          <div class="text-2 text-sm">الحالة</div>
+          <span class="badge badge-green">{{ subscription()?.status }}</span>
+        </div>
+        <div>
+          <div class="text-2 text-sm">حدود الخطة</div>
+          <div>{{ subscription()?.plan?.maxBranches }} فروع · {{ subscription()?.plan?.maxUsers }} مستخدمين · {{ subscription()?.plan?.maxBarbers }} حلاقين</div>
+        </div>
+        <div>
+          <div class="text-2 text-sm">القيمة الشهرية</div>
+          <div class="money" style="font-weight: 800">{{ subscription()?.plan?.monthlyPrice | sar }}</div>
+        </div>
+      </div>
+
+      <div class="field mt-16" *ngIf="canManage() && plans().length > 0">
+        <label>تغيير الخطة</label>
+        <div class="flex gap-8 wrap">
+          <button *ngFor="let p of plans()" class="btn btn-sm"
+                  [class]="p.id === subscription()?.plan?.id ? 'btn-success' : 'btn-outline'"
+                  [disabled]="savingPlan()"
+                  (click)="changePlan(p.id)">
+            {{ p.name }} ({{ p.maxBranches }} فروع)
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-16" *ngIf="canManage()">
+      <h2 class="mb-16">طرق الدفع</h2>
+      <div class="flex gap-16 wrap">
+        <label class="flex gap-8" style="align-items: center; font-weight: 600">
+          <input type="checkbox" [(ngModel)]="form.enableCash" style="width: 20px; height: 20px"> الدفع النقدي مفعّل
+        </label>
+        <label class="flex gap-8" style="align-items: center; font-weight: 600">
+          <input type="checkbox" [(ngModel)]="form.enableCard" style="width: 20px; height: 20px"> الدفع بالبطاقة مفعّل
+        </label>
+      </div>
+    </div>
+
+    <div class="card mb-16" *ngIf="canManage()">
+      <h2 class="mb-16">إعدادات الإيصال</h2>
+      <div class="field">
+        <label>هاتف المحل (يظهر في الإيصال)</label>
+        <input class="input" [(ngModel)]="form.receiptPhone" dir="ltr" placeholder="0112345678">
+      </div>
+      <div class="field">
+        <label>عبارة أسفل الإيصال</label>
+        <input class="input" [(ngModel)]="form.receiptFooter" placeholder="شكرًا لزيارتكم">
+      </div>
+      <p class="text-2 text-sm">الإيصال الحالي غير متوافق مع متطلبات الفاتورة الضريبية الإلكترونية (فاتورة) — يتم التعامل معه كإيصال داخلي فقط.</p>
+    </div>
+
+    <div class="card mb-16">
+      <h2 class="mb-16">حسابي</h2>
+      <div class="flex gap-16 wrap" style="align-items: flex-end">
+        <div class="field grow">
+          <label>كلمة المرور الحالية</label>
+          <input class="input" type="password" [(ngModel)]="password.current" dir="ltr">
+        </div>
+        <div class="field grow">
+          <label>كلمة المرور الجديدة</label>
+          <input class="input" type="password" [(ngModel)]="password.next" dir="ltr">
+        </div>
+        <button class="btn btn-primary" (click)="changePassword()">تغيير كلمة المرور</button>
+      </div>
+    </div>
+
+    <button class="btn btn-success btn-lg" *ngIf="canManage()" (click)="save()">
+      <app-icon name="check" [size]="19"></app-icon> حفظ الإعدادات
+    </button>
+  </ng-container>
+</div>

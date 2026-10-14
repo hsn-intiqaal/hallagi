@@ -1,0 +1,41 @@
+<div class="page">
+  <div class="page-title">
+    <div>
+      <h1>الحلاقون</h1>
+      <p class="text-2 text-sm">مبيعات وطريقة تعويض كل حلاق خلال آخر ٣٠ يومًا</p>
+    </div>
+    <button class="btn btn-primary" *ngIf="canManage()" (click)="add()">
+      <app-icon name="plus" [size]="18"></app-icon> إضافة حلاق
+    </button>
+  </div>
+
+  <div *ngIf="loading()"><app-loading message="جارٍ تحميل الحلاقين…" /></div>
+
+  <app-empty *ngIf="!loading() && barbers().length === 0" icon="users"
+    title="لا يوجد حلاقون بعد"
+    message="أضف الحلاقين لتتمكن من تسجيل المبيعات."
+    actionLabel="إضافة حلاق" (action)="add()" />
+
+  <div class="rows" *ngIf="barbers().length > 0">
+    <button class="b-row" *ngFor="let b of barbers()" (click)="open(b.id)">
+      <span class="av">{{ b.fullName.charAt(0) }}</span>
+      <div class="who">
+        <div class="n">{{ b.fullName }}</div>
+        <div class="s">{{ b.branchNames.join(' · ') || 'بدون فرع' }}<span *ngIf="b.phone"> · {{ b.phone }}</span></div>
+      </div>
+      <div class="stat">
+        <div class="l">عدد العمليات</div>
+        <div class="v">{{ b.salesCount }}</div>
+      </div>
+      <div class="stat">
+        <div class="l">مبيعات الخدمات</div>
+        <div class="v money">{{ b.salesTotal | sar }}</div>
+      </div>
+      <div class="comp">
+        <div class="l">طريقة التعويض</div>
+        <div class="v">{{ b.compensation?.typeText ?? 'غير محددة' }}</div>
+      </div>
+      <app-icon name="chevronLeft" [size]="19" class="text-2"></app-icon>
+    </button>
+  </div>
+</div>

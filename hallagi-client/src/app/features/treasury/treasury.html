@@ -1,0 +1,153 @@
+<div class="page">
+  <div class="page-title">
+    <div>
+      <h1>الخزينة والوردية</h1>
+      <p class="text-2 text-sm">كل فرع له درج نقدي ووردية مستقلة — لا تُخلط الأرصدة بين الفروع</p>
+    </div>
+    <button class="btn btn-outline btn-sm" (click)="load()"><app-icon name="refresh" [size]="16"></app-icon> تحديث</button>
+  </div>
+
+  <div class="alert" style="display:flex;align-items:center;gap:10px;background:var(--orange-soft);border:1px solid #F0D9AE;color:#8A5A08;padding:12px 14px;border-radius:var(--radius-sm);margin-bottom:14px;font-weight:600" *ngIf="state()?.staleOpenShift">
+    <app-icon name="alert" [size]="18"></app-icon>
+    <span>هناك وردية مفتوحة من يوم سابق. أغلقها الآن لتحديث رصيد الدرج.</span>
+  </div>
+
+  <div *ngIf="loading()"><app-loading message="جارٍ تحميل الخزينة…" /></div>
+
+  <ng-container *ngIf="state() as s">
+    <!-- الوردية المفتوحة -->
+    <div class="shift-card" *ngIf="s.current as c; else noShift">
+      <div class="head">
+        <app-icon name="safe" [size]="22"></app-icon>
+        <h2 style="color:#fff">وردية مفتوحة</h2>
+        <span class="badge" *ngIf="c.autoOpened">فُتحت تلقائيًا مع أول عملية</span>
+        <div class="grow"></div>
+        <span class="opened">{{ c.openedByName }} — {{ c.openedAt | dateTimeAr }}</span>
+      </div>
+
+      <div class="expected">
+        <span class="l">النقدية المتوقعة في الدرج</span>
+        <span class="v money">{{ c.expectedCash | sar }}</span>
+      </div>
+
+      <div class="grid">
+        <div class="item"><div class="l">الرصيد الافتتاحي</div><div class="v money">{{ c.openingCash | sar }}</div></div>
+        <div class="item"><div class="l">مبيعات نقدية</div><div class="v money text-green" style="color:#7BD3A5">{{ c.cashSales | sar }}</div></div>
+        <div class="item"><div class="l">مبيعات بالبطاقة</div><div class="v money">{{ c.cardSales | sar }}</div></div>
+        <div class="item"><div class="l">مصروفات من الدرج</div><div class="v money" style="color:#FF9C9C">{{ c.cashExpenses | sar }}</div></div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-success" *ngIf="canClose()" (click)="startClose()">
+          <app-icon name="check" [size]="18"></app-icon> إقفال الوردية
+        </button>
+        <span class="text-sm" style="opacity:.75; align-self:center" *ngIf="!canClose()">إقفال الوردية يتطلب صلاحية</span>
+      </div>
+    </div>
+
+    <!-- لا وردية مفتوحة -->
+    <ng-template #noShift>
+      <div class="closed-box">
+        <div class="flex-between wrap gap-12">
+          <div>
+            <h2>لا توجد وردية مفتوحة على هذا الفرع</h2>
+            <p class="text-2 text-sm mt-8" *ngIf="s.lastClosedAt">
+              آخر وردية أُقفلت في {{ s.lastClosedAt | dateTimeAr }} — رصيد الدرج وقتها {{ s.drawerBalanceWhenClosed | sar }}
+            </p>
+          </div>
+          <button class="btn btn-primary btn-lg" *ngIf="canOpen()" (click)="startOpen()">
+            <app-icon name="safe" [size]="20"></app-icon> فتح وردية جديدة
+          </button>
+        </div>
+      </div>
+    </ng-template>
+
+    <div class="formula">
+      <b>معادلة النقدية المتوقعة:</b><br>
+      الرصيد الافتتاحي + المبيعات النقدية + المقبوضات النقدية الأخرى − المصروفات النقدية − المدفوعات النقدية الأخرى<br>
+      <b>ملاحظة:</b> مبيعات البطاقة والأمر لا تدخل رصيد الدرج النقدي.
+    </div>
+  </ng-container>
+
+  <div class="card mt-16" *ngIf="history().length > 0">
+    <div class="section-head"><h2>آخر الورديات</h2></div>
+    <table class="table">
+      <thead><tr><th>الوردية</th><th>الفرع</th><th>الافتتاح</th><th>الإغلاق</th><th>المتوقع</th><th>المعدود</th><th>الفرق</th></tr></thead>
+      <tbody>
+        <tr *ngFor="let sh of history()">
+          <td>{{ sh.openedAt | dateShort }} — {{ sh.openedByName }}</td>
+          <td>{{ sh.branchName }}</td>
+          <td>{{ sh.openedAt | dateTimeAr }}</td>
+          <td>{{ sh.closedAt | dateTimeAr }}</td>
+          <td class="money">{{ sh.expectedCash | sar }}</td>
+          <td class="money">{{ sh.countedCash | sar }}</td>
+          <td>
+            <span *ngIf="sh.difference !== null" class="badge"
+              [class]="sh.difference === 0 ? 'badge-green' : (sh.difference < 0 ? 'badge-red' : 'badge-orange')">
+              {{ sh.difference === 0 ? 'مطابقة' : (sh.difference < 0 ? 'عجز ' : 'فائض ') }}
+              <span class="money">{{ sh.difference | sar }}</span>
+            </span>
+            <span *ngIf="sh.difference === null" class="badge badge-blue">مفتوحة</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- فتح وردية -->
+<app-modal *ngIf="showOpen()" title="فتح وردية" (close)="showOpen.set(false)">
+  <div class="field">
+    <label>الرصيد النقدي الافتتاحي في الدرج</label>
+    <input class="input" type="number" min="0" [(ngModel)]="openCash" placeholder="200">
+  </div>
+  <div class="field">
+    <label>المستخدم المسؤول</label>
+    <input class="input" [value]="auth.profile()?.fullName" disabled>
+  </div>
+  <p class="text-2 text-sm">لا يمكن فتح ورديتين على الدرج نفسه. إذا كانت هناك وردية قديمة مفتوحة فأغلقها أولاً.</p>
+  <div footer class="flex gap-8">
+    <button class="btn btn-primary" (click)="confirmOpen()">فتح الوردية</button>
+    <button class="btn btn-outline" (click)="showOpen.set(false)">إلغاء</button>
+  </div>
+</app-modal>
+
+<!-- إقفال وردية -->
+<app-modal *ngIf="showClose() && state()?.current as c" title="إقفال الوردية" (close)="showClose.set(false)">
+  <table class="table mb-16">
+    <tbody>
+      <tr><td>الرصيد الافتتاحي</td><td class="money">{{ c.openingCash | sar }}</td></tr>
+      <tr><td>مبيعات نقدية</td><td class="money text-green">{{ c.cashSales | sar }}</td></tr>
+      <tr><td>مبيعات بالبطاقة (لا تدخل الدرج)</td><td class="money text-2">{{ c.cardSales | sar }}</td></tr>
+      <tr><td>مصروفات مدفوعة من الدرج</td><td class="money text-red">{{ c.cashExpenses | sar }}</td></tr>
+      <tr><td><b>النقدية المتوقعة</b></td><td class="money"><b>{{ c.expectedCash | sar }}</b></td></tr>
+    </tbody>
+  </table>
+
+  <div class="field">
+    <label>النقدية الفعلية التي عدّها الموظف</label>
+    <input class="input" type="number" min="0" [(ngModel)]="countedCash" placeholder="أدخل المبلغ المعدود">
+  </div>
+
+  <div class="diff-box ok" *ngIf="difference() === 0">
+    <app-icon name="checkCircle" [size]="20"></app-icon> النقدية مطابقة
+  </div>
+  <div class="diff-box short" *ngIf="difference() !== null && difference()! < 0">
+    <app-icon name="alert" [size]="20"></app-icon>
+    يوجد عجز نقدي قدره <span class="money">{{ difference() | sar }}</span> — الفرق بين المتوقع والمعدود
+  </div>
+  <div class="diff-box over" *ngIf="difference() !== null && difference()! > 0">
+    <app-icon name="info" [size]="20"></app-icon>
+    يوجد فائض نقدي قدره <span class="money">{{ difference() | sar }}</span> — الفرق بين المتوقع والمعدود
+  </div>
+
+  <p class="text-2 text-sm mt-16">بعد الإقفال لا يمكن تعديل الوردية. أي تصحيح لاحق يكون بإجراء موثق ومصرح به.</p>
+
+  <div footer class="flex gap-8">
+    <button class="btn btn-success" (click)="confirmClose()" [disabled]="closeSaving()">
+      <span class="spinner" *ngIf="closeSaving()"></span>
+      تأكيد إقفال الوردية
+    </button>
+    <button class="btn btn-outline" (click)="showClose.set(false)">إلغاء</button>
+  </div>
+</app-modal>

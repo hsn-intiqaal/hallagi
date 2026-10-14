@@ -1,0 +1,12 @@
+.b-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.b-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
+.b-card .head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.b-card .head .ic {
+  width: 42px; height: 42px; border-radius: 12px;
+  background: var(--navy); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+}
+.b-card .name { font-weight: 800; font-size: 1.08rem; }
+.b-card .city { color: var(--text-2); font-size: .86rem; }
+.b-card .meta { display: flex; flex-direction: column; gap: 4px; font-size: .86rem; color: var(--text-2); margin-top: 10px; }
+.b-card .actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }

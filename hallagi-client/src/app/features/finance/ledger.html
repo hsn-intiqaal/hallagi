@@ -1,0 +1,85 @@
+<div class="page">
+  <div class="flex-between mb-16 wrap">
+    <div class="flex gap-12" style="align-items: center">
+      <button class="btn btn-outline btn-sm" (click)="router.navigate(['/barbers', barberId()])">
+        <app-icon name="arrowRight" [size]="17"></app-icon>
+      </button>
+      <h1>السجل المالي — {{ barberName() }}</h1>
+    </div>
+    <button *ngIf="canManage()" class="btn btn-primary" (click)="openAdvance()">
+      <app-icon name="plus" [size]="17"></app-icon> تسجيل سلفة
+    </button>
+  </div>
+
+  <div class="balance-card">
+    <div class="l">الرصيد الحالي (ما يستحق للحلاق سالب ما عليه)</div>
+    <div class="v money">{{ balance() | sar }}</div>
+    <div class="text-sm" style="opacity:.8">الرصيد الموجب = مبلغ للمحل للحلاق · السالب = مبلغ على الحلاق للمحل</div>
+  </div>
+
+  <div *ngIf="loading()"><app-loading /></div>
+
+  <ng-container *ngIf="!loading()">
+    <div class="card mb-16">
+      <h2 class="mb-16">الحركات المالية</h2>
+      <app-empty *ngIf="entries().length === 0" icon="wallet" title="لا توجد حركات" message="ستظهر العمولات والسلف والدفعات هنا." />
+      <div class="entry" *ngFor="let e of entries()">
+        <div class="what">
+          <div class="n">{{ e.typeText }}</div>
+          <div class="s">{{ e.txDate | dateAr }}<span *ngIf="e.description"> · {{ e.description }}</span><span *ngIf="e.status === 'Reversed'"> · معكوسة</span></div>
+        </div>
+        <span class="dir-chip" [class]="e.direction === 'Credit' ? 'credit' : 'debit'">
+          {{ e.direction === 'Credit' ? 'دائن' : 'مدين' }}
+        </span>
+        <span class="amt" [class]="e.direction === 'Credit' ? 'credit' : 'debit'">
+          {{ e.direction === 'Credit' ? '+' : '-' }}{{ e.amount | sar }}
+        </span>
+        <button *ngIf="canManage() && e.status !== 'Reversed' && e.type !== 'Reversal'" class="btn btn-ghost btn-sm" (click)="reverse(e.id)">
+          عكس
+        </button>
+      </div>
+    </div>
+
+    <div class="card" *ngIf="advances().length > 0">
+      <h2 class="mb-16">السلف</h2>
+      <table class="table">
+        <thead><tr><th>التاريخ</th><th>المبلغ</th><th>المتبقي</th><th>السبب</th><th>الحالة</th><th></th></tr></thead>
+        <tbody>
+          <tr *ngFor="let a in advances()">
+            <td>{{ a.advanceDate | dateAr }}</td>
+            <td class="money">{{ a.originalAmount | sar }}</td>
+            <td class="money" [class.text-red]="a.outstanding > 0">{{ a.outstanding | sar }}</td>
+            <td>{{ a.reason || '—' }}</td>
+            <td><span class="badge" [class]="a.statusText === 'مسدّدة' ? 'badge-green' : 'badge-orange'">{{ a.statusText }}</span></td>
+            <td>
+              <button *ngIf="canManage() && a.outstanding > 0" class="btn btn-outline btn-sm" (click)="repay(a.id)">سداد كامل</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </ng-container>
+</div>
+
+<app-modal *ngIf="showAdvance()" title="تسجيل سلفة" (close)="showAdvance.set(false)">
+  <div class="field">
+    <label>المبلغ (ريال)</label>
+    <input class="input" type="number" min="0" [(ngModel)]="advance.amount">
+  </div>
+  <div class="field">
+    <label>السبب</label>
+    <input class="input" [(ngModel)]="advance.reason" placeholder="مثال: سلفة شخصية">
+  </div>
+  <div footer class="flex gap-8">
+    <button class="btn btn-primary" (click)="saveAdvance()">حفظ</button>
+    <button class="btn btn-outline" (click)="showAdvance.set(false)">إلغاء</button>
+  </div>
+</app-modal>
+
+<app-modal *ngIf="reversingId()" title="عكس حركة مالية" (close)="reversingId.set(null)">
+  <p class="mb-16">سيتم تسجيل قيد عكسي موثق مع بقاء الحركة الأصلية ظاهرة في السجل.</p>
+  <div footer class="flex gap-8">
+    <button class="btn btn-danger" (click)="confirmReverse()">تأكيد العكس</button>
+    <button class="btn btn-outline" (click)="reversingId.set(null)">تراجع</button>
+  </div>
+</app-modal>

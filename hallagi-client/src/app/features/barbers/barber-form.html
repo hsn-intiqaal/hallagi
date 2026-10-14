@@ -1,0 +1,98 @@
+<div class="page">
+  <div class="page-title">
+    <div class="flex gap-12" style="align-items: center">
+      <button class="btn btn-outline btn-sm" (click)="router.navigate(['/barbers'])">
+        <app-icon name="arrowRight" [size]="17"></app-icon>
+      </button>
+      <h1>{{ isEdit() ? 'تعديل بيانات حلاق' : 'إضافة حلاق جديد' }}</h1>
+    </div>
+  </div>
+
+  <div *ngIf="loading()"><app-loading message="جارٍ تحميل البيانات…" /></div>
+
+  <ng-container *ngIf="!loading()">
+    <div class="grid s2" style="display: grid; grid-template-columns: 1fr; gap: 14px">
+      <div class="card">
+        <h2 class="mb-16">بيانات الحلاق</h2>
+        <div class="field">
+          <label>الاسم الكامل <span class="text-red">*</span></label>
+          <input class="input" [(ngModel)]="form.fullName" placeholder="مثال: أحمد العتيبي">
+        </div>
+        <div class="field">
+          <label>رقم الجوال (اختياري)</label>
+          <input class="input" [(ngModel)]="form.phone" placeholder="05xxxxxxxx" dir="ltr">
+        </div>
+        <div class="field">
+          <label>تاريخ بدء العمل (اختياري)</label>
+          <input class="input" type="date" [(ngModel)]="form.startDate">
+        </div>
+        <div class="field flex gap-8" style="align-items: center">
+          <input type="checkbox" id="bActive" [(ngModel)]="form.active" style="width: 20px; height: 20px">
+          <label for="bActive" style="margin: 0">الحساب نشط</label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="mb-16">الفروع <span class="text-red">*</span></h2>
+        <p class="text-2 text-sm mb-16">اختر الفروع التي يعمل بها هذا الحلاق. لا يمكن تسجيل مبيعات له في فرع غير محدد.</p>
+        <div class="branch-chips">
+          <button *ngFor="let b of allBranches" class="branch-chip"
+                  [class.selected]="form.branchIds.includes(b.id)"
+                  (click)="toggleBranch(b.id)">
+            {{ b.name }}
+          </button>
+        </div>
+        <div class="field-error" *ngIf="form.branchIds.length === 0">اختر فرعًا واحدًا على الأقل</div>
+      </div>
+
+      <div class="card" style="grid-column: 1 / -1">
+        <h2 class="mb-16">طريقة التعويض</h2>
+        <div class="branch-chips mb-16">
+          <button *ngFor="let t of compTypes" class="branch-chip"
+                  [class.selected]="form.compType === t.value"
+                  (click)="form.compType = t.value">
+            {{ t.label }}
+          </button>
+        </div>
+
+        <div class="s2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px">
+          <div class="field" *ngIf="form.compType === 'FixedSalary' || form.compType === 'FixedPlusCommission'">
+            <label>الراتب الشهري (ريال)</label>
+            <input class="input" type="number" min="0" [(ngModel)]="form.monthlySalary" placeholder="3500">
+          </div>
+          <div class="field" *ngIf="form.compType === 'Commission' || form.compType === 'FixedPlusCommission'">
+            <label>نسبة العمولة (%)</label>
+            <input class="input" type="number" min="0" max="100" [(ngModel)]="form.commissionRate" placeholder="30">
+          </div>
+          <div class="field" *ngIf="form.compType === 'ChairRental'">
+            <label>مبلغ إيجار الكرسي الدوري (ريال)</label>
+            <input class="input" type="number" min="0" [(ngModel)]="form.chairRentAmount" placeholder="1200">
+          </div>
+        </div>
+
+        <div class="field" *ngIf="form.compType === 'ChairRental'">
+          <label>ملاحظات الاتفاق (اختياري)</label>
+          <input class="input" [(ngModel)]="form.compNotes" placeholder="مثال: إيجار كرسي شهري بموجب اتفاق خاص">
+        </div>
+
+        <div class="explain" *ngIf="form.compType === 'FixedSalary'">
+          الراتب ثابت بقيمة اتفاقية مستقلة عن المبيعات.
+        </div>
+        <div class="explain" *ngIf="form.compType === 'Commission'">
+          العمولة تُحسب على قيمة الخدمات المؤهلة خلال الفترة وفق النسبة المحددة.
+        </div>
+        <div class="explain" *ngIf="form.compType === 'ChairRental'">
+          اتفاق تأجير كرسي مستقل — لا يُحسب راتب أو عمولة تلقائيًا.
+        </div>
+      </div>
+    </div>
+
+    <div class="flex gap-12 mt-16">
+      <button class="btn btn-primary btn-lg" (click)="save()" [disabled]="saving()">
+        <span class="spinner" *ngIf="saving()"></span>
+        {{ saving() ? 'جارٍ الحفظ…' : 'حفظ' }}
+      </button>
+      <button class="btn btn-outline btn-lg" (click)="router.navigate(['/barbers'])">إلغاء</button>
+    </div>
+  </ng-container>
+</div>

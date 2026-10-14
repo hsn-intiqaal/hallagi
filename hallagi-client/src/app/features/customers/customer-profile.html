@@ -1,0 +1,54 @@
+<div class="page">
+  <div class="flex-between mb-16 wrap">
+    <div class="flex gap-12" style="align-items: center">
+      <button class="btn btn-outline btn-sm" (click)="router.navigate(['/customers'])">
+        <app-icon name="arrowRight" [size]="17"></app-icon>
+      </button>
+      <h1>{{ file()?.customer?.fullName }}</h1>
+    </div>
+    <button class="btn btn-outline btn-sm" (click)="editing.set(!editing())">
+      <app-icon name="edit" [size]="15"></app-icon> {{ editing() ? 'إلغاء التعديل' : 'تعديل' }}
+    </button>
+  </div>
+
+  <div *ngIf="loading()"><app-loading /></div>
+
+  <ng-container *ngIf="file() as f">
+    <div class="kpis">
+      <div class="kpi"><div class="l">عدد الزيارات</div><div class="v">{{ f.summary.count }}</div></div>
+      <div class="kpi"><div class="l">إجمالي الإنفاق التاريخي</div><div class="v money">{{ f.summary.total | sar }}</div></div>
+      <div class="kpi"><div class="l">آخر زيارة</div><div class="v" style="font-size: 1rem">{{ f.summary.lastVisit | dateShort }}</div></div>
+      <div class="kpi"><div class="l">تاريخ إنشاء الملف</div><div class="v" style="font-size: 1rem">{{ f.customer.createdAt | dateShort }}</div></div>
+    </div>
+
+    <div class="card mb-16" *ngIf="editing()">
+      <div class="field">
+        <label>اسم العميل</label>
+        <input class="input" [(ngModel)]="form.fullName">
+      </div>
+      <div class="field">
+        <label>رقم الجوال</label>
+        <input class="input" [(ngModel)]="form.phone" dir="ltr">
+      </div>
+      <div class="field">
+        <label>ملاحظات</label>
+        <input class="input" [(ngModel)]="form.notes">
+      </div>
+      <button class="btn btn-primary" (click)="save()">حفظ التغييرات</button>
+    </div>
+
+    <div class="card">
+      <div class="section-head"><h2>سجل الزيارات</h2></div>
+      <div *ngIf="f.visits.length === 0" class="text-2 text-sm">لا توجد زيارات مسجلة لهذا العميل.</div>
+      <button class="visit" *ngFor="let v of f.visits" (click)="openSale(v.id)">
+        <span class="when">{{ v.createdAt | dateTimeAr }}</span>
+        <div class="what">
+          <div class="n">{{ v.servicesText }}</div>
+          <div class="s">{{ v.branchName }} · {{ v.barberName }} · #{{ v.receiptNo }}</div>
+        </div>
+        <span class="badge" [class]="v.statusText === 'مكتملة' ? 'badge-green' : 'badge-red'">{{ v.statusText }}</span>
+        <span class="amt money">{{ v.totalAmount | sar }}</span>
+      </button>
+    </div>
+  </ng-container>
+</div>

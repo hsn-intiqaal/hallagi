@@ -1,0 +1,12 @@
+.svc-list { display: flex; flex-direction: column; gap: 10px; }
+.svc-row {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 14px 16px;
+}
+.svc-row .info { flex: 1; min-width: 0; }
+.svc-row .info .n { font-weight: 700; font-size: 1.02rem; }
+.svc-row .info .d { color: var(--text-2); font-size: .84rem; }
+.svc-row .price { font-size: 1.25rem; font-weight: 800; color: var(--navy); }
+.svc-row .price .unit { font-size: .8rem; color: var(--text-2); font-weight: 600; }
+.svc-row.inactive { opacity: .65; }

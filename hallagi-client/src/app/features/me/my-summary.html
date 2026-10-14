@@ -1,0 +1,52 @@
+<div class="page">
+  <h1 class="mb-8">ملخصي</h1>
+  <p class="text-2 mb-16">معلوماتك الشخصية المصرح بها فقط — لا تظهر هنا بيانات الخزينة أو المصروفات أو أرباح المحل.</p>
+
+  <div *ngIf="loading()"><app-loading /></div>
+
+  <ng-container *ngIf="summary() as s">
+    <div class="me-kpis">
+      <div class="kpi"><div class="l">عدد عملياتي (آخر ٣٠ يومًا)</div><div class="v">{{ s.barber?.summary?.count ?? 0 }}</div></div>
+      <div class="kpi"><div class="l">عدد الخدمات المنفذة</div><div class="v">{{ s.barber?.summary?.servicesCount ?? 0 }}</div></div>
+      <div class="kpi"><div class="l">قيمة خدماتي</div><div class="v money">{{ s.barber?.summary?.total ?? 0 | sar }}</div></div>
+    </div>
+
+    <div class="card mb-16" *ngIf="s.barber?.compensation">
+      <h2 class="mb-8">مستحقاتي التقديرية</h2>
+      <div class="flex gap-16 wrap" style="align-items: flex-end">
+        <div>
+          <div class="text-2 text-sm">طريقة التعويض</div>
+          <div style="font-weight: 700">{{ s.barber.compensation.typeText }}</div>
+        </div>
+        <div *ngIf="s.barber.compensation.monthlySalary !== null">
+          <div class="text-2 text-sm">الراتب الشهري</div>
+          <div class="money" style="font-size: 1.3rem; font-weight: 800">{{ s.barber.compensation.monthlySalary | sar }}</div>
+        </div>
+        <div *ngIf="s.barber.compensation.commissionRate !== null">
+          <div class="text-2 text-sm">نسبة العمولة</div>
+          <div style="font-size: 1.3rem; font-weight: 800">{{ s.barber.compensation.commissionRate | pct }}</div>
+        </div>
+        <div *ngIf="s.barber.compensation.estimatedCommission !== null">
+          <div class="text-2 text-sm">العمولة التقديرية</div>
+          <div class="money" style="font-size: 1.3rem; font-weight: 800">{{ s.barber.compensation.estimatedCommission | sar }}</div>
+        </div>
+      </div>
+      <p class="explain" *ngIf="s.barber.compensation.explanation">{{ s.barber.compensation.explanation }}</p>
+      <p class="text-2 text-sm mt-8" *ngIf="!s.canViewDues">(قد تكون بعض التفاصيل غير معروضة حسب صلاحياتك)</p>
+    </div>
+
+    <div class="card">
+      <h2 class="mb-16">خدماتي الأخيرة</h2>
+      <app-empty *ngIf="!(s.barber?.sales?.length)" icon="scissors" title="لا توجد عمليات بعد"
+        message="عملياتك ستظهر هنا بعد تسجيل أول عملية." />
+      <div class="txn" *ngFor="let t of s.barber?.sales ?? []">
+        <app-icon [name]="t.paymentText === 'نقدي' ? 'cash' : 'card'" [size]="18" class="text-2"></app-icon>
+        <div class="grow">
+          <div class="n">{{ t.servicesText }}</div>
+          <div class="s">#{{ t.receiptNo }} · {{ t.createdAt | dateShort }} · {{ t.paymentText }} · {{ t.customerName }}</div>
+        </div>
+        <span class="money" style="font-weight: 700">{{ t.totalAmount | sar }}</span>
+      </div>
+    </div>
+  </ng-container>
+</div>

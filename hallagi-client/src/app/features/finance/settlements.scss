@@ -1,0 +1,14 @@
+.s-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+@media (min-width: 900px) { .s-grid { grid-template-columns: 1fr 1fr; } }
+.calc-row { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px dashed var(--border); font-size: .95rem; }
+.calc-row:last-child { border-bottom: none; }
+.calc-row.total { border-top: 2px solid var(--navy); border-bottom: none; font-size: 1.1rem; font-weight: 800; padding-top: 10px; margin-top: 6px; }
+.net-pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 4px 12px; font-weight: 800; font-size: 1.05rem; }
+.net-positive { background: var(--green-soft); color: var(--green); }
+.net-negative { background: var(--red-soft); color: var(--red); }
+.items-list { margin-top: 10px; font-size: .88rem; color: var(--text-2); }
+.items-list .line { display: flex; justify-content: space-between; padding: 3px 0; }
+.badge-draft { background: var(--navy-soft); color: var(--navy); }
+.badge-approved { background: var(--green-soft); color: var(--green); }
+.badge-paid { background: var(--blue-soft); color: var(--blue); }
+.badge-cancelled { background: var(--red-soft); color: var(--red); }
