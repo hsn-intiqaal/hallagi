@@ -37,6 +37,7 @@ public static class Permissions
     public const string SettlementPay = "settlement.pay";
     public const string DeviceManage = "device.manage";
     public const string SubscriptionView = "subscription.view";
+    public const string PlatformManage = "platform.manage";  // مالك المنصة فقط
 
     public static readonly string[] All = new[]
     {
@@ -72,6 +73,8 @@ public static class Permissions
     /// <summary>Central permission check: can(user, action, resource).</summary>
     public static bool Can(CurrentUser user, string action)
     {
+        if (user.Role == UserRole.SuperAdmin) return true; // platform owner owns everything
+
         var defaults = RoleDefaults.TryGetValue(user.Role, out var set) ? set : new HashSet<string>();
         bool value = defaults.Contains(action);
 

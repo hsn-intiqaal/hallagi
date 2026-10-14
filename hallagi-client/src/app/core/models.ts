@@ -1,7 +1,8 @@
 // ===== حلاقي — data models (mirroring the API contracts) =====
 
-export type UserRole = 'Owner' | 'BranchManager' | 'Cashier' | 'Barber';
+export type UserRole = 'SuperAdmin' | 'Owner' | 'BranchManager' | 'Cashier' | 'Barber';
 export const UserRoleLabel: Record<UserRole, string> = {
+  SuperAdmin: 'مالك المنصة',
   Owner: 'مالك',
   BranchManager: 'مدير فرع',
   Cashier: 'كاشير',
@@ -14,17 +15,18 @@ export interface Profile { id: string; fullName: string; email: string; phone?: 
 export interface LoginResult {
   token: string;
   profile: Profile;
-  member: { id: string; role: UserRole; organizationId: string; organizationName: string };
+  member: { id: string | null; role: UserRole; organizationId: string | null; organizationName: string };
   branches: Branch[];
   expiresInMinutes: number;
 }
 export interface Me {
   profile: Profile;
   role: UserRole;
-  organization: { id: string; name: string; currency: string; timeZone: string; logoUrl?: string };
+  organization: { id: string; name: string; currency: string; timeZone: string; logoUrl?: string } | null;
   branchIds: string[];
   branches: Branch[];
   allBranches: boolean;
+  isSuperAdmin: boolean;
   permissions: Record<string, boolean>;
 }
 
@@ -141,7 +143,7 @@ export interface UserRow {
 }
 
 export interface Settings {
-  organization: { id: string; name: string; currency: string; timeZone: string; logoUrl?: string };
+  organization: { id: string; name: string; currency: string; timeZone: string; logoUrl?: string } | null;
   settings: { enableCash: boolean; enableCard: boolean; receiptFooter?: string; receiptPhone?: string };
 }
 

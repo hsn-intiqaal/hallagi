@@ -1,0 +1,158 @@
+<div class="page">
+  <div class="page-title">
+    <div>
+      <h1>لوحة منصة حلاقي</h1>
+      <p class="text-2 text-sm">إدارة كل المنشآت والاشتركات والفروع — مرحبًا {{ auth.profile()?.fullName }}</p>
+    </div>
+    <div class="flex gap-8">
+      <button class="btn btn-outline" (click)="logout()">
+        <app-icon name="logout" [size]="17"></app-icon> خروج
+      </button>
+      <button class="btn btn-primary" (click)="openCreate()">
+        <app-icon name="plus" [size]="18"></app-icon> منشأة جديدة
+      </button>
+    </div>
+  </div>
+
+  <div class="stats-grid" *ngIf="stats() as s">
+    <app-stat-card label="المنشآت" [value]="s.organizationsCount" icon="building" tone="navy" hint="منشآت على المنصة" />
+    <app-stat-card label="الفروع" [value]="s.branchesCount" icon="building" tone="blue" hint="مجموع الفروع" />
+    <app-stat-card label="المستخدمون" [value]="s.usersCount" icon="users" tone="blue" hint="حسابات موظفين" />
+    <app-stat-card label="الحلاقون" [value]="s.barbersCount" icon="user" tone="navy" hint="حلاقون مسجلون" />
+    <app-stat-card label="إجمالي المبيعات" [value]="s.salesTotal" icon="cash" tone="green" hint="عبر كل المنشآت" />
+    <app-stat-card label="اشتراكات فعّالة" [value]="s.activeSubscriptions" icon="checkCircle" tone="green" />
+  </div>
+
+  <div class="card mb-16">
+    <div class="flex gap-8">
+      <input class="input" [(ngModel)]="search" (keyup.enter)="load()" placeholder="بحث عن منشأة بالاسم…">
+      <button class="btn btn-navy" (click)="load()"><app-icon name="search" [size]="17"></app-icon></button>
+    </div>
+  </div>
+
+  <div *ngIf="loading()"><app-loading message="جارٍ تحميل المنشآت…" /></div>
+
+  <app-empty *ngIf="!loading() && orgs().length === 0" icon="building"
+    title="لا توجد منشآت"
+    message="أنشئ أول منشأة مع حساب مالكها."
+    actionLabel="منشأة جديدة" (action)="openCreate()" />
+
+  <div class="flex-col gap-12" *ngIf="orgs().length > 0">
+    <div class="org-row" *ngFor="let o of orgs()">
+      <div class="info">
+        <div class="n">{{ o.name }}</div>
+        <div class="s">
+          <span class="badge plan-badge" [class]="planClass(o.planName)">{{ o.planName || 'بدون خطة' }}</span>
+          <span class="badge" [class]="o.subscriptionStatus === 'Active' ? 'badge-green' : 'badge-red'">
+            {{ o.subscriptionStatus === 'Active' ? 'اشتراك فعّال' : o.subscriptionStatus }}
+          </span>
+          <span *ngIf="o.ownerEmail"> · المالك: {{ o.ownerName }} ({{ o.ownerEmail }})</span>
+        </div>
+      </div>
+      <div class="metrics">
+        <div class="m"><div class="l">الفروع</div><div class="v">{{ o.branchesCount }}</div></div>
+        <div class="m"><div class="l">المستخدمون</div><div class="v">{{ o.usersCount }}</div></div>
+        <div class="m"><div class="l">الحلاقون</div><div class="v">{{ o.barbersCount }}</div></div>
+        <div class="m"><div class="l">المبيعات</div><div class="v money">{{ o.salesTotal | sar }}</div></div>
+        <div class="m"><div class="l">تاريخ الإنشاء</div><div class="v" style="font-size:.85rem">{{ o.createdAt | dateShort }}</div></div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-outline btn-sm" (click)="askChangePlan(o)">
+          <app-icon name="shield" [size]="15"></app-icon> الخطة
+        </button>
+        <button class="btn btn-outline btn-sm" (click)="askAddBranch(o)">
+          <app-icon name="plus" [size]="15"></app-icon> فرع
+        </button>
+        <button class="btn btn-ghost btn-sm" *ngIf="o.subscriptionStatus === 'Active'" style="color: var(--red)" (click)="setStatus(o, 'Suspended')">
+          إيقاف الاشتراك
+        </button>
+        <button class="btn btn-ghost btn-sm" *ngIf="o.subscriptionStatus !== 'Active'" style="color: var(--green)" (click)="setStatus(o, 'Active')">
+          تفعيل الاشتراك
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<app-modal *ngIf="showCreate()" title="إنشاء منشأة جديدة" (close)="showCreate.set(false)">
+  <div class="field">
+    <label>اسم المنشأة</label>
+    <input class="input" [(ngModel)]="form.name" placeholder="مثال: صالون الأمانة للحلاقة">
+  </div>
+  <div class="field">
+    <label>المدينة</label>
+    <input class="input" [(ngModel)]="form.city" placeholder="الرياض">
+  </div>
+  <div class="field">
+    <label>الفرع الأول</label>
+    <input class="input" [(ngModel)]="form.branchName" placeholder="الفرع الرئيسي">
+  </div>
+  <div class="field">
+    <label>العنوان (اختياري)</label>
+    <input class="input" [(ngModel)]="form.address">
+  </div>
+  <div class="field">
+    <label>الخطة</label>
+    <select class="select" [(ngModel)]="form.planId">
+      <option *ngFor="let p of plans()" [value]="p.id">{{ p.name }} — {{ p.maxBranches }} فروع / {{ p.maxUsers }} مستخدمين ({{ p.monthlyPrice | sar }})</option>
+    </select>
+  </div>
+
+  <h3 class="mt-16 mb-8">حساب مالك المنشأة</h3>
+  <div class="field">
+    <label>اسم المالك</label>
+    <input class="input" [(ngModel)]="form.ownerName" placeholder="مثال: عبدالله الدوسري">
+  </div>
+  <div class="field">
+    <label>البريد الإلكتروني</label>
+    <input class="input" type="email" [(ngModel)]="form.ownerEmail" dir="ltr" placeholder="owner@example.com">
+  </div>
+  <div class="field">
+    <label>رقم الجوال (اختياري)</label>
+    <input class="input" [(ngModel)]="form.ownerPhone" dir="ltr" placeholder="05xxxxxxxx">
+  </div>
+  <div class="field">
+    <label>كلمة مرور مؤقتة</label>
+    <input class="input" [(ngModel)]="form.ownerPassword" dir="ltr" placeholder="6 أحرف على الأقل">
+  </div>
+
+  <div footer class="flex gap-8">
+    <button class="btn btn-primary" (click)="create()" [disabled]="creating()">
+      <span class="spinner" *ngIf="creating()"></span>
+      {{ creating() ? 'جارٍ الإنشاء…' : 'إنشاء المنشأة' }}
+    </button>
+    <button class="btn btn-outline" (click)="showCreate.set(false)">إلغاء</button>
+  </div>
+</app-modal>
+
+<app-modal *ngIf="branchTarget()" title="إضافة فرع — {{ branchTarget()?.name }}" (close)="branchTarget.set(null)">
+  <div class="field">
+    <label>اسم الفرع</label>
+    <input class="input" [(ngModel)]="branchForm.name" placeholder="مثال: فرع الياسمين">
+  </div>
+  <div class="field">
+    <label>المدينة</label>
+    <input class="input" [(ngModel)]="branchForm.city">
+  </div>
+  <div footer class="flex gap-8">
+    <button class="btn btn-primary" (click)="confirmAddBranch()">إضافة</button>
+    <button class="btn btn-outline" (click)="branchTarget.set(null)">إلغاء</button>
+  </div>
+</app-modal>
+
+<app-modal *ngIf="planTarget()" title="تغيير خطة {{ planTarget()?.name }}" (close)="planTarget.set(null)">
+  <div class="flex-col gap-8">
+    <button *ngFor="let p of plans()" class="org-row" style="text-align: start"
+            [class.badge-green]="p.id === planTarget()?.planId"
+            (click)="confirmChangePlan(p.id)">
+      <div class="info">
+        <div class="n">{{ p.name }}</div>
+        <div class="s">{{ p.description }} — {{ p.maxBranches }} فروع / {{ p.maxUsers }} مستخدمين / {{ p.maxBarbers }} حلاقين</div>
+      </div>
+      <span class="money" style="font-weight: 800">{{ p.monthlyPrice | sar }}</span>
+    </button>
+  </div>
+  <div footer class="flex gap-8">
+    <button class="btn btn-outline" (click)="planTarget.set(null)">إلغاء</button>
+  </div>
+</app-modal>

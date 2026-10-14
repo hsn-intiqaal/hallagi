@@ -38,19 +38,6 @@ export class AuthService {
     );
   }
 
-  registerOwner(body: {
-    fullName: string; email: string; password: string; phone?: string;
-    organizationName: string; city: string; branchName: string;
-  }): Observable<any> {
-    return this.api.post('/auth/register-owner', body).pipe(
-      tap((res: any) => {
-        localStorage.setItem(TOKEN_KEY, res.token);
-        this.token.set(res.token);
-        this.loadMe().subscribe();
-      })
-    );
-  }
-
   loadMe(): Observable<Me> {
     return this.api.get<Me>('/auth/me').pipe(tap(m => this.me.set(m)));
   }
@@ -61,7 +48,7 @@ export class AuthService {
 
   /** Where each role should land after login. */
   landingRoute(): string {
-    return this.role() === 'Barber' ? '/me' : '/dashboard';
+    return this.role() === 'SuperAdmin' ? '/platform' : this.role() === 'Barber' ? '/me' : '/dashboard';
   }
 
   can(action: string): boolean {

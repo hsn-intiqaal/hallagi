@@ -28,8 +28,24 @@ public class CurrentUserAccessor(IHttpContextAccessor accessor, AppDbContext db)
             var memberClaim = principal.FindFirst("member")?.Value;
             var orgClaim = principal.FindFirst("org")?.Value;
 
-            if (subClaim is null || memberClaim is null || orgClaim is null ||
-                !Guid.TryParse(subClaim, out var profileId) ||
+            if (subClaim is null || !Guid.TryParse(subClaim, out var profileId))
+                throw new UnauthorizedAccessException("invalid_token");
+
+            var profile = db.Profiles.AsNoTracking().FirstOrDefault(p => p.Id == profileId)
+                ?? throw new UnauthorizedAccessException("profile_not_found");
+
+            // Platform owner: no organization membership
+            if (profile.IsSuperAdmin)
+            {
+                if (principal.FindFirst("superadmin")?.Value != "true")
+                    throw new UnauthorizedAccessException("invalid_token");
+                return new CurrentUser(profileId, Guid.Empty, Guid.Empty, UserRole.SuperAdmin, true, Array.Empty<Guid>(), null);
+            }
+
+            if (profile.Status != EntityStatus.Active)
+                throw new UnauthorizedAccessException("account_disabled");
+
+            if (memberClaim is null || orgClaim is null ||
                 !Guid.TryParse(memberClaim, out var memberId) ||
                 !Guid.TryParse(orgClaim, out var orgId))
                 throw new UnauthorizedAccessException("invalid_token");

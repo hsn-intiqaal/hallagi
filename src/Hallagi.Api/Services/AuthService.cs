@@ -28,6 +28,22 @@ public class AuthService(AppDbContext db, JwtSettings jwt)
         if (!BCrypt.Net.BCrypt.Verify(password, profile.PasswordHash))
             return (false, "invalid_credentials", null);
 
+        // Platform owner: no organization membership required
+        if (profile.IsSuperAdmin)
+        {
+            profile.LastLoginAt = DateTime.UtcNow;
+            await db.SaveChangesAsync(ct);
+            var token = IssueSuperAdminToken(profile);
+            return (true, null, new
+            {
+                token,
+                profile = new { profile.Id, profile.FullName, profile.Email, profile.Phone },
+                member = new { id = (Guid?)null, role = UserRole.SuperAdmin.ToString(), organizationId = (Guid?)null, organizationName = "منصة حلاقي" },
+                branches = Array.Empty<object>(),
+                expiresInMinutes = jwt.ExpiryMinutes
+            });
+        }
+
         var member = await db.OrganizationMembers
             .Where(m => m.ProfileId == profile.Id && m.Status == MemberStatus.Active)
             .OrderBy(m => m.CreatedAt)
@@ -37,95 +53,14 @@ public class AuthService(AppDbContext db, JwtSettings jwt)
         profile.LastLoginAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
 
-        var token = IssueToken(profile, member);
-        return (true, null, await BuildLoginResultAsync(profile, member, token, ct));
+        var memberToken = IssueToken(profile, member);
+        return (true, null, await BuildLoginResultAsync(profile, member, memberToken, ct));
     }
 
-    public async Task<(bool ok, string? error, object? result)> RegisterOwnerAsync(
-        string fullName, string email, string password, string? phone,
-        string orgName, string city, string branchName, CancellationToken ct)
-    {
-        var normalized = email.Trim().ToLowerInvariant();
-        if (await db.Profiles.AnyAsync(p => p.Email == normalized, ct))
-            return (false, "email_taken", null);
-
-        var now = DateTime.UtcNow;
-
-        var org = new Organization
-        {
-            Id = Guid.NewGuid(),
-            Name = orgName.Trim(),
-            Currency = "SAR",
-            TimeZone = "Asia/Riyadh",
-            CreatedAt = now,
-            UpdatedAt = now,
-            Settings = new OrganizationSettings { EnableCash = true, EnableCard = true }
-        };
-        db.Organizations.Add(org);
-
-        var branch = new Branch
-        {
-            Id = Guid.NewGuid(),
-            OrganizationId = org.Id,
-            Name = branchName.Trim(),
-            City = city.Trim(),
-            Status = EntityStatus.Active,
-            CreatedAt = now,
-            UpdatedAt = now,
-            Drawer = new CashDrawer { OrganizationId = org.Id, CreatedAt = now }
-        };
-        db.Branches.Add(branch);
-
-        var profile = new Profile
-        {
-            Id = Guid.NewGuid(),
-            FullName = fullName.Trim(),
-            Email = normalized,
-            Phone = phone?.Trim(),
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
-            Status = EntityStatus.Active,
-            CreatedAt = now,
-            UpdatedAt = now
-        };
-        db.Profiles.Add(profile);
-
-        var member = new OrganizationMember
-        {
-            Id = Guid.NewGuid(),
-            OrganizationId = org.Id,
-            ProfileId = profile.Id,
-            Role = UserRole.Owner,
-            Status = MemberStatus.Active,
-            CreatedAt = now,
-            UpdatedAt = now
-        };
-        db.OrganizationMembers.Add(member);
-
-        db.MemberBranchAccess.Add(new MemberBranchAccess
-        {
-            Id = Guid.NewGuid(),
-            MemberId = member.Id,
-            BranchId = branch.Id
-        });
-
-        db.AuditLogs.Add(new AuditLog
-        {
-            Id = Guid.NewGuid(),
-            OrganizationId = org.Id,
-            ActorId = profile.Id,
-            Action = "organization.created",
-            EntityType = nameof(Organization),
-            EntityId = org.Id.ToString(),
-            Details = $"owner={member.Id}; branch={branch.Name}",
-            CreatedAt = now
-        });
-
-        await db.SaveChangesAsync(ct);
-
-        var token = IssueToken(profile, member);
-        return (true, null, await BuildLoginResultAsync(profile, member, token, ct));
-    }
-
+    /// <summary>
+    /// Public self-service registration is disabled: new tenants are created only
+    /// by the platform owner through the admin console (see PlatformService).
+    /// </summary>
     public string HashPassword(string password) => BCrypt.Net.BCrypt.HashPassword(password);
 
     public (bool ok, string? error) ChangePassword(Guid profileId, string currentPassword, string newPassword)
@@ -151,6 +86,30 @@ public class AuthService(AppDbContext db, JwtSettings jwt)
             new("member", member.Id.ToString()),
             new("org", member.OrganizationId.ToString()),
             new(ClaimTypes.Role, member.Role.ToString()),
+            new("name", profile.FullName),
+            new("email", profile.Email)
+        };
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Key));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        var token = new JwtSecurityToken(
+            issuer: jwt.Issuer,
+            audience: jwt.Audience,
+            claims: claims,
+            expires: DateTime.UtcNow.AddMinutes(jwt.ExpiryMinutes),
+            signingCredentials: creds);
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    /// <summary>Token for the platform owner: superadmin role, no organization context.</summary>
+    private string IssueSuperAdminToken(Profile profile)
+    {
+        var claims = new List<Claim>
+        {
+            new(JwtRegisteredClaimNames.Sub, profile.Id.ToString()),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new("superadmin", "true"),
+            new(ClaimTypes.Role, UserRole.SuperAdmin.ToString()),
             new("name", profile.FullName),
             new("email", profile.Email)
         };

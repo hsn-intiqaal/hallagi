@@ -1,5 +1,5 @@
-import { NgIf } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
+import { NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
@@ -10,7 +10,7 @@ import { Icon } from '../../shared/icon';
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [FormsModule, Icon, NgIf],
+  imports: [NgIf, FormsModule, Icon],
   templateUrl: './login.html',
   styleUrl: './login.scss'
 })
@@ -18,19 +18,13 @@ export class Login {
   private auth = inject(AuthService);
   private branches = inject(BranchContext);
   private toast = inject(ToastService);
-  readonly router = inject(Router);
+  private router = inject(Router);
 
   readonly loading = signal(false);
   readonly showPassword = signal(false);
-  readonly mode = signal<'login' | 'register'>('login');
 
   email = '';
   password = '';
-  fullName = '';
-  phone = '';
-  organizationName = '';
-  city = '';
-  branchName = '';
 
   submit(): void {
     if (this.loading()) return;
@@ -55,30 +49,6 @@ export class Login {
       this.toast.error(e?.message ?? 'تعذّر تسجيل الدخول. تحقق من البيانات وحاول مرة أخرى');
     };
 
-    if (this.mode() === 'login') {
-      this.auth.login(this.email.trim(), this.password).subscribe({
-        next: onDone,
-        error: onError
-      });
-    } else {
-      if (!this.fullName.trim() || !this.organizationName.trim() || !this.city.trim() || !this.branchName.trim()) {
-        this.loading.set(false);
-        this.toast.error('أكمل الحقول المطلوبة: الاسم، اسم المحل، المدينة، الفرع');
-        return;
-      }
-      this.auth.registerOwner({
-        fullName: this.fullName.trim(),
-        email: this.email.trim(),
-        password: this.password,
-        phone: this.phone.trim() || undefined,
-        organizationName: this.organizationName.trim(),
-        city: this.city.trim(),
-        branchName: this.branchName.trim()
-      }).subscribe({ next: onDone, error: onError });
-    }
-  }
-
-  switchMode(mode: 'login' | 'register'): void {
-    this.mode.set(mode);
+    this.auth.login(this.email.trim(), this.password).subscribe({ next: onDone, error: onError });
   }
 }

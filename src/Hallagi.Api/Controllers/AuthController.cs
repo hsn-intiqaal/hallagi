@@ -8,14 +8,6 @@ using Microsoft.EntityFrameworkCore;
 namespace Hallagi.Api.Controllers;
 
 public record LoginRequest(string Email, string Password);
-public record RegisterOwnerRequest(
-    string FullName,
-    string Email,
-    string Password,
-    string? Phone,
-    string OrganizationName,
-    string City,
-    string BranchName);
 public record ChangePasswordRequest(string CurrentPassword, string NewPassword);
 
 [ApiController]
@@ -35,7 +27,7 @@ public class AuthController(AuthService auth, AppDbContext db) : BaseApiControll
             var message = error switch
             {
                 "invalid_credentials" => "البريد الإلكتروني أو كلمة المرور غير صحيحة",
-                "account_disabled" => "هذا الحساب معطّل. تواصل مع مالك المنشأة",
+                "account_disabled" => "هذا الحساب معطّل. تواصل مع الدعم",
                 "no_active_membership" => "لا يوجد اشتراك فعّال لهذا الحساب",
                 _ => "تعذّر تسجيل الدخول. حاول مرة أخرى"
             };
@@ -44,36 +36,28 @@ public class AuthController(AuthService auth, AppDbContext db) : BaseApiControll
         return Ok(result);
     }
 
-    [HttpPost("register-owner")]
-    [AllowAnonymous]
-    public async Task<IActionResult> RegisterOwner([FromBody] RegisterOwnerRequest req, CancellationToken ct)
-    {
-        if (string.IsNullOrWhiteSpace(req.FullName) || string.IsNullOrWhiteSpace(req.Email) ||
-            string.IsNullOrWhiteSpace(req.OrganizationName) || string.IsNullOrWhiteSpace(req.City) ||
-            string.IsNullOrWhiteSpace(req.BranchName))
-            return BadRequest(new { error = new { code = "missing_fields", message = "أكمل الحقول المطلوبة: الاسم، البريد، اسم المحل، المدينة، الفرع" } });
-        if (req.Password.Length < 6)
-            return BadRequest(new { error = new { code = "weak_password", message = "كلمة المرور يجب أن تكون 6 أحرف على الأقل" } });
-
-        var (ok, error, result) = await auth.RegisterOwnerAsync(
-            req.FullName, req.Email, req.Password, req.Phone, req.OrganizationName, req.City, req.BranchName, ct);
-        if (!ok)
-        {
-            var message = error switch
-            {
-                "email_taken" => "البريد الإلكتروني مستخدم بالفعل",
-                _ => "تعذّر إنشاء الحساب. تحقق من البيانات"
-            };
-            return Conflict(new { error = new { code = error, message } });
-        }
-        return Ok(result);
-    }
-
     [HttpGet("me")]
     public async Task<IActionResult> Me(CancellationToken ct)
     {
         var user = CurrentUser;
-        var profile = await db.Profiles.FirstOrDefaultAsync(p => p.Id == user.ProfileId, ct);
+
+        // Platform owner
+        if (user.Role == UserRole.SuperAdmin)
+        {
+            var profile = await db.Profiles.FirstOrDefaultAsync(p => p.Id == user.ProfileId, ct);
+            return Ok(new
+            {
+                profile = new { profile!.Id, profile.FullName, profile.Email, profile.Phone },
+                role = UserRole.SuperAdmin.ToString(),
+                organization = (object?)null,
+                branchIds = Array.Empty<Guid>(),
+                branches = Array.Empty<object>(),
+                allBranches = true,
+                isSuperAdmin = true,
+                permissions = Permissions.EffectivePermissions(user)
+            });
+        }
+
         var member = await db.OrganizationMembers.FirstOrDefaultAsync(m => m.Id == user.MemberId, ct);
         var org = await db.Organizations.FirstOrDefaultAsync(o => o.Id == user.OrganizationId, ct);
         var branches = Permissions.AccessesAllBranches(user)
@@ -84,14 +68,17 @@ public class AuthController(AuthService auth, AppDbContext db) : BaseApiControll
                      where a.MemberId == user.MemberId && br.Status == EntityStatus.Active
                      select new { br.Id, br.Name, br.City }).ToListAsync(ct);
 
+        var userProfile = await db.Profiles.FirstOrDefaultAsync(p => p.Id == user.ProfileId, ct);
+
         return Ok(new
         {
-            profile = new { profile!.Id, profile.FullName, profile.Email, profile.Phone },
+            profile = new { userProfile!.Id, userProfile.FullName, userProfile.Email, userProfile.Phone },
             role = member!.Role.ToString(),
             organization = new { org!.Id, org.Name, org.Currency, org.TimeZone, org.LogoUrl },
             branchIds = user.BranchIds,
             branches,
             allBranches = Permissions.AccessesAllBranches(user),
+            isSuperAdmin = false,
             permissions = Permissions.EffectivePermissions(user)
         });
     }

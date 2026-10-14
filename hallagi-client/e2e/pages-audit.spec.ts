@@ -6,11 +6,13 @@ const API = 'http://localhost:5095';
 const CREDENTIALS: Record<string, any> = {
   owner: { email: 'owner@hallagi.sa', password: 'Hallagi@123' },
   cashier: { email: 'cashier@hallagi.sa', password: 'Hallagi@123' },
-  barber: { email: 'barber@hallagi.sa', password: 'Hallagi@123' }
+  barber: { email: 'barber@hallagi.sa', password: 'Hallagi@123' },
+  admin: { email: 'admin@hallagi.sa', password: 'Hallagi@123' }
 };
 
 const ROUTES = [
   { path: '/login', expect: 'حلاقي', role: 'none' },
+  { path: '/platform', expect: 'لوحة منصة حلاقي', role: 'admin' },
   { path: '/dashboard', expect: 'مرحبًا', role: 'owner' },
   { path: '/pos', expect: 'بيع جديد', role: 'cashier' },
   { path: '/pos', expect: 'أنت تسجّل المبيعات على نفسك', role: 'barber' },
@@ -37,7 +39,7 @@ test('كل الصفحات تُفتح بدون أخطاء', async ({ page }) => {
   const report: string[] = [];
 
   const tokens: Record<string, string> = {};
-  for (const role of ['owner', 'cashier', 'barber']) {
+  for (const role of Object.keys(CREDENTIALS)) {
     const res = await page.request.post(`${API}/api/auth/login`, { data: CREDENTIALS[role] });
     tokens[role] = (await res.json()).token;
   }
@@ -60,7 +62,6 @@ test('كل الصفحات تُفتح بدون أخطاء', async ({ page }) => {
     page.on('response', onResponse);
 
     try {
-      // ensure we're on the app origin before touching localStorage
       await page.goto(`${APP}/login`, { waitUntil: 'domcontentloaded' });
       if (route.role !== 'none') {
         await page.evaluate((t: string) => localStorage.setItem('hallagi.token', t), tokens[route.role]);

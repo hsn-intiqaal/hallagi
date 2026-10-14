@@ -1,11 +1,16 @@
 import { Routes } from '@angular/router';
-import { authGuard, permissionGuard, roleGuard } from './core/guards';
+import { authGuard, permissionGuard, roleGuard, superAdminGuard } from './core/guards';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
   {
     path: 'login',
     loadComponent: () => import('./features/auth/login').then(m => m.Login)
+  },
+  {
+    path: 'platform',
+    canActivate: [superAdminGuard],
+    loadComponent: () => import('./features/platform/platform').then(m => m.Platform)
   },
   {
     path: 'onboarding',

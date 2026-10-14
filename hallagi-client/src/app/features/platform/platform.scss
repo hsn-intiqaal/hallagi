@@ -1,0 +1,14 @@
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.org-row { display: flex; align-items: center; gap: 12px; padding: 15px 17px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); flex-wrap: wrap; }
+.org-row .info { flex: 1; min-width: 200px; }
+.org-row .info .n { font-weight: 800; font-size: 1.05rem; }
+.org-row .info .s { font-size: .85rem; color: var(--text-2); }
+.org-row .metrics { display: flex; gap: 18px; flex-wrap: wrap; }
+.org-row .metrics .m { text-align: center; }
+.org-row .metrics .m .l { font-size: .75rem; color: var(--text-2); }
+.org-row .metrics .m .v { font-weight: 800; }
+.org-row .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.plan-badge { font-weight: 700; }
+.plan-trial { background: var(--navy-soft); color: var(--navy); }
+.plan-basic { background: var(--blue-soft); color: var(--blue); }
+.plan-pro { background: var(--green-soft); color: var(--green); }

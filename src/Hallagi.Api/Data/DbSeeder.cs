@@ -8,10 +8,30 @@ namespace Hallagi.Api.Data;
 public static class DbSeeder
 {
     public const string DemoPassword = "Hallagi@123"; // dev/demo only; never use in production
+    public const string SuperAdminEmail = "admin@hallagi.sa"; // حساب مالك المنصة (عرض توضيحي)
 
     public static async Task SeedAsync(AppDbContext db, IConfiguration config, CancellationToken ct = default)
     {
         await db.Database.MigrateAsync(ct);
+
+        // Platform owner account (highest level) — created once, demo credentials in dev
+        if (!await db.Profiles.AnyAsync(p => p.IsSuperAdmin, ct))
+        {
+            var admin = new Profile
+            {
+                Id = Guid.NewGuid(),
+                FullName = "مالك منصة حلاقي",
+                Email = SuperAdminEmail,
+                Phone = "0550000000",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(DemoPassword),
+                Status = EntityStatus.Active,
+                IsSuperAdmin = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            db.Profiles.Add(admin);
+            await db.SaveChangesAsync(ct);
+        }
 
         if (!await db.Organizations.AnyAsync(ct))
         {

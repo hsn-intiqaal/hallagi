@@ -27,7 +27,28 @@ export const authGuard: CanActivateFn = (): Observable<boolean> | boolean => {
     router.navigate(['/login']);
     return false;
   }
+  // the platform owner uses the admin console, not tenant screens
+  if (auth.role() === 'SuperAdmin') {
+    router.navigate(['/platform']);
+    return false;
+  }
   return ensureLoaded(auth);
+};
+
+/** Only the platform owner may open the admin console. */
+export const superAdminGuard: CanActivateFn = (): Observable<boolean> | boolean => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  if (!auth.isLoggedIn()) {
+    router.navigate(['/login']);
+    return false;
+  }
+  return ensureLoaded(auth).pipe(map(ready => {
+    if (!ready) { router.navigate(['/login']); return false; }
+    if (auth.role() === 'SuperAdmin') return true;
+    router.navigate([auth.landingRoute()]);
+    return false;
+  }));
 };
 
 export const roleGuard = (allowedRoles: string[]): CanActivateFn => (): Observable<boolean> | boolean => {

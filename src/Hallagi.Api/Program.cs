@@ -41,6 +41,7 @@ builder.Services.AddScoped<UsersService>();
 builder.Services.AddScoped<BranchesService>();
 builder.Services.AddScoped<SettingsService>();
 builder.Services.AddScoped<SubscriptionService>();
+builder.Services.AddScoped<PlatformService>();
 builder.Services.AddScoped<DeviceService>();
 builder.Services.AddScoped<LedgerService>();
 builder.Services.AddScoped<SettlementService>();

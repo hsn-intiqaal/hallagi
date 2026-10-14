@@ -1,6 +1,6 @@
 namespace Hallagi.Api.Domain;
 
-public enum UserRole { Owner, BranchManager, Cashier, Barber }
+public enum UserRole { SuperAdmin, Owner, BranchManager, Cashier, Barber }
 public enum MemberStatus { Active, Disabled }
 public enum EntityStatus { Active, Inactive }
 public enum CompensationType { FixedSalary, Commission, FixedPlusCommission, ChairRental }

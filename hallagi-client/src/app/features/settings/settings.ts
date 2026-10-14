@@ -44,9 +44,9 @@ export class Settings implements OnInit {
     this.api.get<SettingsModel>('/settings').subscribe({
       next: s => {
         this.form = {
-          organizationName: s.organization.name,
-          currency: s.organization.currency,
-          timeZone: s.organization.timeZone,
+          organizationName: s.organization?.name ?? '',
+          currency: s.organization?.currency ?? 'SAR',
+          timeZone: s.organization?.timeZone ?? 'Asia/Riyadh',
           enableCash: s.settings.enableCash,
           enableCard: s.settings.enableCard,
           receiptFooter: s.settings.receiptFooter ?? '',
