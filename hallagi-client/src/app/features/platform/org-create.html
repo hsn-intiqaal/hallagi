@@ -1,0 +1,239 @@
+<div class="create-page">
+  <!-- ===== Hero ===== -->
+  <div class="hero" [style.background]="heroBg()">
+    <div class="hero-inner">
+      <a class="back-btn" routerLink="/platform">
+        <app-icon name="chevronRight" [size]="18"></app-icon>
+        <span>لوحة المنصة</span>
+      </a>
+      <h1>إنشاء منشأة جديدة</h1>
+      <p>أضف محل الحلاقة مع هويته البصرية — الشعار والألوان وصورة الغلاف تُطبّق فورًا على كل شاشات المنشأة.</p>
+    </div>
+  </div>
+
+  <div class="create-grid">
+    <!-- ===== Form column ===== -->
+    <div class="form-col">
+
+      <!-- 1: بيانات المنشأة -->
+      <section class="card section">
+        <div class="section-head">
+          <span class="section-num">1</span>
+          <div>
+            <h2>بيانات المنشأة</h2>
+            <p class="text-2 text-sm">الاسم والمدينة يظهران في الإيصالات والتقارير</p>
+          </div>
+        </div>
+        <div class="field">
+          <label>اسم المنشأة <span class="req">*</span></label>
+          <input class="input" [(ngModel)]="form.name" placeholder="مثال: صالون الأمانة للحلاقة">
+        </div>
+        <div class="flex gap-16 wrap">
+          <div class="field grow">
+            <label>المدينة <span class="req">*</span></label>
+            <input class="input" [(ngModel)]="form.city" placeholder="الرياض">
+          </div>
+          <div class="field grow">
+            <label>الفرع الأول</label>
+            <input class="input" [(ngModel)]="form.branchName" placeholder="الفرع الرئيسي">
+          </div>
+        </div>
+        <div class="field">
+          <label>العنوان (اختياري)</label>
+          <input class="input" [(ngModel)]="form.address" placeholder="الحي، الشارع">
+        </div>
+      </section>
+
+      <!-- 2: الهوية البصرية -->
+      <section class="card section">
+        <div class="section-head">
+          <span class="section-num">2</span>
+          <div>
+            <h2>الهوية البصرية</h2>
+            <p class="text-2 text-sm">الشروط والألوان تُطبّق مباشرة على لوحة المنشأة بعد أول تسجيل دخول</p>
+          </div>
+        </div>
+
+        <!-- شعار -->
+        <label class="picker-label">شعار المنشأة</label>
+        <div class="logo-picker">
+          <div class="logo-preview" [style.border-color]="safePrimary()">
+            <img *ngIf="logoUrl()" [src]="logoUrl()" alt="شعار المنشأة">
+            <app-icon *ngIf="!logoUrl()" name="scissors" [size]="26"></app-icon>
+            <button *ngIf="logoUrl()" class="remove-img" type="button" title="إزالة الشعار" (click)="removeLogo()">
+              <app-icon name="x" [size]="13"></app-icon>
+            </button>
+          </div>
+          <div class="picker-actions">
+            <button class="btn btn-outline btn-sm" type="button" (click)="logoInput.click()">
+              <app-icon name="plus" [size]="15"></app-icon> اختيار شعار
+            </button>
+            <span class="text-2 text-sm">PNG أو JPG مربّع — يُصغَّر تلقائيًا إلى 256px</span>
+          </div>
+          <input #logoInput type="file" accept="image/*" hidden (change)="pickImage('logo', $event)">
+        </div>
+
+        <!-- غلاف -->
+        <label class="picker-label mt-16">صورة الغلاف</label>
+        <div class="cover-picker" [class.has-image]="coverUrl()"
+             [style.background-image]="coverUrl() ? 'url(' + coverUrl() + ')' : coverGradient()">
+          <div class="cover-overlay">
+            <div class="cover-actions">
+              <button class="btn btn-sm cover-btn" type="button" (click)="coverInput.click()">
+                <app-icon name="plus" [size]="15"></app-icon>
+                {{ coverUrl() ? 'تغيير الصورة' : 'إضافة صورة غلاف' }}
+              </button>
+              <button *ngIf="coverUrl()" class="btn btn-sm cover-btn-ghost" type="button" (click)="removeCover()">إزالة</button>
+            </div>
+          </div>
+        </div>
+        <input #coverInput type="file" accept="image/*" hidden (change)="pickImage('cover', $event)">
+        <p class="text-2 text-sm">تظهر كخلفية أعلى الشاشة الرئيسية — يُصغَّر تلقائيًا إلى 1280px</p>
+
+        <!-- الألوان -->
+        <div class="colors-row">
+          <div class="color-field">
+            <label class="picker-label">اللون الأساسي</label>
+            <div class="color-inputs">
+              <input type="color" class="color-swatch" [(ngModel)]="form.primaryColor" aria-label="اللون الأساسي">
+              <input class="input hex-input" [(ngModel)]="form.primaryColor" dir="ltr" maxlength="7" spellcheck="false">
+            </div>
+          </div>
+          <div class="color-field">
+            <label class="picker-label">اللون الثانوي</label>
+            <div class="color-inputs">
+              <input type="color" class="color-swatch" [(ngModel)]="form.secondaryColor" aria-label="اللون الثانوي">
+              <input class="input hex-input" [(ngModel)]="form.secondaryColor" dir="ltr" maxlength="7" spellcheck="false">
+            </div>
+          </div>
+        </div>
+
+        <!-- لوحات جاهزة -->
+        <label class="picker-label">لوحات ألوان جاهزة</label>
+        <div class="palettes">
+          <button *ngFor="let p of palettes" class="palette" type="button" (click)="applyPreset(p)">
+            <span class="palette-dots">
+              <span class="dot" [style.background]="p.primary"></span>
+              <span class="dot" [style.background]="p.secondary"></span>
+            </span>
+            <span class="palette-name">{{ p.name }}</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- 3: حساب المالك -->
+      <section class="card section">
+        <div class="section-head">
+          <span class="section-num">3</span>
+          <div>
+            <h2>حساب مالك المنشأة</h2>
+            <p class="text-2 text-sm">يستخدمه المالك لتسجيل الدخول وإدارة محلله</p>
+          </div>
+        </div>
+        <div class="field">
+          <label>اسم المالك</label>
+          <input class="input" [(ngModel)]="form.ownerName" placeholder="مثال: عبدالله الدوسري">
+        </div>
+        <div class="field">
+          <label>البريد الإلكتروني <span class="req">*</span></label>
+          <input class="input" type="email" [(ngModel)]="form.ownerEmail" dir="ltr" placeholder="owner@example.com">
+        </div>
+        <div class="field">
+          <label>رقم الجوال (اختياري)</label>
+          <input class="input" [(ngModel)]="form.ownerPhone" dir="ltr" placeholder="05xxxxxxxx">
+        </div>
+        <div class="field">
+          <label>كلمة مرور مؤقتة <span class="req">*</span></label>
+          <div class="flex gap-8">
+            <input class="input grow" [(ngModel)]="form.ownerPassword" dir="ltr" placeholder="6 أحرف على الأقل">
+            <button class="btn btn-outline" type="button" (click)="generatePassword()">
+              <app-icon name="refresh" [size]="15"></app-icon> توليد
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4: الخطة -->
+      <section class="card section">
+        <div class="section-head">
+          <span class="section-num">4</span>
+          <div>
+            <h2>الخطة</h2>
+            <p class="text-2 text-sm">يمكن تغييرها لاحقًا في أي وقت</p>
+          </div>
+        </div>
+        <div class="plans">
+          <button *ngFor="let p of plans()" class="plan-card" type="button"
+                  [class.selected]="form.planId === p.id" (click)="form.planId = p.id">
+            <div class="plan-name">{{ p.name }}</div>
+            <div class="plan-price">{{ p.monthlyPrice | sar }} <span>/ شهريًا</span></div>
+            <div class="plan-desc">{{ p.description }}</div>
+            <div class="plan-limits">{{ p.maxBranches }} فروع · {{ p.maxUsers }} مستخدمين · {{ p.maxBarbers }} حلاقين</div>
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <!-- ===== Live preview column ===== -->
+    <aside class="preview-col">
+      <div class="preview-sticky">
+        <div class="preview-title">
+          <app-icon name="eye" [size]="17"></app-icon> معاينة حية
+        </div>
+
+        <div class="device">
+          <div class="device-topbar" [style.background]="previewTopbar()">
+            <span class="device-logo">
+              <img *ngIf="logoUrl()" [src]="logoUrl()" alt="">
+              <app-icon *ngIf="!logoUrl()" name="scissors" [size]="14"></app-icon>
+            </span>
+            <span class="device-org">{{ form.name || 'اسم المنشأة' }}</span>
+          </div>
+          <div class="device-body">
+            <div class="device-side">
+              <div class="ds-item active" [style.background]="tintPrimary()" [style.color]="safePrimary()">
+                <span class="ds-dot" [style.background]="safePrimary()"></span> الرئيسية
+              </div>
+              <div class="ds-item"><span class="ds-dot"></span> بيع جديد</div>
+              <div class="ds-item"><span class="ds-dot"></span> المبيعات</div>
+              <div class="ds-item"><span class="ds-dot"></span> العملاء</div>
+              <div class="ds-item"><span class="ds-dot"></span> التقارير</div>
+            </div>
+            <div class="device-main">
+              <div class="device-greet">مرحبًا {{ form.ownerName || 'المالك' }}</div>
+              <div class="device-stats">
+                <div class="dstat" [style.border-top-color]="safePrimary()">
+                  <div class="dl">مبيعات اليوم</div>
+                  <div class="dv">1,250 ر.س</div>
+                </div>
+                <div class="dstat" [style.border-top-color]="safeSecondary()">
+                  <div class="dl">صافي التشغيل</div>
+                  <div class="dv">870 ر.س</div>
+                </div>
+              </div>
+              <div class="device-btns">
+                <span class="dbtn primary" [style.background]="safePrimary()">بيع جديد</span>
+                <span class="dbtn ghost" [style.color]="safePrimary()" [style.border-color]="safePrimary()">التقارير</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="preview-chips">
+          <span class="chip"><span class="chip-dot" [style.background]="safePrimary()"></span> {{ form.primaryColor }}</span>
+          <span class="chip"><span class="chip-dot" [style.background]="safeSecondary()"></span> {{ form.secondaryColor }}</span>
+        </div>
+        <p class="text-2 text-sm">هكذا ستبدو واجهة المنشأة عند تسجيل المالك للدخول.</p>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ===== Sticky action bar ===== -->
+  <div class="action-bar">
+    <button class="btn btn-primary btn-lg" type="button" (click)="create()" [disabled]="creating()">
+      <span class="spinner" *ngIf="creating()"></span>
+      {{ creating() ? 'جارٍ إنشاء المنشأة…' : 'إنشاء المنشأة' }}
+    </button>
+    <a class="btn btn-ghost" routerLink="/platform">إلغاء</a>
+  </div>
+</div>

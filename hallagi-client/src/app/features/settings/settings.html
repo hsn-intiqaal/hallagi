@@ -26,6 +26,73 @@
       </div>
     </div>
 
+    <div class="card mb-16" *ngIf="canManage()">
+      <h2 class="mb-16">الهوية البصرية</h2>
+      <p class="text-2 text-sm mb-16">الشعار والألوان وصورة الغلاف تُطبّق على كل شاشات منشأتك بعد الحفظ.</p>
+
+      <div class="branding-grid">
+        <div class="branding-logo">
+          <div class="logo-preview" [style.border-color]="form.primaryColor">
+            <img *ngIf="logoUrl()" [src]="logoUrl()" alt="شعار المنشأة">
+            <app-icon *ngIf="!logoUrl()" name="scissors" [size]="26"></app-icon>
+            <button *ngIf="logoUrl()" class="remove-img" type="button" title="إزالة الشعار" (click)="removeLogo()">
+              <app-icon name="x" [size]="13"></app-icon>
+            </button>
+          </div>
+          <button class="btn btn-outline btn-sm" type="button" (click)="logoInput.click()">
+            <app-icon name="plus" [size]="15"></app-icon> اختيار شعار
+          </button>
+          <span class="text-2 text-sm">PNG أو JPG — يُصغَّر إلى 256px</span>
+          <input #logoInput type="file" accept="image/*" hidden (change)="pickImage('logo', $event)">
+        </div>
+
+        <div class="branding-main">
+          <label class="picker-label">صورة الغلاف</label>
+          <div class="cover-picker" [class.has-image]="coverUrl()"
+               [style.background-image]="coverUrl() ? 'url(' + coverUrl() + ')' : coverGradient()">
+            <div class="cover-overlay">
+              <div class="cover-actions">
+                <button class="btn btn-sm cover-btn" type="button" (click)="coverInput.click()">
+                  <app-icon name="plus" [size]="15"></app-icon>
+                  {{ coverUrl() ? 'تغيير الصورة' : 'إضافة صورة غلاف' }}
+                </button>
+                <button *ngIf="coverUrl()" class="btn btn-sm cover-btn-ghost" type="button" (click)="removeCover()">إزالة</button>
+              </div>
+            </div>
+          </div>
+          <input #coverInput type="file" accept="image/*" hidden (change)="pickImage('cover', $event)">
+
+          <div class="colors-row">
+            <div class="color-field">
+              <label class="picker-label">اللون الأساسي</label>
+              <div class="color-inputs">
+                <input type="color" class="color-swatch" [(ngModel)]="form.primaryColor" aria-label="اللون الأساسي">
+                <input class="input hex-input" [(ngModel)]="form.primaryColor" dir="ltr" maxlength="7" spellcheck="false">
+              </div>
+            </div>
+            <div class="color-field">
+              <label class="picker-label">اللون الثانوي</label>
+              <div class="color-inputs">
+                <input type="color" class="color-swatch" [(ngModel)]="form.secondaryColor" aria-label="اللون الثانوي">
+                <input class="input hex-input" [(ngModel)]="form.secondaryColor" dir="ltr" maxlength="7" spellcheck="false">
+              </div>
+            </div>
+          </div>
+
+          <label class="picker-label mt-16">لوحات ألوان جاهزة</label>
+          <div class="palettes">
+            <button *ngFor="let p of palettes" class="palette" type="button" (click)="applyPreset(p)">
+              <span class="palette-dots">
+                <span class="dot" [style.background]="p.primary"></span>
+                <span class="dot" [style.background]="p.secondary"></span>
+              </span>
+              <span class="palette-name">{{ p.name }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="card mb-16" *ngIf="subscription()?.hasSubscription">
       <h2 class="mb-16">الاشتراك</h2>
       <div class="flex gap-16 wrap" style="align-items: flex-end">

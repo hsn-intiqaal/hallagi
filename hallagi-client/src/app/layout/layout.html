@@ -1,24 +1,32 @@
 <header class="topbar no-print">
+  <div class="topbar-cover" *ngIf="auth.me()?.organization?.coverImageUrl"
+       [style.background-image]="'url(&quot;' + auth.me()?.organization?.coverImageUrl + '&quot;)'"></div>
   <div class="brand">
-    <span class="logo">حلاقي</span>
-    <span class="org-name">{{ auth.me()?.organization?.name }}</span>
+    <span class="logo">
+      <img *ngIf="auth.me()?.organization?.logoUrl" [src]="auth.me()?.organization?.logoUrl" alt="شعار المنشأة">
+      <app-icon *ngIf="!auth.me()?.organization?.logoUrl" name="scissors" [size]="20"></app-icon>
+    </span>
+    <span class="brand-text">
+      <span class="org-name">{{ auth.me()?.organization?.name }}</span>
+      <span class="brand-sub">حلاقي</span>
+    </span>
   </div>
 
   <div class="branch-switch" *ngIf="auth.isLoggedIn()">
-    <button class="branch-btn" (click)="toggleMenu()">
+    <button class="branch-btn" aria-haspopup="menu" [attr.aria-expanded]="menuOpen()" (click)="toggleMenu($event)">
       <app-icon name="building" [size]="17"></app-icon>
-      <span>{{ branches.currentBranch()?.name ?? 'كل الفروع' }}</span>
-      <app-icon name="chevronDown" [size]="16"></app-icon>
+      <span class="branch-label">{{ branches.currentBranch()?.name ?? 'كل الفروع' }}</span>
+      <app-icon name="chevronDown" [size]="16" class="chevron" [class.rotated]="menuOpen()"></app-icon>
     </button>
-    <div class="branch-menu" *ngIf="menuOpen()">
+    <div class="dropdown branch-menu" *ngIf="menuOpen()" role="menu">
       <div class="menu-title">الفرع الحالي</div>
-      <button *ngIf="allBranches()" [class.active]="branches.currentBranchId() === null" (click)="selectBranch(null)">
+      <button *ngIf="allBranches()" [class.active]="branches.currentBranchId() === null" (click)="selectBranch(null)" role="menuitem">
         <span>كل الفروع</span>
         <app-icon *ngIf="branches.currentBranchId() === null" name="check" [size]="16"></app-icon>
       </button>
       <button *ngFor="let b of branches.branches()"
         [class.active]="branches.currentBranchId() === b.id"
-        (click)="selectBranch(b.id)">
+        (click)="selectBranch(b.id)" role="menuitem">
         <span>{{ b.name }} — {{ b.city }}</span>
         <app-icon *ngIf="branches.currentBranchId() === b.id" name="check" [size]="16"></app-icon>
       </button>
@@ -27,17 +35,41 @@
 
   <div class="grow"></div>
 
-  <div class="user-chip">
-    <span class="avatar">{{ initials(auth.profile()?.fullName ?? '') }}</span>
-    <span>
-      <b>{{ auth.profile()?.fullName }}</b>
-      <span class="text-2"> · {{ roleLabel() }}</span>
-    </span>
-  </div>
+  <div class="user-menu" *ngIf="auth.isLoggedIn()">
+    <button class="user-btn" aria-haspopup="menu" [attr.aria-expanded]="userMenuOpen()" (click)="toggleUserMenu($event)">
+      <span class="avatar">{{ initials(auth.profile()?.fullName ?? '') }}</span>
+      <span class="user-meta">
+        <b class="user-name">{{ auth.profile()?.fullName }}</b>
+        <span class="user-role">{{ roleLabel() }}</span>
+      </span>
+      <app-icon name="chevronDown" [size]="16" class="chevron" [class.rotated]="userMenuOpen()"></app-icon>
+    </button>
 
-  <button class="icon-btn" title="تسجيل الخروج" (click)="logout()">
-    <app-icon name="logout" [size]="20"></app-icon>
-  </button>
+    <div class="dropdown user-dropdown" *ngIf="userMenuOpen()" role="menu">
+      <div class="user-card">
+        <span class="avatar avatar-lg">{{ initials(auth.profile()?.fullName ?? '') }}</span>
+        <div class="user-card-info">
+          <b class="user-card-name">{{ auth.profile()?.fullName }}</b>
+          <span class="text-2 user-card-email">{{ auth.profile()?.email }}</span>
+          <span class="role-badge">{{ roleLabel() }}</span>
+        </div>
+      </div>
+      <div class="menu-divider"></div>
+      <a *ngIf="hasNavItem('me')" class="menu-item" routerLink="/me" role="menuitem" (click)="closeUserMenu()">
+        <app-icon name="user" [size]="18"></app-icon>
+        <span>ملخصي</span>
+      </a>
+      <a class="menu-item" routerLink="/settings" role="menuitem" (click)="closeUserMenu()">
+        <app-icon name="settings" [size]="18"></app-icon>
+        <span>الإعدادات</span>
+      </a>
+      <div class="menu-divider"></div>
+      <button class="menu-item menu-item-danger" role="menuitem" (click)="requestLogout()">
+        <app-icon name="logout" [size]="18"></app-icon>
+        <span>تسجيل الخروج</span>
+      </button>
+    </div>
+  </div>
 </header>
 
 <div class="body">
@@ -50,6 +82,10 @@
     <div class="grow"></div>
     <div class="side-section">الإصدار التجريبي</div>
     <div class="text-2 text-sm" style="padding: 0 14px 8px">حلاقي — محلك في يدك</div>
+    <button *ngIf="auth.isLoggedIn()" class="side-link side-logout" (click)="requestLogout()">
+      <app-icon class="nav-icon" name="logout" [size]="20"></app-icon>
+      <span>تسجيل الخروج</span>
+    </button>
   </aside>
 
   <main class="main">
@@ -69,3 +105,18 @@
     <span>الإعدادات</span>
   </a>
 </nav>
+
+<app-modal *ngIf="logoutConfirmOpen()" title="تأكيد تسجيل الخروج" [showFooter]="true" (close)="cancelLogout()">
+  <div class="logout-confirm">
+    <div class="logout-icon"><app-icon name="logout" [size]="28"></app-icon></div>
+    <p class="logout-title">هل أنت متأكد من رغبتك في تسجيل الخروج؟</p>
+    <p class="text-2 text-sm">ستنتهي الجلسة الحالية وسيتم توجيهك إلى صفحة تسجيل الدخول.</p>
+  </div>
+  <div footer>
+    <button class="btn btn-ghost" (click)="cancelLogout()">إلغاء</button>
+    <button class="btn btn-danger" (click)="confirmLogout()">
+      <app-icon name="logout" [size]="17"></app-icon>
+      <span>تسجيل الخروج</span>
+    </button>
+  </div>
+</app-modal>

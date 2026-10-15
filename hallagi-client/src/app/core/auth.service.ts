@@ -4,6 +4,7 @@ import { Observable, tap } from 'rxjs';
 import { ApiService } from './api.service';
 import { TOKEN_KEY } from './auth.interceptor';
 import { Me, Profile, UserRole } from './models';
+import { ThemeService } from './theme.service';
 
 const BRANCH_KEY = 'hallagi.branch';
 
@@ -11,6 +12,7 @@ const BRANCH_KEY = 'hallagi.branch';
 export class AuthService {
   private api = inject(ApiService);
   private router = inject(Router);
+  private theme = inject(ThemeService);
 
   readonly token = signal<string | null>(localStorage.getItem(TOKEN_KEY));
   readonly me = signal<Me | null>(null);
@@ -22,7 +24,7 @@ export class AuthService {
     // Restore session details from token on boot
     if (this.token()) {
       this.api.get<Me>('/auth/me').subscribe({
-        next: m => this.me.set(m),
+        next: m => { this.me.set(m); this.theme.apply(m.organization); },
         error: () => this.logout(false)
       });
     }
@@ -39,7 +41,7 @@ export class AuthService {
   }
 
   loadMe(): Observable<Me> {
-    return this.api.get<Me>('/auth/me').pipe(tap(m => this.me.set(m)));
+    return this.api.get<Me>('/auth/me').pipe(tap(m => { this.me.set(m); this.theme.apply(m.organization); }));
   }
 
   refreshMe(): void {
@@ -64,6 +66,7 @@ export class AuthService {
     localStorage.removeItem(BRANCH_KEY);
     this.token.set(null);
     this.me.set(null);
+    this.theme.reset();
     if (navigate) this.router.navigate(['/login']);
   }
 }

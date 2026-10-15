@@ -13,6 +13,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/platform/platform').then(m => m.Platform)
   },
   {
+    path: 'platform/new',
+    canActivate: [superAdminGuard],
+    loadComponent: () => import('./features/platform/org-create').then(m => m.OrgCreate)
+  },
+  {
     path: 'onboarding',
     canActivate: [authGuard],
     loadComponent: () => import('./features/onboarding/onboarding').then(m => m.Onboarding)

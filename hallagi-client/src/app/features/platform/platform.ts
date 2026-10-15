@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { NgIf, NgFor } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { ApiService } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
 import { ToastService } from '../../core/toast.service';
@@ -10,6 +11,8 @@ import { EmptyState, LoadingRow, StatCard, Modal } from '../../shared/ui';
 
 interface Org {
   id: string; name: string; currency: string; timeZone: string;
+  logoUrl: string | null; coverImageUrl: string | null;
+  primaryColor: string; secondaryColor: string;
   branchesCount: number; usersCount: number; barbersCount: number; salesTotal: number;
   ownerName: string | null; ownerEmail: string | null;
   planName: string | null; planId: string | null; subscriptionStatus: string | null;
@@ -29,19 +32,13 @@ export class Platform implements OnInit {
   private api = inject(ApiService);
   readonly auth = inject(AuthService);
   private toast = inject(ToastService);
+  private router = inject(Router);
 
   readonly stats = signal<any>(null);
   readonly orgs = signal<Org[]>([]);
   readonly plans = signal<Plan[]>([]);
   readonly loading = signal(true);
   search = '';
-
-  readonly showCreate = signal(false);
-  readonly creating = signal(false);
-  form = {
-    name: '', city: 'الرياض', branchName: 'الفرع الرئيسي', address: '',
-    ownerName: '', ownerEmail: '', ownerPhone: '', ownerPassword: '', planId: ''
-  };
 
   readonly branchTarget = signal<Org | null>(null);
   branchForm = { name: '', city: 'الرياض' };
@@ -68,43 +65,12 @@ export class Platform implements OnInit {
     });
   }
 
+  /** Organization creation lives on its own full screen (branding + images + colors). */
   openCreate(): void {
-    this.form = {
-      name: '', city: 'الرياض', branchName: 'الفرع الرئيسي', address: '',
-      ownerName: '', ownerEmail: '', ownerPhone: '', ownerPassword: '', planId: this.plans()[0]?.id ?? ''
-    };
-    this.showCreate.set(true);
+    this.router.navigate(['/platform/new']);
   }
 
-  create(): void {
-    if (this.creating()) return;
-    if (!this.form.name.trim() || !this.form.ownerEmail.trim() || this.form.ownerPassword.length < 6) {
-      this.toast.error('أكمل اسم المنشأة وبريد المالك وكلمة مرور (6 أحرف على الأقل)');
-      return;
-    }
-    this.creating.set(true);
-    this.api.post<any>('/platform/organizations', {
-      name: this.form.name.trim(),
-      city: this.form.city.trim(),
-      branchName: this.form.branchName.trim() || 'الفرع الرئيسي',
-      address: this.form.address.trim() || null,
-      ownerName: this.form.ownerName.trim() || 'مالك المنشأة',
-      ownerEmail: this.form.ownerEmail.trim(),
-      ownerPhone: this.form.ownerPhone.trim() || null,
-      ownerPassword: this.form.ownerPassword,
-      planId: this.form.planId || null
-    }).subscribe({
-      next: () => {
-        this.creating.set(false);
-        this.showCreate.set(false);
-        this.toast.success('تم إنشاء المنشأة وحساب مالكها');
-        this.load();
-      },
-      error: (e: any) => { this.creating.set(false); this.toast.error(e?.message ?? 'تعذّر إنشاء المنشأة'); }
-    });
-  }
-
-  askAddBranch(org: Org): void { this.branchTarget.set(org); this.branchForm = { name: '', city: org.name.includes('الرياض') ? 'الرياض' : 'الرياض' }; }
+  askAddBranch(org: Org): void { this.branchTarget.set(org); this.branchForm = { name: '', city: 'الرياض' }; }
 
   confirmAddBranch(): void {
     const org = this.branchTarget();

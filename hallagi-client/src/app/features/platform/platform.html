@@ -40,13 +40,27 @@
   <div class="flex-col gap-12" *ngIf="orgs().length > 0">
     <div class="org-row" *ngFor="let o of orgs()">
       <div class="info">
-        <div class="n">{{ o.name }}</div>
-        <div class="s">
-          <span class="badge plan-badge" [class]="planClass(o.planName)">{{ o.planName || 'بدون خطة' }}</span>
-          <span class="badge" [class]="o.subscriptionStatus === 'Active' ? 'badge-green' : 'badge-red'">
-            {{ o.subscriptionStatus === 'Active' ? 'اشتراك فعّال' : o.subscriptionStatus }}
+        <div class="org-head">
+          <span class="org-logo" [style.border-color]="o.secondaryColor">
+            <img *ngIf="o.logoUrl" [src]="o.logoUrl" [alt]="o.name">
+            <span *ngIf="!o.logoUrl" class="org-logo-fallback" [style.background]="o.primaryColor">
+              {{ o.name.charAt(0) }}
+            </span>
           </span>
-          <span *ngIf="o.ownerEmail"> · المالك: {{ o.ownerName }} ({{ o.ownerEmail }})</span>
+          <div>
+            <div class="n">{{ o.name }}</div>
+            <div class="s">
+              <span class="badge plan-badge" [class]="planClass(o.planName)">{{ o.planName || 'بدون خطة' }}</span>
+              <span class="badge" [class]="o.subscriptionStatus === 'Active' ? 'badge-green' : 'badge-red'">
+                {{ o.subscriptionStatus === 'Active' ? 'اشتراك فعّال' : o.subscriptionStatus }}
+              </span>
+              <span class="color-dots" *ngIf="o.primaryColor || o.secondaryColor">
+                <span class="cdot" [style.background]="o.primaryColor" title="اللون الأساسي"></span>
+                <span class="cdot" [style.background]="o.secondaryColor" title="اللون الثانوي"></span>
+              </span>
+              <span *ngIf="o.ownerEmail"> · المالك: {{ o.ownerName }} ({{ o.ownerEmail }})</span>
+            </div>
+          </div>
         </div>
       </div>
       <div class="metrics">
@@ -73,57 +87,6 @@
     </div>
   </div>
 </div>
-
-<app-modal *ngIf="showCreate()" title="إنشاء منشأة جديدة" (close)="showCreate.set(false)">
-  <div class="field">
-    <label>اسم المنشأة</label>
-    <input class="input" [(ngModel)]="form.name" placeholder="مثال: صالون الأمانة للحلاقة">
-  </div>
-  <div class="field">
-    <label>المدينة</label>
-    <input class="input" [(ngModel)]="form.city" placeholder="الرياض">
-  </div>
-  <div class="field">
-    <label>الفرع الأول</label>
-    <input class="input" [(ngModel)]="form.branchName" placeholder="الفرع الرئيسي">
-  </div>
-  <div class="field">
-    <label>العنوان (اختياري)</label>
-    <input class="input" [(ngModel)]="form.address">
-  </div>
-  <div class="field">
-    <label>الخطة</label>
-    <select class="select" [(ngModel)]="form.planId">
-      <option *ngFor="let p of plans()" [value]="p.id">{{ p.name }} — {{ p.maxBranches }} فروع / {{ p.maxUsers }} مستخدمين ({{ p.monthlyPrice | sar }})</option>
-    </select>
-  </div>
-
-  <h3 class="mt-16 mb-8">حساب مالك المنشأة</h3>
-  <div class="field">
-    <label>اسم المالك</label>
-    <input class="input" [(ngModel)]="form.ownerName" placeholder="مثال: عبدالله الدوسري">
-  </div>
-  <div class="field">
-    <label>البريد الإلكتروني</label>
-    <input class="input" type="email" [(ngModel)]="form.ownerEmail" dir="ltr" placeholder="owner@example.com">
-  </div>
-  <div class="field">
-    <label>رقم الجوال (اختياري)</label>
-    <input class="input" [(ngModel)]="form.ownerPhone" dir="ltr" placeholder="05xxxxxxxx">
-  </div>
-  <div class="field">
-    <label>كلمة مرور مؤقتة</label>
-    <input class="input" [(ngModel)]="form.ownerPassword" dir="ltr" placeholder="6 أحرف على الأقل">
-  </div>
-
-  <div footer class="flex gap-8">
-    <button class="btn btn-primary" (click)="create()" [disabled]="creating()">
-      <span class="spinner" *ngIf="creating()"></span>
-      {{ creating() ? 'جارٍ الإنشاء…' : 'إنشاء المنشأة' }}
-    </button>
-    <button class="btn btn-outline" (click)="showCreate.set(false)">إلغاء</button>
-  </div>
-</app-modal>
 
 <app-modal *ngIf="branchTarget()" title="إضافة فرع — {{ branchTarget()?.name }}" (close)="branchTarget.set(null)">
   <div class="field">

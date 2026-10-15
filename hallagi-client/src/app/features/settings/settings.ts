@@ -4,10 +4,17 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
 import { ToastService } from '../../core/toast.service';
+import { ThemeService } from '../../core/theme.service';
 import { Settings as SettingsModel } from '../../core/models';
 import { Icon } from '../../shared/icon';
 import { SarPipe } from '../../core/format.pipes';
 import { LoadingRow } from '../../shared/ui';
+import { resizeImageFile } from '../../shared/image-upload';
+
+interface Palette { name: string; primary: string; secondary: string; }
+
+const DEFAULT_PRIMARY = '#2563EB';
+const DEFAULT_SECONDARY = '#173653';
 
 @Component({
   selector: 'app-settings',
@@ -20,14 +27,34 @@ export class Settings implements OnInit {
   private api = inject(ApiService);
   readonly auth = inject(AuthService);
   private toast = inject(ToastService);
+  private theme = inject(ThemeService);
 
   readonly loading = signal(true);
   readonly canManage = signal(false);
   readonly subscription = signal<any>(null);
   readonly plans = signal<any[]>([]);
   readonly savingPlan = signal(false);
-  form = { organizationName: '', currency: 'SAR', timeZone: 'Asia/Riyadh', enableCash: true, enableCard: true, receiptFooter: '', receiptPhone: '' };
+  readonly logoUrl = signal<string | null>(null);
+  readonly coverUrl = signal<string | null>(null);
+  /** Empty string clears the stored image (null means "unchanged" on the API). */
+  readonly logoRemoved = signal(false);
+  readonly coverRemoved = signal(false);
+  form = {
+    organizationName: '', currency: 'SAR', timeZone: 'Asia/Riyadh',
+    enableCash: true, enableCard: true, receiptFooter: '', receiptPhone: '',
+    primaryColor: DEFAULT_PRIMARY, secondaryColor: DEFAULT_SECONDARY
+  };
   password = { current: '', next: '' };
+
+  readonly palettes: Palette[] = [
+    { name: 'كحلي كلاسيكي', primary: '#2563EB', secondary: '#173653' },
+    { name: 'ذهبي ملكي', primary: '#C79A3B', secondary: '#2A2113' },
+    { name: 'زمردي', primary: '#0E9F6E', secondary: '#0B3B2E' },
+    { name: 'عنابي', primary: '#BE123C', secondary: '#3F0D1F' },
+    { name: 'برتقالي', primary: '#EA580C', secondary: '#431407' },
+    { name: 'بنفسجي', primary: '#7C3AED', secondary: '#2E1065' },
+    { name: 'فيروزي', primary: '#0D9488', secondary: '#134E4A' }
+  ];
 
   ngOnInit(): void {
     this.api.get<any>('/auth/me').subscribe({
@@ -50,12 +77,46 @@ export class Settings implements OnInit {
           enableCash: s.settings.enableCash,
           enableCard: s.settings.enableCard,
           receiptFooter: s.settings.receiptFooter ?? '',
-          receiptPhone: s.settings.receiptPhone ?? ''
+          receiptPhone: s.settings.receiptPhone ?? '',
+          primaryColor: s.organization?.primaryColor ?? DEFAULT_PRIMARY,
+          secondaryColor: s.organization?.secondaryColor ?? DEFAULT_SECONDARY
         };
+        this.logoUrl.set(s.organization?.logoUrl ?? null);
+        this.coverUrl.set(s.organization?.coverImageUrl ?? null);
         this.loading.set(false);
       },
       error: (e: any) => { this.toast.error(e?.message ?? 'تعذّر تحميل الإعدادات'); this.loading.set(false); }
     });
+  }
+
+  applyPreset(p: Palette): void {
+    this.form.primaryColor = p.primary;
+    this.form.secondaryColor = p.secondary;
+  }
+
+  /** Placeholder gradient for the cover picker before an image is chosen. */
+  coverGradient(): string {
+    const pri = this.form.primaryColor && /^#([0-9a-fA-F]{6})$/.test(this.form.primaryColor)
+      ? this.form.primaryColor : DEFAULT_PRIMARY;
+    return `linear-gradient(135deg, ${pri}, ${this.theme.darken(pri, 0.3)})`;
+  }
+
+  removeLogo(): void { this.logoUrl.set(null); this.logoRemoved.set(true); }
+  removeCover(): void { this.coverUrl.set(null); this.coverRemoved.set(true); }
+
+  async pickImage(kind: 'logo' | 'cover', event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { this.toast.error('الملف المختار ليس صورة'); return; }
+    try {
+      const dataUrl = await resizeImageFile(file, kind === 'logo' ? 256 : 1280, kind === 'logo' ? 0.85 : 0.75);
+      if (kind === 'logo') { this.logoUrl.set(dataUrl); this.logoRemoved.set(false); }
+      else { this.coverUrl.set(dataUrl); this.coverRemoved.set(false); }
+    } catch {
+      this.toast.error('تعذّر معالجة الصورة، جرّب صورة أخرى');
+    }
   }
 
   save(): void {
@@ -64,10 +125,14 @@ export class Settings implements OnInit {
       organizationName: this.form.organizationName.trim(),
       currency: this.form.currency,
       timeZone: this.form.timeZone,
+      logoUrl: this.logoRemoved() ? '' : this.logoUrl(),
       enableCash: this.form.enableCash,
       enableCard: this.form.enableCard,
       receiptFooter: this.form.receiptFooter?.trim() || null,
-      receiptPhone: this.form.receiptPhone?.trim() || null
+      receiptPhone: this.form.receiptPhone?.trim() || null,
+      coverImageUrl: this.coverRemoved() ? '' : this.coverUrl(),
+      primaryColor: this.form.primaryColor,
+      secondaryColor: this.form.secondaryColor
     }).subscribe({
       next: () => { this.toast.success('تم حفظ الإعدادات بنجاح'); this.auth.refreshMe(); },
       error: (e: any) => this.toast.error(e?.message ?? 'تعذّر حفظ الإعدادات')

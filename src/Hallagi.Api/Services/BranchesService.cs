@@ -100,7 +100,7 @@ public class SettingsService(AppDbContext db)
         var settings = await db.OrganizationSettings.AsNoTracking().FirstOrDefaultAsync(s => s.OrganizationId == org.Id, ct);
         return new
         {
-            organization = new { org.Id, org.Name, org.Currency, org.TimeZone, org.LogoUrl },
+            organization = new { org.Id, org.Name, org.Currency, org.TimeZone, org.LogoUrl, org.PrimaryColor, org.SecondaryColor, org.CoverImageUrl },
             settings = settings is null
                 ? new { EnableCash = true, EnableCard = true, ReceiptFooter = (string?)null, ReceiptPhone = (string?)null }
                 : new { settings!.EnableCash, settings.EnableCard, settings.ReceiptFooter, settings.ReceiptPhone }
@@ -120,7 +120,11 @@ public class SettingsService(AppDbContext db)
         org.Name = req.OrganizationName.Trim();
         org.Currency = string.IsNullOrWhiteSpace(req.Currency) ? org.Currency : req.Currency.Trim();
         org.TimeZone = string.IsNullOrWhiteSpace(req.TimeZone) ? org.TimeZone : req.TimeZone.Trim();
-        org.LogoUrl = req.LogoUrl?.Trim();
+        // null = keep current image, "" = remove, data URL = replace
+        if (req.LogoUrl is not null) org.LogoUrl = Branding.NormalizeImage(req.LogoUrl);
+        if (req.CoverImageUrl is not null) org.CoverImageUrl = Branding.NormalizeImage(req.CoverImageUrl);
+        org.PrimaryColor = Branding.NormalizeColor(req.PrimaryColor, org.PrimaryColor);
+        org.SecondaryColor = Branding.NormalizeColor(req.SecondaryColor, org.SecondaryColor);
         org.UpdatedAt = DateTime.UtcNow;
 
         var settings = await db.OrganizationSettings.FirstOrDefaultAsync(s => s.OrganizationId == org.Id, ct);
@@ -188,4 +192,7 @@ public record UpdateSettingsRequest(
     bool EnableCash,
     bool EnableCard,
     string? ReceiptFooter,
-    string? ReceiptPhone);
+    string? ReceiptPhone,
+    string? CoverImageUrl = null,
+    string? PrimaryColor = null,
+    string? SecondaryColor = null);

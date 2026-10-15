@@ -1,9 +1,31 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Hallagi.Api.Data;
 using Hallagi.Api.Domain;
 using Microsoft.EntityFrameworkCore;
 
 namespace Hallagi.Api.Services;
+
+/// <summary>Validation + normalization for tenant branding (colors and images).</summary>
+public static class Branding
+{
+    private static readonly Regex HexColor = new("^#([0-9a-fA-F]{6})$", RegexOptions.Compiled);
+    public const int MaxImageChars = 1_500_000;
+
+    /// <summary>Returns a valid #RRGGBB color, or the fallback when the value is missing/invalid.</summary>
+    public static string NormalizeColor(string? value, string fallback)
+        => !string.IsNullOrWhiteSpace(value) && HexColor.IsMatch(value.Trim()) ? value.Trim() : fallback;
+
+    /// <summary>Accepts only inline image data URLs within the size cap; everything else is dropped.</summary>
+    public static string? NormalizeImage(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        var v = value.Trim();
+        if (v.Length > MaxImageChars)
+            throw ApiException.Bad("image_too_large", "حجم الصورة كبير جدًا (الحد الأقصى 1.5 ميجابايت)");
+        return v.StartsWith("data:image/", StringComparison.OrdinalIgnoreCase) ? v : null;
+    }
+}
 
 /// <summary>
 /// Platform administration (حساب مالك المنصة): manages every tenant, its
@@ -57,6 +79,10 @@ public class PlatformService(AppDbContext db, AuthService auth, SubscriptionServ
                 org.Name,
                 org.Currency,
                 org.TimeZone,
+                org.LogoUrl,
+                org.PrimaryColor,
+                org.SecondaryColor,
+                org.CoverImageUrl,
                 branchesCount = await db.Branches.CountAsync(b => b.OrganizationId == org.Id, ct),
                 usersCount = await db.OrganizationMembers.CountAsync(m => m.OrganizationId == org.Id, ct),
                 barbersCount = await db.Barbers.CountAsync(b => b.OrganizationId == org.Id, ct),
@@ -103,6 +129,10 @@ public class PlatformService(AppDbContext db, AuthService auth, SubscriptionServ
             Name = req.Name.Trim(),
             Currency = "SAR",
             TimeZone = "Asia/Riyadh",
+            LogoUrl = Branding.NormalizeImage(req.LogoUrl),
+            CoverImageUrl = Branding.NormalizeImage(req.CoverImageUrl),
+            PrimaryColor = Branding.NormalizeColor(req.PrimaryColor, "#2563EB"),
+            SecondaryColor = Branding.NormalizeColor(req.SecondaryColor, "#173653"),
             CreatedAt = now,
             UpdatedAt = now,
             Settings = new OrganizationSettings { EnableCash = true, EnableCard = true }
@@ -314,4 +344,8 @@ public record CreateOrganizationRequest(
     string OwnerEmail,
     string? OwnerPhone,
     string OwnerPassword,
-    Guid? PlanId);
+    Guid? PlanId,
+    string? LogoUrl = null,
+    string? CoverImageUrl = null,
+    string? PrimaryColor = null,
+    string? SecondaryColor = null);

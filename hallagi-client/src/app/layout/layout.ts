@@ -1,11 +1,12 @@
 import { NgIf, NgFor } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../core/auth.service';
 import { BranchContext } from '../core/branch-context';
 import { ToastService } from '../core/toast.service';
 import { UserRoleLabel } from '../core/models';
 import { Icon } from '../shared/icon';
+import { Modal } from '../shared/ui';
 
 interface NavItem {
   path: string;
@@ -17,7 +18,7 @@ interface NavItem {
 
 @Component({
   selector: 'app-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, NgIf, NgFor],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, NgIf, NgFor, Modal],
   templateUrl: './layout.html',
   styleUrl: './layout.scss'
 })
@@ -28,6 +29,8 @@ export class Layout implements OnInit {
   private router = inject(Router);
 
   readonly menuOpen = signal(false);
+  readonly userMenuOpen = signal(false);
+  readonly logoutConfirmOpen = signal(false);
   readonly roleLabel = computed(() => (this.auth.role() ? UserRoleLabel[this.auth.role()!] : ''));
 
   navItems: NavItem[] = [
@@ -75,12 +78,22 @@ export class Layout implements OnInit {
     return (name ?? 'ح').trim().charAt(0);
   }
 
-  logout(): void {
-    this.auth.logout();
+  hasNavItem(path: string): boolean {
+    return this.visibleItems().some(i => i.path === path);
   }
 
-  toggleMenu(): void {
+  /** Toggle the branch dropdown (closes the user menu). */
+  toggleMenu(event: Event): void {
+    event.stopPropagation();
+    this.userMenuOpen.set(false);
     this.menuOpen.update(v => !v);
+  }
+
+  /** Toggle the user dropdown (closes the branch menu). */
+  toggleUserMenu(event: Event): void {
+    event.stopPropagation();
+    this.menuOpen.set(false);
+    this.userMenuOpen.update(v => !v);
   }
 
   selectBranch(id: string | null): void {
@@ -90,5 +103,49 @@ export class Layout implements OnInit {
 
   allBranches(): boolean {
     return this.branches.showAllOption();
+  }
+
+  /** Close the user menu after activating one of its links. */
+  closeUserMenu(): void {
+    this.userMenuOpen.set(false);
+  }
+
+  /** Step 1 of sign-out: ask for confirmation before leaving. */
+  requestLogout(): void {
+    this.userMenuOpen.set(false);
+    this.menuOpen.set(false);
+    this.logoutConfirmOpen.set(true);
+  }
+
+  cancelLogout(): void {
+    this.logoutConfirmOpen.set(false);
+  }
+
+  /** Step 2 of sign-out: clear the session and return to login. */
+  confirmLogout(): void {
+    this.logoutConfirmOpen.set(false);
+    this.toast.info('تم تسجيل الخروج بنجاح');
+    this.auth.logout();
+  }
+
+  /** Close open dropdowns when clicking anywhere outside them. */
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: Event): void {
+    const target = event.target as HTMLElement | null;
+    if (!target?.closest) return;
+    if (target.closest('.branch-switch') || target.closest('.user-menu')) return;
+    this.menuOpen.set(false);
+    this.userMenuOpen.set(false);
+  }
+
+  /** Escape closes dropdowns first, then the confirmation dialog. */
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.menuOpen() || this.userMenuOpen()) {
+      this.menuOpen.set(false);
+      this.userMenuOpen.set(false);
+      return;
+    }
+    this.logoutConfirmOpen.set(false);
   }
 }

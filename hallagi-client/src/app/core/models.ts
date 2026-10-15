@@ -22,7 +22,13 @@ export interface LoginResult {
 export interface Me {
   profile: Profile;
   role: UserRole;
-  organization: { id: string; name: string; currency: string; timeZone: string; logoUrl?: string } | null;
+  organization: {
+    id: string; name: string; currency: string; timeZone: string;
+    logoUrl?: string | null;
+    primaryColor?: string | null;
+    secondaryColor?: string | null;
+    coverImageUrl?: string | null;
+  } | null;
   branchIds: string[];
   branches: Branch[];
   allBranches: boolean;
@@ -143,7 +149,13 @@ export interface UserRow {
 }
 
 export interface Settings {
-  organization: { id: string; name: string; currency: string; timeZone: string; logoUrl?: string } | null;
+  organization: {
+    id: string; name: string; currency: string; timeZone: string;
+    logoUrl?: string | null;
+    primaryColor?: string | null;
+    secondaryColor?: string | null;
+    coverImageUrl?: string | null;
+  } | null;
   settings: { enableCash: boolean; enableCard: boolean; receiptFooter?: string; receiptPhone?: string };
 }
 

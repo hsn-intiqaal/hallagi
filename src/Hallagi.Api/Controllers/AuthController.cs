@@ -74,7 +74,7 @@ public class AuthController(AuthService auth, AppDbContext db) : BaseApiControll
         {
             profile = new { userProfile!.Id, userProfile.FullName, userProfile.Email, userProfile.Phone },
             role = member!.Role.ToString(),
-            organization = new { org!.Id, org.Name, org.Currency, org.TimeZone, org.LogoUrl },
+            organization = new { org!.Id, org.Name, org.Currency, org.TimeZone, org.LogoUrl, org.PrimaryColor, org.SecondaryColor, org.CoverImageUrl },
             branchIds = user.BranchIds,
             branches,
             allBranches = Permissions.AccessesAllBranches(user),
