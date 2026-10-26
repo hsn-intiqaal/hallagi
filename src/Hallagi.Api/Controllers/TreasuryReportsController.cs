@@ -56,6 +56,11 @@ public class ReportsController(ReportsService reports) : BaseApiController
         => Ok(await reports.BranchComparisonAsync(CurrentUser,
             from ?? DateTime.Today.AddDays(-6), to ?? DateTime.Today.AddDays(1).AddTicks(-1), ct));
 
+    [HttpGet("tax")]
+    public async Task<IActionResult> Tax([FromQuery] Guid? branchId, [FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken ct = default)
+        => Ok(await reports.TaxAndProductsAsync(CurrentUser, branchId,
+            from ?? DateTime.Today.AddDays(-29), to ?? DateTime.Today.AddDays(1).AddTicks(-1), ct));
+
     [HttpGet("customers")]
     public async Task<IActionResult> Customers([FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken ct = default)
         => Ok(await reports.CustomerRepeatAsync(CurrentUser,

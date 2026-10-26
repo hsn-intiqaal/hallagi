@@ -133,6 +133,7 @@ public class PlatformService(AppDbContext db, AuthService auth, SubscriptionServ
             CoverImageUrl = Branding.NormalizeImage(req.CoverImageUrl),
             PrimaryColor = Branding.NormalizeColor(req.PrimaryColor, "#2563EB"),
             SecondaryColor = Branding.NormalizeColor(req.SecondaryColor, "#173653"),
+            Slug = await Slugs.RandomUniqueAsync(db, ct),
             CreatedAt = now,
             UpdatedAt = now,
             Settings = new OrganizationSettings { EnableCash = true, EnableCard = true }
@@ -330,6 +331,7 @@ public class PlatformService(AppDbContext db, AuthService auth, SubscriptionServ
             ?? throw ApiException.NotFound("لا يوجد مالك لهذه المنشأة");
 
         owner.PasswordHash = auth.HashPassword(newPassword);
+        foreach (var t in db.RefreshTokens.Where(t => t.ProfileId == owner.Id && t.RevokedAt == null)) t.RevokedAt = DateTime.UtcNow;
         owner.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
     }

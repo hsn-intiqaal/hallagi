@@ -10,9 +10,48 @@ public static class DbSeeder
     public const string DemoPassword = "Hallagi@123"; // dev/demo only; never use in production
     public const string SuperAdminEmail = "admin@hallagi.sa"; // حساب مالك المنصة (عرض توضيحي)
 
+    /// <summary>SQL Server uses versioned migrations; SQLite (local demo mode) builds the schema directly.</summary>
+    public static async Task MigrateAsync(AppDbContext db, CancellationToken ct = default)
+    {
+        if (db.Database.ProviderName?.Contains("SqlServer", StringComparison.OrdinalIgnoreCase) == true)
+            await db.Database.MigrateAsync(ct);
+        else
+            await db.Database.EnsureCreatedAsync(ct);
+    }
+
+    /// <summary>
+    /// Production bootstrap: schema + subscription plans + the first platform-owner account
+    /// taken from configuration (Bootstrap__AdminEmail / Bootstrap__AdminPassword). No demo data.
+    /// </summary>
+    public static async Task BootstrapAsync(AppDbContext db, IConfiguration config, CancellationToken ct = default)
+    {
+        await MigrateAsync(db, ct);
+        await SeedSaaSAsync(db, ct);
+
+        var email = config["Bootstrap:AdminEmail"]?.Trim().ToLowerInvariant();
+        var password = config["Bootstrap:AdminPassword"];
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password)) return;
+        if (await db.Profiles.AnyAsync(p => p.IsSuperAdmin, ct)) return;
+        if (password.Length < 12)
+            throw new InvalidOperationException("Bootstrap:AdminPassword must be at least 12 characters");
+
+        db.Profiles.Add(new Profile
+        {
+            Id = Guid.NewGuid(),
+            FullName = "مالك المنصة",
+            Email = email,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
+            Status = EntityStatus.Active,
+            IsSuperAdmin = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        });
+        await db.SaveChangesAsync(ct);
+    }
+
     public static async Task SeedAsync(AppDbContext db, IConfiguration config, CancellationToken ct = default)
     {
-        await db.Database.MigrateAsync(ct);
+        await MigrateAsync(db, ct);
 
         // Platform owner account (highest level) — created once, demo credentials in dev
         if (!await db.Profiles.AnyAsync(p => p.IsSuperAdmin, ct))
@@ -57,12 +96,23 @@ public static class DbSeeder
             TimeZone = "Asia/Riyadh",
             CreatedAt = now,
             UpdatedAt = now,
+            Slug = "elite",
             Settings = new OrganizationSettings
             {
                 EnableCash = true,
                 EnableCard = true,
                 ReceiptFooter = "شكرًا لزيارتكم — حلاقي، محلك في يدك",
-                ReceiptPhone = "0112345678"
+                ReceiptPhone = "0112345678",
+                // Demo tax identity (fictitious, valid format) — replace before going live
+                VatEnabled = true,
+                VatRate = 0.15m,
+                PricesIncludeVat = true,
+                VatNumber = "310123456700003",
+                CommercialRegistration = "1010123456",
+                LegalName = "مؤسسة صالون النخبة للحلاقة",
+                TaxAddress = "الرياض، حي النرجس، شارع الأمير سلطان",
+                LoyaltyEnabled = true,
+                OnlineBookingEnabled = true
             }
         };
         db.Organizations.Add(org);
@@ -100,6 +150,7 @@ public static class DbSeeder
                 OrganizationId = org.Id,
                 Name = name,
                 BasePrice = price,
+                DurationMinutes = name switch { "حلاقة ذقن" => 20, "شعر وذقن" => 45, "تنظيف بشرة" => 40, "صبغة شعر" => 60, _ => 30 },
                 Status = EntityStatus.Active,
                 CreatedAt = now,
                 UpdatedAt = now
@@ -365,7 +416,10 @@ public static class DbSeeder
                     ReceiptNo = ++receipt,
                     PaymentMethod = method,
                     Status = SaleStatus.Completed,
+                    GrossAmount = total,
+                    SubtotalAmount = total,
                     TotalAmount = total,
+                    CommissionBase = total,
                     CreatedAt = createdAt,
                     UpdatedAt = createdAt
                 };
@@ -465,7 +519,89 @@ public static class DbSeeder
             CreatedAt = now
         });
 
+        await db.SaveChangesAsync(ct);
+        await SeedCommerceAndBookingAsync(db, org, branches, ownerId, ct);
+
         // SaaS subscription/devices are seeded in SeedSaaSAsync
+    }
+
+    /// <summary>Retail products with stock, coupons and today's appointments for the demo salon.</summary>
+    private static async Task SeedCommerceAndBookingAsync(AppDbContext db, Organization org, Branch[] branches, Guid ownerId, CancellationToken ct)
+    {
+        var now = DateTime.UtcNow;
+        var products = new (string Name, string Sku, decimal Price, decimal Cost, int Qty)[]
+        {
+            ("واكس تصفيف شعر", "WAX-01", 45m, 22m, 18),
+            ("زيت لحية", "OIL-01", 55m, 25m, 12),
+            ("شامبو رجالي", "SHA-01", 35m, 15m, 4),
+            ("بلسم لحية", "BLM-01", 40m, 18m, 9)
+        };
+        foreach (var (name, sku, price, cost, qty) in products)
+        {
+            var product = new Product
+            {
+                Id = Guid.NewGuid(), OrganizationId = org.Id, Name = name, Sku = sku, Price = price, Cost = cost,
+                Status = EntityStatus.Active, CreatedAt = now, UpdatedAt = now
+            };
+            db.Products.Add(product);
+            foreach (var br in branches)
+            {
+                db.ProductStocks.Add(new ProductStock { Id = Guid.NewGuid(), ProductId = product.Id, BranchId = br.Id, Quantity = qty, LowStockThreshold = 5 });
+                db.StockMovements.Add(new StockMovement
+                {
+                    Id = Guid.NewGuid(), OrganizationId = org.Id, BranchId = br.Id, ProductId = product.Id,
+                    Type = StockMovementType.Purchase, Quantity = qty, BalanceAfter = qty, UnitCost = cost,
+                    Note = "رصيد افتتاحي", CreatedBy = ownerId, CreatedAt = now
+                });
+            }
+        }
+
+        db.Coupons.Add(new Coupon
+        {
+            Id = Guid.NewGuid(), OrganizationId = org.Id, Code = "WELCOME10", Description = "خصم 10% للعملاء الجدد",
+            Type = DiscountType.Percent, Value = 10m, MaxDiscount = 30m, Status = EntityStatus.Active, CreatedAt = now, UpdatedAt = now
+        });
+        db.Coupons.Add(new Coupon
+        {
+            Id = Guid.NewGuid(), OrganizationId = org.Id, Code = "EID20", Description = "خصم العيد 20 ريال",
+            Type = DiscountType.Fixed, Value = 20m, MinSubtotal = 60m, MaxUses = 100, Status = EntityStatus.Active, CreatedAt = now, UpdatedAt = now
+        });
+
+        // A few appointments today at the first branch (local Riyadh time)
+        var tz = Hallagi.Api.Services.OrgTime.Resolve(org.TimeZone);
+        var today = Hallagi.Api.Services.OrgTime.Today(tz);
+        var branch = branches[0];
+        var barberIds = await db.BarberBranchAssignments.Where(a => a.BranchId == branch.Id).Select(a => a.BarberId).ToListAsync(ct);
+        var haircut = await db.Services.FirstAsync(s => s.OrganizationId == org.Id && s.Name == "حلاقة شعر", ct);
+        var combo = await db.Services.FirstAsync(s => s.OrganizationId == org.Id && s.Name == "شعر وذقن", ct);
+        var customers = await db.Customers.Where(c => c.OrganizationId == org.Id).OrderBy(c => c.FullName).Take(4).ToListAsync(ct);
+        var plan = new (int Hour, int BarberIdx, Service Svc, AppointmentSource Source)[]
+        {
+            (16, 0, haircut, AppointmentSource.Staff),
+            (17, 1, combo, AppointmentSource.Online),
+            (19, 0, combo, AppointmentSource.Online),
+            (21, 1, haircut, AppointmentSource.Staff)
+        };
+        for (var i = 0; i < plan.Length && barberIds.Count > 0; i++)
+        {
+            var (hour, barberIdx, svc, source) = plan[i];
+            var start = Hallagi.Api.Services.OrgTime.ToUtc(today.ToDateTime(new TimeOnly(hour, 0)), tz);
+            var customer = customers[i % customers.Count];
+            db.Appointments.Add(new Appointment
+            {
+                Id = Guid.NewGuid(), OrganizationId = org.Id, BranchId = branch.Id,
+                BarberId = barberIds[barberIdx % barberIds.Count],
+                CustomerId = customer.Id, CustomerName = customer.FullName, CustomerPhone = customer.Phone,
+                StartAt = start, EndAt = start.AddMinutes(svc.DurationMinutes),
+                Status = AppointmentStatus.Confirmed, Source = source,
+                Reference = $"DEMO{i + 1:00}", CreatedBy = ownerId, CreatedAt = now, UpdatedAt = now,
+                Items = new List<AppointmentItem>
+                {
+                    new() { Id = Guid.NewGuid(), ServiceId = svc.Id, ServiceName = svc.Name, Price = svc.BasePrice, DurationMinutes = svc.DurationMinutes }
+                }
+            });
+        }
+        await db.SaveChangesAsync(ct);
     }
 
     /// <summary>Seeds SaaS plans, subscriptions and demo devices (idempotent, safe to re-run).</summary>

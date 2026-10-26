@@ -22,6 +22,110 @@ namespace Hallagi.Api.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("Hallagi.Api.Domain.Appointment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("BarberId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CancelReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CustomerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CustomerName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("CustomerPhone")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime>("EndAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Reference")
+                        .IsRequired()
+                        .HasMaxLength(12)
+                        .HasColumnType("nvarchar(12)");
+
+                    b.Property<Guid?>("SaleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Source")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("StartAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BarberId", "StartAt");
+
+                    b.HasIndex("BranchId", "StartAt");
+
+                    b.HasIndex("OrganizationId", "Reference")
+                        .IsUnique();
+
+                    b.ToTable("Appointments");
+                });
+
+            modelBuilder.Entity("Hallagi.Api.Domain.AppointmentItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AppointmentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("DurationMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<Guid>("ServiceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ServiceName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AppointmentId");
+
+                    b.ToTable("AppointmentItems");
+                });
+
             modelBuilder.Entity("Hallagi.Api.Domain.AuditLog", b =>
                 {
                     b.Property<Guid>("Id")
@@ -382,6 +486,9 @@ namespace Hallagi.Api.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<TimeOnly>("ClosesAt")
+                        .HasColumnType("time");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -390,8 +497,14 @@ namespace Hallagi.Api.Data.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
+                    b.Property<TimeOnly>("OpensAt")
+                        .HasColumnType("time");
+
                     b.Property<Guid>("OrganizationId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Phone")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
@@ -552,6 +665,64 @@ namespace Hallagi.Api.Data.Migrations
                     b.ToTable("CashMovements");
                 });
 
+            modelBuilder.Entity("Hallagi.Api.Domain.Coupon", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("MaxDiscount")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<int?>("MaxUses")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("MinSubtotal")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UsedCount")
+                        .HasColumnType("int");
+
+                    b.Property<DateOnly?>("ValidFrom")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("ValidTo")
+                        .HasColumnType("date");
+
+                    b.Property<decimal>("Value")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId", "Code")
+                        .IsUnique();
+
+                    b.ToTable("Coupons");
+                });
+
             modelBuilder.Entity("Hallagi.Api.Domain.Customer", b =>
                 {
                     b.Property<Guid>("Id")
@@ -565,6 +736,9 @@ namespace Hallagi.Api.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
+
+                    b.Property<int>("LoyaltyPoints")
+                        .HasColumnType("int");
 
                     b.Property<string>("Notes")
                         .HasColumnType("nvarchar(max)");
@@ -679,6 +853,47 @@ namespace Hallagi.Api.Data.Migrations
                     b.ToTable("Expenses");
                 });
 
+            modelBuilder.Entity("Hallagi.Api.Domain.LoyaltyTransaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("BalanceAfter")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Points")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("SaleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId", "CreatedAt");
+
+                    b.ToTable("LoyaltyTransactions");
+                });
+
             modelBuilder.Entity("Hallagi.Api.Domain.MemberBranchAccess", b =>
                 {
                     b.Property<Guid>("Id")
@@ -731,6 +946,10 @@ namespace Hallagi.Api.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Slug")
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
                     b.Property<string>("TimeZone")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -741,6 +960,10 @@ namespace Hallagi.Api.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("Name");
+
+                    b.HasIndex("Slug")
+                        .IsUnique()
+                        .HasFilter("[Slug] IS NOT NULL");
 
                     b.ToTable("Organizations");
                 });
@@ -787,10 +1010,45 @@ namespace Hallagi.Api.Data.Migrations
                     b.Property<Guid>("OrganizationId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<int>("BookingMaxDaysAhead")
+                        .HasColumnType("int");
+
+                    b.Property<int>("BookingSlotMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CommercialRegistration")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
                     b.Property<bool>("EnableCard")
                         .HasColumnType("bit");
 
                     b.Property<bool>("EnableCash")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LegalName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("LoyaltyEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("LoyaltyMinRedeem")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("LoyaltyPointValue")
+                        .HasColumnType("decimal(8,4)");
+
+                    b.Property<decimal>("LoyaltyPointsPerSar")
+                        .HasColumnType("decimal(8,4)");
+
+                    b.Property<decimal>("MaxManualDiscountPercent")
+                        .HasColumnType("decimal(8,4)");
+
+                    b.Property<bool>("OnlineBookingEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("PricesIncludeVat")
                         .HasColumnType("bit");
 
                     b.Property<string>("ReceiptFooter")
@@ -798,6 +1056,19 @@ namespace Hallagi.Api.Data.Migrations
 
                     b.Property<string>("ReceiptPhone")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TaxAddress")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("VatEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("VatNumber")
+                        .HasMaxLength(15)
+                        .HasColumnType("nvarchar(15)");
+
+                    b.Property<decimal>("VatRate")
+                        .HasColumnType("decimal(8,4)");
 
                     b.HasKey("OrganizationId");
 
@@ -841,6 +1112,78 @@ namespace Hallagi.Api.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("PayrollPeriods");
+                });
+
+            modelBuilder.Entity("Hallagi.Api.Domain.Product", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Barcode")
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<decimal>("Cost")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<string>("Sku")
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId", "Barcode");
+
+                    b.HasIndex("OrganizationId", "Name");
+
+                    b.ToTable("Products");
+                });
+
+            modelBuilder.Entity("Hallagi.Api.Domain.ProductStock", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("LowStockThreshold")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId", "BranchId")
+                        .IsUnique();
+
+                    b.ToTable("ProductStocks");
                 });
 
             modelBuilder.Entity("Hallagi.Api.Domain.Profile", b =>
@@ -889,10 +1232,53 @@ namespace Hallagi.Api.Data.Migrations
                     b.ToTable("Profiles");
                 });
 
+            modelBuilder.Entity("Hallagi.Api.Domain.RefreshToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("MemberId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ProfileId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ReplacedByHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProfileId");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.ToTable("RefreshTokens");
+                });
+
             modelBuilder.Entity("Hallagi.Api.Domain.Sale", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("AppointmentId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("BarberId")
@@ -910,6 +1296,16 @@ namespace Hallagi.Api.Data.Migrations
                     b.Property<Guid?>("CancelledBy")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<decimal>("CommissionBase")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<string>("CouponCode")
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<Guid?>("CouponId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -919,13 +1315,33 @@ namespace Hallagi.Api.Data.Migrations
                     b.Property<Guid?>("CustomerId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<decimal>("DiscountAmount")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<decimal>("GrossAmount")
+                        .HasColumnType("decimal(10,2)");
+
                     b.Property<string>("IdempotencyKey")
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("InvoiceSellerName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("InvoiceVatNumber")
+                        .HasMaxLength(15)
+                        .HasColumnType("nvarchar(15)");
 
                     b.Property<Guid>("OrganizationId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("PaymentMethod")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PointsEarned")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PointsRedeemed")
                         .HasColumnType("int");
 
                     b.Property<int>("ReceiptNo")
@@ -934,11 +1350,20 @@ namespace Hallagi.Api.Data.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
+                    b.Property<decimal>("SubtotalAmount")
+                        .HasColumnType("decimal(10,2)");
+
                     b.Property<decimal>("TotalAmount")
                         .HasColumnType("decimal(10,2)");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<decimal>("VatAmount")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<decimal>("VatRate")
+                        .HasColumnType("decimal(8,4)");
 
                     b.HasKey("Id");
 
@@ -962,8 +1387,14 @@ namespace Hallagi.Api.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<int>("ItemType")
+                        .HasColumnType("int");
+
                     b.Property<decimal>("LineTotal")
                         .HasColumnType("decimal(10,2)");
+
+                    b.Property<Guid?>("ProductId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
@@ -1002,6 +1433,9 @@ namespace Hallagi.Api.Data.Migrations
 
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("DurationMinutes")
+                        .HasColumnType("int");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -1147,6 +1581,53 @@ namespace Hallagi.Api.Data.Migrations
                     b.ToTable("Shifts");
                 });
 
+            modelBuilder.Entity("Hallagi.Api.Domain.StockMovement", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("BalanceAfter")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("SaleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("UnitCost")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId", "BranchId", "CreatedAt");
+
+                    b.ToTable("StockMovements");
+                });
+
             modelBuilder.Entity("Hallagi.Api.Domain.Subscription", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1232,6 +1713,17 @@ namespace Hallagi.Api.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("SubscriptionPlans");
+                });
+
+            modelBuilder.Entity("Hallagi.Api.Domain.AppointmentItem", b =>
+                {
+                    b.HasOne("Hallagi.Api.Domain.Appointment", "Appointment")
+                        .WithMany("Items")
+                        .HasForeignKey("AppointmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Appointment");
                 });
 
             modelBuilder.Entity("Hallagi.Api.Domain.BarberAdvance", b =>
@@ -1410,6 +1902,17 @@ namespace Hallagi.Api.Data.Migrations
                     b.Navigation("Organization");
                 });
 
+            modelBuilder.Entity("Hallagi.Api.Domain.ProductStock", b =>
+                {
+                    b.HasOne("Hallagi.Api.Domain.Product", "Product")
+                        .WithMany("Stock")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+                });
+
             modelBuilder.Entity("Hallagi.Api.Domain.SaleItem", b =>
                 {
                     b.HasOne("Hallagi.Api.Domain.Sale", "Sale")
@@ -1462,6 +1965,11 @@ namespace Hallagi.Api.Data.Migrations
                     b.Navigation("Plan");
                 });
 
+            modelBuilder.Entity("Hallagi.Api.Domain.Appointment", b =>
+                {
+                    b.Navigation("Items");
+                });
+
             modelBuilder.Entity("Hallagi.Api.Domain.Barber", b =>
                 {
                     b.Navigation("BranchAssignments");
@@ -1493,6 +2001,11 @@ namespace Hallagi.Api.Data.Migrations
             modelBuilder.Entity("Hallagi.Api.Domain.OrganizationMember", b =>
                 {
                     b.Navigation("BranchAccess");
+                });
+
+            modelBuilder.Entity("Hallagi.Api.Domain.Product", b =>
+                {
+                    b.Navigation("Stock");
                 });
 
             modelBuilder.Entity("Hallagi.Api.Domain.Profile", b =>

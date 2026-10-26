@@ -186,6 +186,7 @@ public class UsersService(AppDbContext db, AuthService auth, SubscriptionService
 
         profile.PasswordHash = auth.HashPassword(newPassword);
         profile.UpdatedAt = DateTime.UtcNow;
+        foreach (var t in db.RefreshTokens.Where(t => t.ProfileId == profile.Id && t.RevokedAt == null)) t.RevokedAt = DateTime.UtcNow;
 
         db.AuditLogs.Add(new AuditLog
         {

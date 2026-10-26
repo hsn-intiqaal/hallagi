@@ -35,6 +35,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<BarberSettlement> BarberSettlements => Set<BarberSettlement>();
     public DbSet<SettlementItem> SettlementItems => Set<SettlementItem>();
     public DbSet<SettlementPayment> SettlementPayments => Set<SettlementPayment>();
+    public DbSet<Product> Products => Set<Product>();
+    public DbSet<ProductStock> ProductStocks => Set<ProductStock>();
+    public DbSet<StockMovement> StockMovements => Set<StockMovement>();
+    public DbSet<Coupon> Coupons => Set<Coupon>();
+    public DbSet<LoyaltyTransaction> LoyaltyTransactions => Set<LoyaltyTransaction>();
+    public DbSet<Appointment> Appointments => Set<Appointment>();
+    public DbSet<AppointmentItem> AppointmentItems => Set<AppointmentItem>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     // Financial precision: NUMERIC(10,2) everywhere, never float
     private const string Money = "decimal(10,2)";
@@ -48,6 +56,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             e.HasIndex(x => x.Name);
             e.Property(x => x.Name).HasMaxLength(150);
+            e.Property(x => x.Slug).HasMaxLength(60);
+            e.HasIndex(x => x.Slug).IsUnique();
         });
 
         b.Entity<Branch>(e =>
@@ -123,12 +133,28 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         b.Entity<OrganizationSettings>(e =>
         {
             e.HasKey(x => x.OrganizationId);
+            e.Property(x => x.VatRate).HasColumnType(Rate);
+            e.Property(x => x.MaxManualDiscountPercent).HasColumnType(Rate);
+            e.Property(x => x.LoyaltyPointsPerSar).HasColumnType(Rate);
+            e.Property(x => x.LoyaltyPointValue).HasColumnType(Rate);
+            e.Property(x => x.VatNumber).HasMaxLength(15);
+            e.Property(x => x.CommercialRegistration).HasMaxLength(20);
+            e.Property(x => x.LegalName).HasMaxLength(200);
             e.HasOne(x => x.Organization).WithOne(x => x.Settings!).HasForeignKey<OrganizationSettings>(x => x.OrganizationId).OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<Sale>(e =>
         {
             e.Property(x => x.TotalAmount).HasColumnType(Money);
+            e.Property(x => x.GrossAmount).HasColumnType(Money);
+            e.Property(x => x.DiscountAmount).HasColumnType(Money);
+            e.Property(x => x.SubtotalAmount).HasColumnType(Money);
+            e.Property(x => x.VatAmount).HasColumnType(Money);
+            e.Property(x => x.CommissionBase).HasColumnType(Money);
+            e.Property(x => x.VatRate).HasColumnType(Rate);
+            e.Property(x => x.CouponCode).HasMaxLength(40);
+            e.Property(x => x.InvoiceSellerName).HasMaxLength(200);
+            e.Property(x => x.InvoiceVatNumber).HasMaxLength(15);
             e.HasIndex(x => new { x.OrganizationId, x.IdempotencyKey }).IsUnique();
             e.HasIndex(x => new { x.OrganizationId, x.ReceiptNo }).IsUnique();
             e.HasIndex(x => new { x.BranchId, x.CreatedAt });
@@ -264,6 +290,72 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(x => x.Amount).HasColumnType(Money);
             e.HasOne(x => x.Settlement).WithMany(x => x.Payments).HasForeignKey(x => x.SettlementId).OnDelete(DeleteBehavior.Cascade);
             e.Property(x => x.Method).HasMaxLength(20);
+        });
+
+        // ===== Commerce =====
+        b.Entity<Product>(e =>
+        {
+            e.Property(x => x.Price).HasColumnType(Money);
+            e.Property(x => x.Cost).HasColumnType(Money);
+            e.Property(x => x.Name).HasMaxLength(150);
+            e.Property(x => x.Sku).HasMaxLength(60);
+            e.Property(x => x.Barcode).HasMaxLength(60);
+            e.HasIndex(x => new { x.OrganizationId, x.Name });
+            e.HasIndex(x => new { x.OrganizationId, x.Barcode });
+        });
+
+        b.Entity<ProductStock>(e =>
+        {
+            e.HasOne(x => x.Product).WithMany(x => x.Stock).HasForeignKey(x => x.ProductId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => new { x.ProductId, x.BranchId }).IsUnique();
+        });
+
+        b.Entity<StockMovement>(e =>
+        {
+            e.Property(x => x.UnitCost).HasColumnType(Money);
+            e.Property(x => x.Note).HasMaxLength(300);
+            e.HasIndex(x => new { x.ProductId, x.BranchId, x.CreatedAt });
+        });
+
+        b.Entity<Coupon>(e =>
+        {
+            e.Property(x => x.Value).HasColumnType(Money);
+            e.Property(x => x.MinSubtotal).HasColumnType(Money);
+            e.Property(x => x.MaxDiscount).HasColumnType(Money);
+            e.Property(x => x.Code).HasMaxLength(40);
+            e.HasIndex(x => new { x.OrganizationId, x.Code }).IsUnique();
+        });
+
+        b.Entity<LoyaltyTransaction>(e =>
+        {
+            e.HasIndex(x => new { x.CustomerId, x.CreatedAt });
+            e.Property(x => x.Note).HasMaxLength(300);
+        });
+
+        // ===== Booking =====
+        b.Entity<Appointment>(e =>
+        {
+            e.Property(x => x.CustomerName).HasMaxLength(150);
+            e.Property(x => x.CustomerPhone).HasMaxLength(30);
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.Property(x => x.Reference).HasMaxLength(12);
+            e.HasIndex(x => new { x.BranchId, x.StartAt });
+            e.HasIndex(x => new { x.BarberId, x.StartAt });
+            e.HasIndex(x => new { x.OrganizationId, x.Reference }).IsUnique();
+        });
+
+        b.Entity<AppointmentItem>(e =>
+        {
+            e.Property(x => x.Price).HasColumnType(Money);
+            e.HasOne(x => x.Appointment).WithMany(x => x.Items).HasForeignKey(x => x.AppointmentId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<RefreshToken>(e =>
+        {
+            e.Property(x => x.TokenHash).HasMaxLength(64);
+            e.Property(x => x.ReplacedByHash).HasMaxLength(64);
+            e.HasIndex(x => x.TokenHash).IsUnique();
+            e.HasIndex(x => x.ProfileId);
         });
     }
 }

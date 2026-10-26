@@ -11,3 +11,13 @@ public enum ExpenseSource { CashDrawer, Bank, Other }
 public enum ShiftStatus { Open, Closed }
 public enum CashMovementType { Opening, Sale, SaleVoid, Expense, ManualIn, ManualOut }
 public enum ExpenseStatus { Active, Voided }
+
+// ===== Commerce: products, discounts, loyalty =====
+public enum SaleItemType { Service, Product }
+public enum DiscountType { Percent, Fixed }
+public enum StockMovementType { Purchase, Sale, SaleVoid, Adjustment }
+public enum LoyaltyTxType { Earn, Redeem, Reverse, Adjust }
+
+// ===== Booking =====
+public enum AppointmentStatus { Pending, Confirmed, Waiting, InService, Completed, Cancelled, NoShow }
+public enum AppointmentSource { Staff, Online, WalkIn }

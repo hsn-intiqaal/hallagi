@@ -4,14 +4,18 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Hallagi.Api.Services;
 
-public record CreateSaleItem(Guid ServiceId, int Quantity);
+public record CreateSaleItem(Guid? ServiceId, int Quantity, Guid? ProductId = null);
 public record CreateSaleRequest(
     Guid BranchId,
     Guid BarberId,
     Guid? CustomerId,
     PaymentMethod PaymentMethod,
     List<CreateSaleItem> Items,
-    string? IdempotencyKey);
+    string? IdempotencyKey,
+    string? CouponCode = null,
+    decimal? ManualDiscount = null,
+    int RedeemPoints = 0,
+    Guid? AppointmentId = null);
 
 public class SalesService(AppDbContext db)
 {
@@ -44,13 +48,20 @@ public class SalesService(AppDbContext db)
             throw ApiException.Bad("empty_cart", "أضف خدمة واحدة على الأقل لإتمام البيع");
         if (req.Items.Any(i => i.Quantity <= 0 || i.Quantity > 50))
             throw ApiException.Bad("invalid_quantity", "الكمية غير صحيحة");
+        if (req.Items.Any(i => (i.ServiceId is null) == (i.ProductId is null)))
+            throw ApiException.Bad("invalid_item", "كل بند يجب أن يكون خدمة أو منتجًا");
         if (req.PaymentMethod != PaymentMethod.Cash && req.PaymentMethod != PaymentMethod.Card)
             throw ApiException.Bad("invalid_payment", "طريقة الدفع غير مدعومة");
+        if (req.RedeemPoints < 0)
+            throw ApiException.Bad("invalid_points", "عدد النقاط غير صحيح");
+        if (req.ManualDiscount is < 0)
+            throw ApiException.Bad("invalid_discount", "قيمة الخصم غير صحيحة");
 
-        var settings = await db.OrganizationSettings.FindAsync(new object[] { user.OrganizationId }, ct);
-        if (req.PaymentMethod == PaymentMethod.Cash && settings is { EnableCash: false })
+        var settings = await db.OrganizationSettings.FindAsync(new object[] { user.OrganizationId }, ct)
+                       ?? new OrganizationSettings { OrganizationId = user.OrganizationId };
+        if (req.PaymentMethod == PaymentMethod.Cash && !settings.EnableCash)
             throw ApiException.Bad("payment_disabled", "طريقة الدفع النقدي معطلة في إعدادات المنشأة");
-        if (req.PaymentMethod == PaymentMethod.Card && settings is { EnableCard: false })
+        if (req.PaymentMethod == PaymentMethod.Card && !settings.EnableCard)
             throw ApiException.Bad("payment_disabled", "طريقة الدفع بالبطاقة معطلة في إعدادات المنشأة");
 
         // Idempotent replay: same key returns the same stored sale
@@ -81,40 +92,143 @@ public class SalesService(AppDbContext db)
                 ?? throw ApiException.Bad("invalid_customer", "العميل غير موجود");
         }
 
-        // Server-side pricing from the trusted source (branch override, else base price)
-        var serviceIds = req.Items.Select(i => i.ServiceId).Distinct().ToList();
-        var services = await db.Services.Where(s => s.OrganizationId == user.OrganizationId && serviceIds.Contains(s.Id)).ToListAsync(ct);
-        if (services.Count != serviceIds.Count)
-            throw ApiException.Bad("invalid_service", "إحدى الخدمات غير موجودة");
-        if (services.Any(s => s.Status != EntityStatus.Active))
-            throw ApiException.Bad("service_inactive", "إحدى الخدمات غير نشطة");
-
-        var branchPrices = await db.BranchServicePrices
-            .Where(p => p.BranchId == branch.Id && serviceIds.Contains(p.ServiceId))
-            .ToDictionaryAsync(p => p.ServiceId, p => p.Price, ct);
-
-        decimal total = 0m;
-        var items = new List<SaleItem>();
-        foreach (var reqItem in req.Items)
+        Appointment? appointment = null;
+        if (req.AppointmentId is not null)
         {
-            var svc = services.First(s => s.Id == reqItem.ServiceId);
-            var unitPrice = branchPrices.TryGetValue(svc.Id, out var bp) ? bp : svc.BasePrice;
-            var lineTotal = unitPrice * reqItem.Quantity;
-            total += lineTotal;
-            items.Add(new SaleItem
-            {
-                Id = Guid.NewGuid(),
-                ServiceId = svc.Id,
-                ServiceName = svc.Name,
-                UnitPrice = unitPrice,
-                Quantity = reqItem.Quantity,
-                LineTotal = lineTotal
-            });
+            appointment = await db.Appointments.FirstOrDefaultAsync(a => a.Id == req.AppointmentId && a.OrganizationId == user.OrganizationId, ct)
+                ?? throw ApiException.Bad("invalid_appointment", "الموعد غير موجود");
+            if (appointment.BranchId != branch.Id)
+                throw ApiException.Bad("appointment_branch", "الموعد مسجل في فرع آخر");
+            if (appointment.Status is AppointmentStatus.Completed or AppointmentStatus.Cancelled or AppointmentStatus.NoShow)
+                throw ApiException.Conflict("appointment_closed", "هذا الموعد مغلق ولا يمكن تحصيله");
         }
+
+        // ===== Server-side pricing from the trusted source =====
+        var items = new List<SaleItem>();
+
+        var serviceIds = req.Items.Where(i => i.ServiceId is not null).Select(i => i.ServiceId!.Value).Distinct().ToList();
+        if (serviceIds.Count > 0)
+        {
+            var services = await db.Services.Where(s => s.OrganizationId == user.OrganizationId && serviceIds.Contains(s.Id)).ToListAsync(ct);
+            if (services.Count != serviceIds.Count)
+                throw ApiException.Bad("invalid_service", "إحدى الخدمات غير موجودة");
+            if (services.Any(s => s.Status != EntityStatus.Active))
+                throw ApiException.Bad("service_inactive", "إحدى الخدمات غير نشطة");
+
+            var branchPrices = await db.BranchServicePrices
+                .Where(p => p.BranchId == branch.Id && serviceIds.Contains(p.ServiceId))
+                .ToDictionaryAsync(p => p.ServiceId, p => p.Price, ct);
+
+            foreach (var reqItem in req.Items.Where(i => i.ServiceId is not null))
+            {
+                var svc = services.First(s => s.Id == reqItem.ServiceId);
+                var unitPrice = branchPrices.TryGetValue(svc.Id, out var bp) ? bp : svc.BasePrice;
+                items.Add(new SaleItem
+                {
+                    Id = Guid.NewGuid(),
+                    ItemType = SaleItemType.Service,
+                    ServiceId = svc.Id,
+                    ServiceName = svc.Name,
+                    UnitPrice = unitPrice,
+                    Quantity = reqItem.Quantity,
+                    LineTotal = unitPrice * reqItem.Quantity
+                });
+            }
+        }
+
+        var productQty = req.Items.Where(i => i.ProductId is not null)
+            .GroupBy(i => i.ProductId!.Value).ToDictionary(g => g.Key, g => g.Sum(i => i.Quantity));
+        var stockRows = new Dictionary<Guid, ProductStock>();
+        if (productQty.Count > 0)
+        {
+            var productIds = productQty.Keys.ToList();
+            var products = await db.Products.Where(p => p.OrganizationId == user.OrganizationId && productIds.Contains(p.Id)).ToListAsync(ct);
+            if (products.Count != productIds.Count)
+                throw ApiException.Bad("invalid_product", "أحد المنتجات غير موجود");
+            if (products.Any(p => p.Status != EntityStatus.Active))
+                throw ApiException.Bad("product_inactive", "أحد المنتجات غير نشط");
+
+            stockRows = await db.ProductStocks.Where(s => s.BranchId == branch.Id && productIds.Contains(s.ProductId))
+                .ToDictionaryAsync(s => s.ProductId, ct);
+            foreach (var p in products)
+            {
+                var onHand = stockRows.TryGetValue(p.Id, out var st) ? st.Quantity : 0;
+                if (onHand < productQty[p.Id])
+                    throw ApiException.Bad("insufficient_stock", $"الكمية المتوفرة من «{p.Name}» في هذا الفرع {onHand} فقط");
+                items.Add(new SaleItem
+                {
+                    Id = Guid.NewGuid(),
+                    ItemType = SaleItemType.Product,
+                    ProductId = p.Id,
+                    ServiceName = p.Name,
+                    UnitPrice = p.Price,
+                    Quantity = productQty[p.Id],
+                    LineTotal = p.Price * productQty[p.Id]
+                });
+            }
+        }
+
+        var gross = items.Sum(i => i.LineTotal);
+
+        // ===== Discounts: coupon + manual + loyalty points (all before VAT) =====
+        Coupon? coupon = null;
+        decimal couponDiscount = 0m;
+        var tz = OrgTime.Resolve((await db.Organizations.AsNoTracking().Where(o => o.Id == user.OrganizationId)
+            .Select(o => o.TimeZone).FirstOrDefaultAsync(ct)));
+        if (!string.IsNullOrWhiteSpace(req.CouponCode))
+        {
+            var code = req.CouponCode.Trim().ToUpperInvariant();
+            coupon = await db.Coupons.FirstOrDefaultAsync(c => c.OrganizationId == user.OrganizationId && c.Code == code, ct)
+                ?? throw ApiException.Bad("invalid_coupon", "كود الخصم غير صحيح");
+            couponDiscount = CouponService.Evaluate(coupon, gross, OrgTime.Today(tz));
+        }
+
+        decimal manualDiscount = Pricing.Round(req.ManualDiscount ?? 0m);
+        if (manualDiscount > 0)
+        {
+            if (!Permissions.Can(user, Permissions.SaleDiscount))
+                throw ApiException.Forbidden("ليس لديك صلاحية لمنح خصم يدوي");
+            var cap = Pricing.Round(gross * settings.MaxManualDiscountPercent / 100m);
+            if (user.Role != UserRole.Owner && manualDiscount > cap)
+                throw ApiException.Bad("discount_too_high", $"الحد الأعلى للخصم اليدوي {settings.MaxManualDiscountPercent:0.##}% ({cap:0.00} ر.س)");
+        }
+
+        decimal pointsDiscount = 0m;
+        if (req.RedeemPoints > 0)
+        {
+            if (!settings.LoyaltyEnabled)
+                throw ApiException.Bad("loyalty_disabled", "برنامج الولاء غير مفعّل");
+            if (customer is null)
+                throw ApiException.Bad("customer_required", "اختر العميل لاستبدال نقاطه");
+            if (req.RedeemPoints < settings.LoyaltyMinRedeem)
+                throw ApiException.Bad("points_below_min", $"الحد الأدنى للاستبدال {settings.LoyaltyMinRedeem} نقطة");
+            if (req.RedeemPoints > customer.LoyaltyPoints)
+                throw ApiException.Bad("insufficient_points", $"رصيد العميل {customer.LoyaltyPoints} نقطة فقط");
+            pointsDiscount = Pricing.Round(req.RedeemPoints * settings.LoyaltyPointValue);
+        }
+
+        var totalDiscount = couponDiscount + manualDiscount + pointsDiscount;
+        if (totalDiscount > gross)
+            throw ApiException.Bad("discount_exceeds_total", "مجموع الخصومات أكبر من قيمة الفاتورة");
+
+        var price = Pricing.Calculate(gross, totalDiscount, settings.VatEnabled, settings.VatRate, settings.PricesIncludeVat);
+
+        // Commission base: the services' share of the discounted net, excluding VAT and retail products
+        var serviceGross = items.Where(i => i.ItemType == SaleItemType.Service).Sum(i => i.LineTotal);
+        var serviceNet = gross == 0 ? 0m : serviceGross * (gross - price.Discount) / gross;
+        var commissionBase = Pricing.ExcludeVat(serviceNet, settings.VatEnabled, settings.VatRate, settings.PricesIncludeVat);
+
+        var pointsEarned = settings.LoyaltyEnabled && customer is not null
+            ? (int)Math.Floor(price.Total * settings.LoyaltyPointsPerSar)
+            : 0;
+
+        var vatNumber = settings.VatEnabled ? settings.VatNumber : null;
+        if (settings.VatEnabled && !Pricing.IsValidVatNumber(vatNumber))
+            throw ApiException.Bad("vat_number_missing", "الرقم الضريبي غير مكتمل في الإعدادات — لا يمكن إصدار فاتورة ضريبية");
 
         var now = DateTime.UtcNow;
 
-        // Transactional: sale + items + cash movement + shift state all commit together
+        // Transactional: sale + items + cash movement + stock + loyalty all commit together
         await using var tx = await db.Database.BeginTransactionAsync(ct);
 
         var receiptNo = await NextReceiptNoAsync(user.OrganizationId, ct);
@@ -129,7 +243,24 @@ public class SalesService(AppDbContext db)
             ReceiptNo = receiptNo,
             PaymentMethod = req.PaymentMethod,
             Status = SaleStatus.Completed,
-            TotalAmount = total,
+            GrossAmount = price.Gross,
+            DiscountAmount = price.Discount,
+            SubtotalAmount = price.Subtotal,
+            VatRate = price.VatRate,
+            VatAmount = price.Vat,
+            TotalAmount = price.Total,
+            CommissionBase = commissionBase,
+            CouponId = coupon?.Id,
+            CouponCode = coupon?.Code,
+            PointsRedeemed = req.RedeemPoints,
+            PointsEarned = pointsEarned,
+            AppointmentId = appointment?.Id,
+            InvoiceVatNumber = vatNumber,
+            InvoiceSellerName = settings.VatEnabled
+                ? (string.IsNullOrWhiteSpace(settings.LegalName)
+                    ? await db.Organizations.Where(o => o.Id == user.OrganizationId).Select(o => o.Name).FirstAsync(ct)
+                    : settings.LegalName)
+                : null,
             IdempotencyKey = string.IsNullOrWhiteSpace(req.IdempotencyKey) ? null : req.IdempotencyKey,
             CreatedAt = now,
             UpdatedAt = now,
@@ -137,6 +268,53 @@ public class SalesService(AppDbContext db)
         };
         items.ForEach(i => i.SaleId = sale.Id);
         db.Sales.Add(sale);
+
+        // stock out
+        foreach (var (productId, qty) in productQty)
+        {
+            var stock = stockRows[productId];
+            stock.Quantity -= qty;
+            db.StockMovements.Add(new StockMovement
+            {
+                Id = Guid.NewGuid(),
+                OrganizationId = user.OrganizationId,
+                BranchId = branch.Id,
+                ProductId = productId,
+                Type = StockMovementType.Sale,
+                Quantity = -qty,
+                BalanceAfter = stock.Quantity,
+                SaleId = sale.Id,
+                Note = $"بيع #{receiptNo}",
+                CreatedBy = user.ProfileId,
+                CreatedAt = now
+            });
+        }
+
+        if (coupon is not null) coupon.UsedCount += 1;
+
+        if (customer is not null && (req.RedeemPoints > 0 || pointsEarned > 0))
+        {
+            if (req.RedeemPoints > 0)
+            {
+                customer.LoyaltyPoints -= req.RedeemPoints;
+                db.LoyaltyTransactions.Add(LoyaltyTx(user, customer, LoyaltyTxType.Redeem, -req.RedeemPoints, sale.Id, $"استبدال في بيع #{receiptNo}", now));
+            }
+            if (pointsEarned > 0)
+            {
+                customer.LoyaltyPoints += pointsEarned;
+                db.LoyaltyTransactions.Add(LoyaltyTx(user, customer, LoyaltyTxType.Earn, pointsEarned, sale.Id, $"نقاط بيع #{receiptNo}", now));
+            }
+            customer.UpdatedAt = now;
+        }
+
+        if (appointment is not null)
+        {
+            appointment.Status = AppointmentStatus.Completed;
+            appointment.SaleId = sale.Id;
+            appointment.BarberId ??= barber.Id;
+            appointment.CustomerId ??= customer?.Id;
+            appointment.UpdatedAt = now;
+        }
 
         Guid? shiftId = null;
         if (req.PaymentMethod == PaymentMethod.Cash)
@@ -150,7 +328,7 @@ public class SalesService(AppDbContext db)
                 BranchId = branch.Id,
                 ShiftId = shift.Id,
                 Type = CashMovementType.Sale,
-                Amount = total,
+                Amount = price.Total,
                 SaleId = sale.Id,
                 Description = $"بيع نقدي #{receiptNo}",
                 CreatedBy = user.ProfileId,
@@ -166,7 +344,7 @@ public class SalesService(AppDbContext db)
             Action = "sale.created",
             EntityType = nameof(Sale),
             EntityId = sale.Id.ToString(),
-            Details = $"branch={branch.Name}; barber={barber.FullName}; total={total}; payment={req.PaymentMethod}",
+            Details = $"branch={branch.Name}; barber={barber.FullName}; total={price.Total}; discount={price.Discount}; vat={price.Vat}; payment={req.PaymentMethod}",
             CreatedAt = now
         });
 
@@ -227,6 +405,48 @@ public class SalesService(AppDbContext db)
             }
         }
 
+        // Return sold products to the branch stock
+        foreach (var line in sale.Items.Where(i => i.ItemType == SaleItemType.Product && i.ProductId is not null))
+        {
+            var stock = await db.ProductStocks.FirstOrDefaultAsync(s => s.ProductId == line.ProductId && s.BranchId == sale.BranchId, ct);
+            if (stock is null)
+            {
+                stock = new ProductStock { Id = Guid.NewGuid(), ProductId = line.ProductId!.Value, BranchId = sale.BranchId };
+                db.ProductStocks.Add(stock);
+            }
+            stock.Quantity += line.Quantity;
+            db.StockMovements.Add(new StockMovement
+            {
+                Id = Guid.NewGuid(),
+                OrganizationId = user.OrganizationId,
+                BranchId = sale.BranchId,
+                ProductId = line.ProductId!.Value,
+                Type = StockMovementType.SaleVoid,
+                Quantity = line.Quantity,
+                BalanceAfter = stock.Quantity,
+                SaleId = sale.Id,
+                Note = $"إلغاء بيع #{sale.ReceiptNo}",
+                CreatedBy = user.ProfileId,
+                CreatedAt = now
+            });
+        }
+
+        if (sale.CouponId is not null)
+        {
+            var coupon = await db.Coupons.FirstOrDefaultAsync(c => c.Id == sale.CouponId, ct);
+            if (coupon is not null && coupon.UsedCount > 0) coupon.UsedCount -= 1;
+        }
+
+        // Reverse loyalty: take back earned points, give back redeemed ones
+        if (sale.CustomerId is not null && (sale.PointsEarned > 0 || sale.PointsRedeemed > 0))
+        {
+            var customer = await db.Customers.FirstAsync(c => c.Id == sale.CustomerId, ct);
+            var delta = sale.PointsRedeemed - sale.PointsEarned;
+            customer.LoyaltyPoints += delta;
+            customer.UpdatedAt = now;
+            db.LoyaltyTransactions.Add(LoyaltyTx(user, customer, LoyaltyTxType.Reverse, delta, sale.Id, $"عكس نقاط بيع ملغى #{sale.ReceiptNo}", now));
+        }
+
         db.AuditLogs.Add(new AuditLog
         {
             Id = Guid.NewGuid(),
@@ -242,6 +462,21 @@ public class SalesService(AppDbContext db)
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
     }
+
+    private static LoyaltyTransaction LoyaltyTx(CurrentUser user, Customer customer, LoyaltyTxType type, int points, Guid saleId, string note, DateTime now)
+        => new()
+        {
+            Id = Guid.NewGuid(),
+            OrganizationId = user.OrganizationId,
+            CustomerId = customer.Id,
+            Type = type,
+            Points = points,
+            BalanceAfter = customer.LoyaltyPoints,
+            SaleId = saleId,
+            Note = note,
+            CreatedBy = user.ProfileId,
+            CreatedAt = now
+        };
 
     public async Task<object> GetAsync(CurrentUser user, Guid saleId, CancellationToken ct = default)
     {
@@ -336,35 +571,65 @@ public class SalesService(AppDbContext db)
 
     private async Task<object> MapSaleAsync(Sale sale, CancellationToken ct)
     {
-        var branchName = await db.Branches.Where(b => b.Id == sale.BranchId).Select(b => b.Name).FirstAsync(ct);
+        var branch = await db.Branches.Where(b => b.Id == sale.BranchId).Select(b => new { b.Name, b.Address, b.Phone }).FirstAsync(ct);
         var barberName = await db.Barbers.Where(b => b.Id == sale.BarberId).Select(b => b.FullName).FirstAsync(ct);
-        var customerName = sale.CustomerId is null
-            ? "عميل نقدي / بدون تسجيل"
-            : await db.Customers.Where(c => c.Id == sale.CustomerId).Select(c => c.FullName).FirstAsync(ct);
-        var customerPhone = sale.CustomerId is null
+        var customer = sale.CustomerId is null
             ? null
-            : await db.Customers.Where(c => c.Id == sale.CustomerId).Select(c => c.Phone).FirstAsync(ct);
+            : await db.Customers.Where(c => c.Id == sale.CustomerId).Select(c => new { c.FullName, c.Phone, c.LoyaltyPoints }).FirstAsync(ct);
+        var org = await db.Organizations.AsNoTracking().Where(o => o.Id == sale.OrganizationId)
+            .Select(o => new { o.Name, o.LogoUrl }).FirstAsync(ct);
+        var settings = await db.OrganizationSettings.AsNoTracking().FirstOrDefaultAsync(s => s.OrganizationId == sale.OrganizationId, ct);
 
+        var isTaxInvoice = sale.InvoiceVatNumber is not null;
         return new
         {
             sale.Id,
             sale.ReceiptNo,
             sale.CreatedAt,
             sale.BranchId,
-            BranchName = branchName,
+            BranchName = branch.Name,
             sale.BarberId,
             BarberName = barberName,
             sale.CustomerId,
-            CustomerName = customerName,
-            CustomerPhone = customerPhone,
+            CustomerName = customer?.FullName ?? "عميل نقدي / بدون تسجيل",
+            CustomerPhone = customer?.Phone,
+            CustomerPoints = customer?.LoyaltyPoints,
             sale.PaymentMethod,
             PaymentText = sale.PaymentMethod == PaymentMethod.Cash ? "نقدي" : "بطاقة",
             sale.Status,
             StatusText = sale.Status == SaleStatus.Completed ? "مكتملة" : "ملغاة",
+            sale.CancelReason,
+            GrossAmount = sale.GrossAmount == 0 ? sale.TotalAmount : sale.GrossAmount,
+            sale.DiscountAmount,
+            SubtotalAmount = sale.SubtotalAmount == 0 ? sale.TotalAmount - sale.VatAmount : sale.SubtotalAmount,
+            sale.VatRate,
+            sale.VatAmount,
             sale.TotalAmount,
+            sale.CouponCode,
+            sale.PointsRedeemed,
+            sale.PointsEarned,
+            sale.AppointmentId,
+            IsTaxInvoice = isTaxInvoice,
+            Invoice = new
+            {
+                Title = isTaxInvoice ? "فاتورة ضريبية مبسطة" : "إيصال",
+                SellerName = sale.InvoiceSellerName ?? org.Name,
+                OrganizationName = org.Name,
+                org.LogoUrl,
+                VatNumber = sale.InvoiceVatNumber,
+                settings?.CommercialRegistration,
+                Address = settings?.TaxAddress ?? branch.Address,
+                Phone = settings?.ReceiptPhone ?? branch.Phone,
+                Footer = settings?.ReceiptFooter,
+                ZatcaQr = isTaxInvoice
+                    ? ZatcaQr.Encode(sale.InvoiceSellerName!, sale.InvoiceVatNumber!, sale.CreatedAt, sale.TotalAmount, sale.VatAmount)
+                    : null
+            },
             Items = sale.Items.Select(i => new
             {
+                i.ItemType,
                 i.ServiceId,
+                i.ProductId,
                 i.ServiceName,
                 i.UnitPrice,
                 i.Quantity,

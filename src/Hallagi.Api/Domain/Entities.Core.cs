@@ -15,6 +15,8 @@ public class Organization
     public string SecondaryColor { get; set; } = "#173653";
     /// <summary>Wide banner image (data URL) shown behind the organization header.</summary>
     public string? CoverImageUrl { get; set; }
+    /// <summary>URL-safe public identifier for the online booking page (/book/{slug}).</summary>
+    public string? Slug { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 
@@ -30,6 +32,10 @@ public class Branch
     public string Name { get; set; } = default!;
     public string City { get; set; } = default!;
     public string? Address { get; set; }
+    public string? Phone { get; set; }
+    /// <summary>Daily opening hours (organization local time) — drives booking availability.</summary>
+    public TimeOnly OpensAt { get; set; } = new(9, 0);
+    public TimeOnly ClosesAt { get; set; } = new(23, 0);
     public EntityStatus Status { get; set; } = EntityStatus.Active;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
@@ -79,4 +85,17 @@ public class MemberBranchAccess
     public Guid MemberId { get; set; }
     public Guid BranchId { get; set; }
     public OrganizationMember Member { get; set; } = default!;
+}
+
+/// <summary>Long-lived refresh token (only its SHA-256 hash is stored). Rotated on every use.</summary>
+public class RefreshToken
+{
+    public Guid Id { get; set; }
+    public Guid ProfileId { get; set; }
+    public Guid? MemberId { get; set; }
+    public string TokenHash { get; set; } = default!;
+    public DateTime ExpiresAt { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? RevokedAt { get; set; }
+    public string? ReplacedByHash { get; set; }
 }

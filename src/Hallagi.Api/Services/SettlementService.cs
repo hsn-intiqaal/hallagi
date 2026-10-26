@@ -282,7 +282,7 @@ public class SettlementService(AppDbContext db)
         var eligible = await db.Sales.AsNoTracking()
             .Where(s => s.BarberId == barberId && s.OrganizationId == orgId
                         && s.Status == SaleStatus.Completed && s.CreatedAt >= from && s.CreatedAt <= to)
-            .SumAsync(s => (decimal?)s.TotalAmount, ct) ?? 0m;
+            .SumAsync(s => (decimal?)s.CommissionBase, ct) ?? 0m;
 
         var now = DateTime.UtcNow;
         var salary = 0m;

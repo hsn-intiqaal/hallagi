@@ -12,7 +12,11 @@ public record CreateSaleDto(
     Guid? CustomerId,
     PaymentMethod PaymentMethod,
     List<CreateSaleItem> Items,
-    string? IdempotencyKey);
+    string? IdempotencyKey,
+    string? CouponCode = null,
+    decimal? ManualDiscount = null,
+    int RedeemPoints = 0,
+    Guid? AppointmentId = null);
 
 public record CancelSaleDto(string Reason);
 
@@ -22,7 +26,8 @@ public class SalesController(SalesService sales) : BaseApiController
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateSaleDto dto, CancellationToken ct)
     {
-        var req = new CreateSaleRequest(dto.BranchId, dto.BarberId, dto.CustomerId, dto.PaymentMethod, dto.Items, dto.IdempotencyKey);
+        var req = new CreateSaleRequest(dto.BranchId, dto.BarberId, dto.CustomerId, dto.PaymentMethod, dto.Items, dto.IdempotencyKey,
+            dto.CouponCode, dto.ManualDiscount, dto.RedeemPoints, dto.AppointmentId);
         var result = await sales.CreateAsync(CurrentUser, req, ct);
         return Ok(result);
     }
@@ -113,8 +118,18 @@ public class PosController(AppDbContext db) : BaseApiController
 
         var customers = await db.Customers.AsNoTracking()
             .Where(c => c.OrganizationId == user.OrganizationId)
-            .OrderBy(c => c.FullName).Take(50)
-            .Select(c => new { c.Id, c.FullName, c.Phone }).ToListAsync(ct);
+            .OrderByDescending(c => c.UpdatedAt).Take(200)
+            .Select(c => new { c.Id, c.FullName, c.Phone, c.LoyaltyPoints }).ToListAsync(ct);
+
+        var products = await db.Products.AsNoTracking()
+            .Where(p => p.OrganizationId == user.OrganizationId && p.Status == EntityStatus.Active)
+            .OrderBy(p => p.Name)
+            .Select(p => new
+            {
+                p.Id, p.Name, p.Price, p.Barcode,
+                Stock = p.Stock.Where(s => s.BranchId == branchId).Select(s => (int?)s.Quantity).FirstOrDefault() ?? 0
+            }).ToListAsync(ct);
+        var cfg = settings ?? new OrganizationSettings { OrganizationId = user.OrganizationId };
 
         return Ok(new
         {
@@ -124,10 +139,24 @@ public class PosController(AppDbContext db) : BaseApiController
                 s.Id,
                 s.Name,
                 s.Description,
-                Price = branchPrices.TryGetValue(s.Id, out var p) ? p : s.BasePrice
+                Price = branchPrices.TryGetValue(s.Id, out var p) ? p : s.BasePrice,
+                s.DurationMinutes
             }),
+            products,
             barbers,
             customers,
+            pricing = new
+            {
+                vatEnabled = cfg.VatEnabled,
+                vatRate = cfg.VatRate,
+                pricesIncludeVat = cfg.PricesIncludeVat,
+                canDiscount = Permissions.Can(user, Permissions.SaleDiscount),
+                maxManualDiscountPercent = user.Role == UserRole.Owner ? 100m : cfg.MaxManualDiscountPercent,
+                loyaltyEnabled = cfg.LoyaltyEnabled,
+                loyaltyPointValue = cfg.LoyaltyPointValue,
+                loyaltyPointsPerSar = cfg.LoyaltyPointsPerSar,
+                loyaltyMinRedeem = cfg.LoyaltyMinRedeem
+            },
             payment = new
             {
                 cashEnabled = settings?.EnableCash ?? true,

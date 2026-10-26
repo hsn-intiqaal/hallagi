@@ -182,7 +182,7 @@ public class AgreementSettlementSeed : IDisposable
                 CreatedBy = OwnerProfile,
                 ReceiptNo = 1000 + Db.Sales.Count() + 1,
                 PaymentMethod = PaymentMethod.Cash,
-                TotalAmount = salesTotal,
+                TotalAmount = salesTotal, GrossAmount = salesTotal, SubtotalAmount = salesTotal, CommissionBase = salesTotal,
                 CreatedAt = DateTime.Today.AddDays(-2),
                 UpdatedAt = now
             });

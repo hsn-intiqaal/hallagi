@@ -9,6 +9,7 @@ namespace Hallagi.Api.Controllers;
 
 public record LoginRequest(string Email, string Password);
 public record ChangePasswordRequest(string CurrentPassword, string NewPassword);
+public record RefreshRequest(string RefreshToken);
 
 [ApiController]
 [Route("api/[controller]")]
@@ -16,6 +17,7 @@ public class AuthController(AuthService auth, AppDbContext db) : BaseApiControll
 {
     [HttpPost("login")]
     [AllowAnonymous]
+    [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("auth")]
     public async Task<IActionResult> Login([FromBody] LoginRequest req, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(req.Email) || string.IsNullOrWhiteSpace(req.Password))
@@ -34,6 +36,25 @@ public class AuthController(AuthService auth, AppDbContext db) : BaseApiControll
             return Unauthorized(new { error = new { code = error, message } });
         }
         return Ok(result);
+    }
+
+    [HttpPost("refresh")]
+    [AllowAnonymous]
+    [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("auth")]
+    public async Task<IActionResult> Refresh([FromBody] RefreshRequest req, CancellationToken ct)
+    {
+        var (ok, error, result) = await auth.RefreshAsync(req.RefreshToken, ct);
+        if (!ok)
+            return Unauthorized(new { error = new { code = error, message = "انتهت جلسة الدخول. سجّل الدخول مرة أخرى" } });
+        return Ok(result);
+    }
+
+    [HttpPost("logout")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Logout([FromBody] RefreshRequest req, CancellationToken ct)
+    {
+        await auth.LogoutAsync(req.RefreshToken, ct);
+        return Ok(new { message = "تم تسجيل الخروج" });
     }
 
     [HttpGet("me")]
@@ -74,7 +95,7 @@ public class AuthController(AuthService auth, AppDbContext db) : BaseApiControll
         {
             profile = new { userProfile!.Id, userProfile.FullName, userProfile.Email, userProfile.Phone },
             role = member!.Role.ToString(),
-            organization = new { org!.Id, org.Name, org.Currency, org.TimeZone, org.LogoUrl, org.PrimaryColor, org.SecondaryColor, org.CoverImageUrl },
+            organization = new { org!.Id, org.Name, org.Currency, org.TimeZone, org.LogoUrl, org.PrimaryColor, org.SecondaryColor, org.CoverImageUrl, org.Slug },
             branchIds = user.BranchIds,
             branches,
             allBranches = Permissions.AccessesAllBranches(user),

@@ -39,13 +39,23 @@ public static class Permissions
     public const string SubscriptionView = "subscription.view";
     public const string PlatformManage = "platform.manage";  // مالك المنصة فقط
 
+    // Commerce & booking
+    public const string SaleDiscount = "sale.discount";
+    public const string ProductView = "product.view";
+    public const string ProductManage = "product.manage";
+    public const string InventoryManage = "inventory.manage";
+    public const string CouponManage = "coupon.manage";
+    public const string AppointmentView = "appointment.view";
+    public const string AppointmentManage = "appointment.manage";
+
     public static readonly string[] All = new[]
     {
         SaleCreate, SaleView, SaleVoid, CustomerManage, ServiceView, ServiceManage,
         BarberView, BarberManage, BarberDuesView, ExpenseCreate, ExpenseView, ExpenseVoid,
         ShiftOpen, ShiftClose, ShiftView, ReportView, BranchManage, UserManage, SettingsManage,
         LedgerView, AdvanceCreate, AdvanceApprove, HandoverCreate,
-        SettlementPreview, SettlementApprove, SettlementPay, DeviceManage, SubscriptionView
+        SettlementPreview, SettlementApprove, SettlementPay, DeviceManage, SubscriptionView,
+        SaleDiscount, ProductView, ProductManage, InventoryManage, CouponManage, AppointmentView, AppointmentManage
     };
 
     // ===== Role default matrix =====
@@ -56,17 +66,19 @@ public static class Permissions
         {
             SaleCreate, SaleView, CustomerManage, ServiceView, BarberView,
             BarberDuesView, ExpenseCreate, ExpenseView, ShiftOpen, ShiftClose, ShiftView, ReportView,
-            LedgerView, AdvanceCreate, HandoverCreate, SettlementPreview, DeviceManage
+            LedgerView, AdvanceCreate, HandoverCreate, SettlementPreview, DeviceManage,
+            SaleDiscount, ProductView, InventoryManage, AppointmentView, AppointmentManage
         },
         [UserRole.Cashier] = new HashSet<string>
         {
             SaleCreate, SaleView, CustomerManage, ServiceView, BarberView,
-            ShiftOpen, ShiftView, HandoverCreate
+            ShiftOpen, ShiftView, HandoverCreate,
+            ProductView, AppointmentView, AppointmentManage
         },
         [UserRole.Barber] = new HashSet<string>
         {
             // Barber-operated POS: may record sales for HIMSELF only (enforced in SalesService)
-            SaleCreate, SaleView, ServiceView, BarberDuesView
+            SaleCreate, SaleView, ServiceView, BarberDuesView, ProductView, AppointmentView
         }
     };
 

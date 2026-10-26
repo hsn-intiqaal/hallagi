@@ -125,7 +125,7 @@ public class ReportsService(AppDbContext db)
                 .Where(s => s.BarberId == b.Id && s.OrganizationId == user.OrganizationId
                             && branchIds.Contains(s.BranchId) && s.Status == SaleStatus.Completed
                             && s.CreatedAt >= from && s.CreatedAt <= to)
-                .SumAsync(s => (decimal?)s.TotalAmount, ct) ?? 0m;
+                .SumAsync(s => (decimal?)s.CommissionBase, ct) ?? 0m;
 
             var commission = comp?.CommissionRate is > 0 ? Math.Round(eligible * comp.CommissionRate.Value, 2) : 0m;
             var assignedIds = b.BranchAssignments.Select(a => a.BranchId).ToList();
@@ -275,5 +275,63 @@ public class ReportsService(AppDbContext db)
         return sb.ToString();
 
         static string Esc(string? s) => string.IsNullOrEmpty(s) ? "\"\"" : "\"" + s.Replace("\"", "\"\"") + "\"";
+    }
+
+    /// <summary>VAT return helper + discounts + retail product performance for the period.</summary>
+    public async Task<object> TaxAndProductsAsync(CurrentUser user, Guid? branchId, DateTime from, DateTime to, CancellationToken ct = default)
+    {
+        if (!Permissions.Can(user, Permissions.ReportView))
+            throw ApiException.Forbidden("ليس لديك صلاحية لعرض التقارير");
+        var branchIds = await ScopeAsync(user, branchId, ct);
+        var sales = db.Sales.AsNoTracking().Where(x =>
+            x.OrganizationId == user.OrganizationId && branchIds.Contains(x.BranchId)
+            && x.Status == SaleStatus.Completed && x.CreatedAt >= from && x.CreatedAt <= to);
+
+        var totals = await sales.GroupBy(_ => 1).Select(g => new
+        {
+            Gross = g.Sum(x => x.GrossAmount),
+            Discount = g.Sum(x => x.DiscountAmount),
+            Taxable = g.Sum(x => x.SubtotalAmount),
+            Vat = g.Sum(x => x.VatAmount),
+            Total = g.Sum(x => x.TotalAmount),
+            Invoices = g.Count(x => x.InvoiceVatNumber != null),
+            CouponSales = g.Count(x => x.CouponId != null),
+            PointsRedeemed = g.Sum(x => x.PointsRedeemed),
+            PointsEarned = g.Sum(x => x.PointsEarned)
+        }).FirstOrDefaultAsync(ct);
+
+        var products = await db.SaleItems.AsNoTracking()
+            .Where(i => i.ItemType == SaleItemType.Product && sales.Select(s => s.Id).Contains(i.SaleId))
+            .GroupBy(i => new { i.ProductId, i.ServiceName })
+            .Select(g => new { g.Key.ProductId, Name = g.Key.ServiceName, Quantity = g.Sum(x => x.Quantity), Revenue = g.Sum(x => x.LineTotal) })
+            .ToListAsync(ct);
+        var costs = await db.Products.AsNoTracking().Where(p => p.OrganizationId == user.OrganizationId)
+            .ToDictionaryAsync(p => p.Id, p => p.Cost, ct);
+
+        var coupons = await sales.Where(s => s.CouponCode != null)
+            .GroupBy(s => s.CouponCode!)
+            .Select(g => new { Code = g.Key, Uses = g.Count(), Discount = g.Sum(x => x.DiscountAmount) })
+            .OrderByDescending(x => x.Uses).ToListAsync(ct);
+
+        return new
+        {
+            from, to,
+            tax = new
+            {
+                gross = totals?.Gross ?? 0m,
+                discount = totals?.Discount ?? 0m,
+                taxable = totals?.Taxable ?? 0m,
+                vat = totals?.Vat ?? 0m,
+                total = totals?.Total ?? 0m,
+                invoices = totals?.Invoices ?? 0
+            },
+            loyalty = new { pointsEarned = totals?.PointsEarned ?? 0, pointsRedeemed = totals?.PointsRedeemed ?? 0 },
+            coupons,
+            products = products.OrderByDescending(p => p.Revenue).Select(p =>
+            {
+                var cost = p.ProductId is not null && costs.TryGetValue(p.ProductId.Value, out var c) ? c * p.Quantity : 0m;
+                return new { p.Name, p.Quantity, p.Revenue, Cost = cost, Profit = p.Revenue - cost };
+            })
+        };
     }
 }

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Hallagi.Api.Services;
+using Microsoft.EntityFrameworkCore;
 
 namespace Hallagi.Api.Middleware;
 
@@ -10,6 +11,16 @@ public class ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddlewa
         try
         {
             await next(context);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            await WriteAsync(context, 409, "concurrency", "تم تعديل البيانات من مستخدم آخر. حدّث الصفحة وحاول مرة أخرى");
+        }
+        catch (DbUpdateException ex) when (IsUniqueViolation(ex))
+        {
+            // e.g. two cashiers grabbing the same receipt number at the same instant
+            logger.LogWarning(ex, "Unique constraint violation");
+            await WriteAsync(context, 409, "conflict", "تعارض في البيانات بسبب عملية متزامنة. حاول مرة أخرى");
         }
         catch (ApiException ex)
         {
@@ -34,14 +45,30 @@ public class ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddlewa
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Unhandled error");
+            logger.LogError(ex, "Unhandled error {TraceId}", context.TraceIdentifier);
             context.Response.StatusCode = 500;
             context.Response.ContentType = "application/json; charset=utf-8";
             var payload = JsonSerializer.Serialize(new
             {
-                error = new { code = "server_error", message = "حدث خطأ غير متوقع. حاول مرة أخرى" }
+                error = new { code = "server_error", message = "حدث خطأ غير متوقع. حاول مرة أخرى", traceId = context.TraceIdentifier }
             }, new JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
             await context.Response.WriteAsync(payload);
         }
+    }
+
+    private static bool IsUniqueViolation(DbUpdateException ex)
+    {
+        var msg = ex.InnerException?.Message ?? "";
+        return msg.Contains("UNIQUE", StringComparison.OrdinalIgnoreCase)
+               || msg.Contains("duplicate key", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static async Task WriteAsync(HttpContext context, int status, string code, string message)
+    {
+        if (context.Response.HasStarted) return;
+        context.Response.StatusCode = status;
+        context.Response.ContentType = "application/json; charset=utf-8";
+        await context.Response.WriteAsync(JsonSerializer.Serialize(new { error = new { code, message } },
+            new JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping }));
     }
 }

@@ -33,6 +33,7 @@ public partial class CatalogService(AppDbContext db)
                 StatusText = s.Status == EntityStatus.Active ? "نشطة" : "غير نشطة",
                 Price = branchPrices.TryGetValue(s.Id, out var p) ? p : s.BasePrice,
                 BasePrice = s.BasePrice,
+                s.DurationMinutes,
                 HasBranchPrice = branchPrices.ContainsKey(s.Id)
             })
         };
@@ -54,6 +55,7 @@ public partial class CatalogService(AppDbContext db)
             Name = input.Name.Trim(),
             Description = input.Description?.Trim(),
             BasePrice = input.BasePrice,
+            DurationMinutes = NormalizeDuration(input.DurationMinutes, 30),
             Status = input.Active ? EntityStatus.Active : EntityStatus.Inactive,
             CreatedAt = now,
             UpdatedAt = now
@@ -77,6 +79,7 @@ public partial class CatalogService(AppDbContext db)
         service.Name = input.Name.Trim();
         service.Description = input.Description?.Trim();
         service.BasePrice = input.BasePrice;
+        service.DurationMinutes = NormalizeDuration(input.DurationMinutes, service.DurationMinutes);
         service.Status = input.Active ? EntityStatus.Active : EntityStatus.Inactive;
         service.UpdatedAt = now;
         db.AuditLogs.Add(Audit("service.updated", nameof(Service), service.Id.ToString(), $"name={service.Name}; price={service.BasePrice}", user, now));
@@ -113,6 +116,13 @@ public partial class CatalogService(AppDbContext db)
             else existing.Price = price.Value;
         }
         await db.SaveChangesAsync(ct);
+    }
+
+    private static int NormalizeDuration(int? minutes, int fallback)
+    {
+        if (minutes is null) return fallback;
+        if (minutes is < 5 or > 480) throw ApiException.Bad("invalid_duration", "مدة الخدمة بين 5 و480 دقيقة");
+        return minutes.Value;
     }
 
     // ================= BARBERS =================
@@ -207,6 +217,7 @@ public partial class CatalogService(AppDbContext db)
             .GroupBy(s => 1).Select(g => new
             {
                 Total = g.Sum(x => x.TotalAmount),
+                CommissionBase = g.Sum(x => x.CommissionBase),
                 Count = g.Count(),
                 ServicesCount = g.SelectMany(x => x.Items).Sum(i => i.Quantity)
             }).FirstOrDefaultAsync(ct);
@@ -221,7 +232,7 @@ public partial class CatalogService(AppDbContext db)
             if (comp is not null)
             {
                 var commission = comp.CommissionRate.HasValue
-                    ? Math.Round((summary?.Total ?? 0m) * comp.CommissionRate.Value, 2)
+                    ? Math.Round((summary?.CommissionBase ?? 0m) * comp.CommissionRate.Value, 2)
                     : 0m;
                 compensation = new
                 {
@@ -234,7 +245,7 @@ public partial class CatalogService(AppDbContext db)
                     effectiveFrom = comp.EffectiveFrom.ToString("yyyy-MM-dd"),
                     estimatedCommission = comp.CommissionRate.HasValue ? commission : (decimal?)null,
                     explanation = comp.CommissionRate.HasValue
-                        ? $"مبيعات الخدمات المؤهلة: {(summary?.Total ?? 0m):0.00} ر.س. العمولة: {comp.CommissionRate.Value:P0}. العمولة التقديرية: {commission:0.00} ر.س."
+                        ? $"مبيعات الخدمات المؤهلة (بدون الضريبة والمنتجات): {(summary?.CommissionBase ?? 0m):0.00} ر.س. العمولة: {comp.CommissionRate.Value:P0}. العمولة التقديرية: {commission:0.00} ر.س."
                         : comp.Type == CompensationType.FixedSalary
                             ? "الراتب ثابت بقيمة اتفاقية مستقلة عن المبيعات"
                             : comp.Type == CompensationType.ChairRental
@@ -310,6 +321,7 @@ public partial class CatalogService(AppDbContext db)
             .GroupBy(s => 1).Select(g => new
             {
                 Total = g.Sum(x => x.TotalAmount),
+                CommissionBase = g.Sum(x => x.CommissionBase),
                 Count = g.Count(),
                 ServicesCount = g.SelectMany(x => x.Items).Sum(i => i.Quantity)
             }).FirstOrDefaultAsync(ct);
@@ -338,9 +350,9 @@ public partial class CatalogService(AppDbContext db)
                 comp.Notes,
                 comp.EffectiveFrom,
                 EstimatedCommission = comp.CommissionRate.HasValue
-                    ? Math.Round((summary?.Total ?? 0m) * comp.CommissionRate.Value, 2) : (decimal?)null,
+                    ? Math.Round((summary?.CommissionBase ?? 0m) * comp.CommissionRate.Value, 2) : (decimal?)null,
                 Explanation = comp.CommissionRate.HasValue
-                    ? $"مبيعات الخدمات المؤهلة: {(summary?.Total ?? 0m):0.00} ر.س. العمولة: {comp.CommissionRate.Value:P0}. العمولة التقديرية: {Math.Round((summary?.Total ?? 0m) * comp.CommissionRate.Value, 2):0.00} ر.س."
+                    ? $"مبيعات الخدمات المؤهلة (بدون الضريبة والمنتجات): {(summary?.CommissionBase ?? 0m):0.00} ر.س. العمولة: {comp.CommissionRate.Value:P0}. العمولة التقديرية: {Math.Round((summary?.CommissionBase ?? 0m) * comp.CommissionRate.Value, 2):0.00} ر.س."
                     : null
             },
             summary = new
@@ -471,6 +483,7 @@ public partial class CatalogService(AppDbContext db)
                 c.FullName,
                 c.Phone,
                 c.Notes,
+                c.LoyaltyPoints,
                 VisitCount = db.Sales.Count(s => s.CustomerId == c.Id && s.Status == SaleStatus.Completed),
                 TotalSpend = db.Sales.Where(s => s.CustomerId == c.Id && s.Status == SaleStatus.Completed).Sum(s => (decimal?)s.TotalAmount) ?? 0m,
                 LastVisit = db.Sales.Where(s => s.CustomerId == c.Id && s.Status == SaleStatus.Completed).Max(s => (DateTime?)s.CreatedAt)
@@ -550,7 +563,13 @@ public partial class CatalogService(AppDbContext db)
 
         return new
         {
-            customer = new { customer.Id, customer.FullName, customer.Phone, customer.Notes, customer.CreatedAt },
+            customer = new { customer.Id, customer.FullName, customer.Phone, customer.Notes, customer.CreatedAt, customer.LoyaltyPoints },
+            appointments = await db.Appointments.AsNoTracking()
+                .Where(a => a.CustomerId == id && a.StartAt >= DateTime.UtcNow.AddDays(-1)
+                            && a.Status != AppointmentStatus.Cancelled && a.Status != AppointmentStatus.Completed)
+                .OrderBy(a => a.StartAt).Take(10)
+                .Select(a => new { a.Id, a.StartAt, a.Status, a.Reference, BranchName = db.Branches.Where(b => b.Id == a.BranchId).Select(b => b.Name).First() })
+                .ToListAsync(ct),
             summary = new
             {
                 Total = summary?.Total ?? 0m,
@@ -575,7 +594,7 @@ public partial class CatalogService(AppDbContext db)
         };
 }
 
-public record ServiceInput(string Name, string? Description, decimal BasePrice, bool Active);
+public record ServiceInput(string Name, string? Description, decimal BasePrice, bool Active, int? DurationMinutes = null);
 public record CompensationInput(CompensationType Type, decimal? MonthlySalary, decimal? CommissionRate, decimal? ChairRentAmount, string? Notes, DateOnly EffectiveFrom);
 public record BarberInput(string FullName, string? Phone, DateOnly? StartDate, bool Active, List<Guid> BranchIds, CompensationInput? Compensation);
 public record CustomerInput(string FullName, string? Phone, string? Notes);
