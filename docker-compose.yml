@@ -1,0 +1,46 @@
+# حلاقي — full stack: SQL Server + API + web (nginx)
+#   cp .env.example .env   # then set real secrets
+#   docker compose up -d --build
+#   open http://localhost:8080
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      MSSQL_PID: Express
+    volumes:
+      - sqldata:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: src/Hallagi.Api/Dockerfile
+    environment:
+      ConnectionStrings__Default: "Server=db;Database=Hallagi;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=True"
+      Jwt__Key: ${JWT_KEY:?set JWT_KEY (32+ chars) in .env}
+      Seed__OnStartup: ${SEED_DEMO:-false}
+      Bootstrap__AdminEmail: ${ADMIN_EMAIL:-}
+      Bootstrap__AdminPassword: ${ADMIN_PASSWORD:-}
+      Cors__AllowedOrigins__0: ${PUBLIC_URL:-http://localhost:8080}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    build: ./hallagi-client
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  sqldata:
