@@ -1,8 +1,4 @@
-using Hallagi.Api.Data;
-using Hallagi.Api.Domain;
-using Hallagi.Api.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Hallagi.Api.Controllers;
 
@@ -11,32 +7,7 @@ public class BranchesController(BranchesService branches) : BaseApiController
 {
     [HttpGet]
     public async Task<IActionResult> List(CancellationToken ct)
-    {
-        var result = await branches.ListAsync(CurrentUser, ct);
-        // Cashiers and barbers only see branches they may access
-        if (!Permissions.AccessesAllBranches(CurrentUser))
-        {
-            return Ok(await FilterAsync(ct));
-        }
-        return Ok(result);
-    }
-
-    private async Task<object> FilterAsync(CancellationToken ct)
-    {
-        var allowed = CurrentUser.BranchIds;
-        var items = await HttpContext.RequestServices.GetRequiredService<AppDbContext>().Branches.AsNoTracking()
-            .Where(b => b.OrganizationId == CurrentUser.OrganizationId && allowed.Contains(b.Id))
-            .Select(b => new
-            {
-                b.Id,
-                b.Name,
-                b.City,
-                b.Address,
-                b.Status,
-                StatusText = b.Status == EntityStatus.Active ? "نشط" : "غير نشط"
-            }).ToListAsync(ct);
-        return new { items };
-    }
+        => Ok(await branches.ListAsync(CurrentUser, ct));
 
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] BranchInput input, CancellationToken ct)

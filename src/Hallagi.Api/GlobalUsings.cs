@@ -1,0 +1,13 @@
+global using Hallagi.Application.Booking;
+global using Hallagi.Application.Catalog;
+global using Hallagi.Application.Commerce;
+global using Hallagi.Application.Common.Exceptions;
+global using Hallagi.Application.Common.Security;
+global using Hallagi.Application.Expenses;
+global using Hallagi.Application.Finance;
+global using Hallagi.Application.Identity;
+global using Hallagi.Application.Organizations;
+global using Hallagi.Application.Reports;
+global using Hallagi.Application.Sales;
+global using Hallagi.Application.Treasury;
+global using Hallagi.Domain.Enums;

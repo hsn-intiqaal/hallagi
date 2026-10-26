@@ -1,5 +1,3 @@
-using Hallagi.Api.Domain;
-using Hallagi.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Hallagi.Api.Controllers;
@@ -111,7 +109,7 @@ public record PublicCancelDto(string Reference, string Phone);
 [ApiController]
 [Route("api/public/{slug}")]
 [Microsoft.AspNetCore.Authorization.AllowAnonymous]
-[Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("public")]
+[Microsoft.AspNetCore.RateLimiting.EnableRateLimiting(Hallagi.Api.Extensions.ServiceCollectionExtensions.PublicRateLimit)]
 public class PublicBookingController(AppointmentService appointments) : ControllerBase
 {
     [HttpGet]

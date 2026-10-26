@@ -1,9 +1,5 @@
-using Hallagi.Api.Data;
-using Hallagi.Api.Domain;
-using Hallagi.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Hallagi.Api.Controllers;
 
@@ -13,11 +9,11 @@ public record RefreshRequest(string RefreshToken);
 
 [ApiController]
 [Route("api/[controller]")]
-public class AuthController(AuthService auth, AppDbContext db) : BaseApiController
+public class AuthController(AuthService auth) : BaseApiController
 {
     [HttpPost("login")]
     [AllowAnonymous]
-    [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("auth")]
+    [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting(Hallagi.Api.Extensions.ServiceCollectionExtensions.AuthRateLimit)]
     public async Task<IActionResult> Login([FromBody] LoginRequest req, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(req.Email) || string.IsNullOrWhiteSpace(req.Password))
@@ -40,7 +36,7 @@ public class AuthController(AuthService auth, AppDbContext db) : BaseApiControll
 
     [HttpPost("refresh")]
     [AllowAnonymous]
-    [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("auth")]
+    [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting(Hallagi.Api.Extensions.ServiceCollectionExtensions.AuthRateLimit)]
     public async Task<IActionResult> Refresh([FromBody] RefreshRequest req, CancellationToken ct)
     {
         var (ok, error, result) = await auth.RefreshAsync(req.RefreshToken, ct);
@@ -58,51 +54,8 @@ public class AuthController(AuthService auth, AppDbContext db) : BaseApiControll
     }
 
     [HttpGet("me")]
-    public async Task<IActionResult> Me(CancellationToken ct)
-    {
-        var user = CurrentUser;
-
-        // Platform owner
-        if (user.Role == UserRole.SuperAdmin)
-        {
-            var profile = await db.Profiles.FirstOrDefaultAsync(p => p.Id == user.ProfileId, ct);
-            return Ok(new
-            {
-                profile = new { profile!.Id, profile.FullName, profile.Email, profile.Phone },
-                role = UserRole.SuperAdmin.ToString(),
-                organization = (object?)null,
-                branchIds = Array.Empty<Guid>(),
-                branches = Array.Empty<object>(),
-                allBranches = true,
-                isSuperAdmin = true,
-                permissions = Permissions.EffectivePermissions(user)
-            });
-        }
-
-        var member = await db.OrganizationMembers.FirstOrDefaultAsync(m => m.Id == user.MemberId, ct);
-        var org = await db.Organizations.FirstOrDefaultAsync(o => o.Id == user.OrganizationId, ct);
-        var branches = Permissions.AccessesAllBranches(user)
-            ? await db.Branches.Where(b => b.OrganizationId == user.OrganizationId && b.Status == EntityStatus.Active)
-                .Select(b => new { b.Id, b.Name, b.City }).ToListAsync(ct)
-            : await (from a in db.MemberBranchAccess
-                     join br in db.Branches on a.BranchId equals br.Id
-                     where a.MemberId == user.MemberId && br.Status == EntityStatus.Active
-                     select new { br.Id, br.Name, br.City }).ToListAsync(ct);
-
-        var userProfile = await db.Profiles.FirstOrDefaultAsync(p => p.Id == user.ProfileId, ct);
-
-        return Ok(new
-        {
-            profile = new { userProfile!.Id, userProfile.FullName, userProfile.Email, userProfile.Phone },
-            role = member!.Role.ToString(),
-            organization = new { org!.Id, org.Name, org.Currency, org.TimeZone, org.LogoUrl, org.PrimaryColor, org.SecondaryColor, org.CoverImageUrl, org.Slug },
-            branchIds = user.BranchIds,
-            branches,
-            allBranches = Permissions.AccessesAllBranches(user),
-            isSuperAdmin = false,
-            permissions = Permissions.EffectivePermissions(user)
-        });
-    }
+    public async Task<IActionResult> Me([FromServices] SessionService session, CancellationToken ct)
+        => Ok(await session.GetMeAsync(CurrentUser, ct));
 
     [HttpPost("change-password")]
     public IActionResult ChangePassword([FromBody] ChangePasswordRequest req)

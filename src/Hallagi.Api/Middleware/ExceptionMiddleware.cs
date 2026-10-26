@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Hallagi.Api.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace Hallagi.Api.Middleware;
@@ -22,7 +21,7 @@ public class ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddlewa
             logger.LogWarning(ex, "Unique constraint violation");
             await WriteAsync(context, 409, "conflict", "تعارض في البيانات بسبب عملية متزامنة. حاول مرة أخرى");
         }
-        catch (ApiException ex)
+        catch (AppException ex)
         {
             context.Response.StatusCode = ex.Status;
             context.Response.ContentType = "application/json; charset=utf-8";

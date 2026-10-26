@@ -1,8 +1,12 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/Hallagi.Domain/Hallagi.Domain.csproj" />
+    <Project Path="src/Hallagi.Application/Hallagi.Application.csproj" />
+    <Project Path="src/Hallagi.Infrastructure/Hallagi.Infrastructure.csproj" />
     <Project Path="src/Hallagi.Api/Hallagi.Api.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/Hallagi.Tests/Hallagi.Tests.csproj" />
+    <Project Path="tests/Hallagi.UnitTests/Hallagi.UnitTests.csproj" />
+    <Project Path="tests/Hallagi.IntegrationTests/Hallagi.IntegrationTests.csproj" />
   </Folder>
 </Solution>

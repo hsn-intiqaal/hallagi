@@ -1,4 +1,3 @@
-using Hallagi.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Hallagi.Api.Controllers;
