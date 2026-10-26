@@ -1,14 +1,14 @@
 import { NgIf, NgFor } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { ApiService } from '../../core/api.service';
-import { BranchContext } from '../../core/branch-context';
-import { AuthService } from '../../core/auth.service';
-import { ToastService } from '../../core/toast.service';
-import { BarberRow } from './models-barbers';
-import { Icon } from '../../shared/icon';
-import { SarPipe, PctPipe } from '../../core/format.pipes';
-import { EmptyState, LoadingRow } from '../../shared/ui';
+import { ApiService } from '@core/http/api.service';
+import { BranchContext } from '@core/state/branch-context';
+import { AuthService } from '@core/auth/auth.service';
+import { ToastService } from '@core/state/toast.service';
+import { BarberRow } from '@features/barbers/models-barbers';
+import { Icon } from '@shared/ui/icon';
+import { SarPipe, PctPipe } from '@shared/pipes/format.pipes';
+import { EmptyState, LoadingRow } from '@shared/ui/ui';
 
 @Component({
   selector: 'app-barbers-list',

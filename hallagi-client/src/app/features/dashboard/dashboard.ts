@@ -1,14 +1,14 @@
 import { NgIf, NgFor } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { DateArPipe, SarPipe } from '../../core/format.pipes';
-import { ApiService } from '../../core/api.service';
-import { AuthService } from '../../core/auth.service';
-import { BranchContext } from '../../core/branch-context';
-import { ToastService } from '../../core/toast.service';
-import { Dashboard as DashboardModel } from '../../core/models';
-import { Icon } from '../../shared/icon';
-import { StatCard, EmptyState, LoadingRow } from '../../shared/ui';
+import { DateArPipe, SarPipe } from '@shared/pipes/format.pipes';
+import { ApiService } from '@core/http/api.service';
+import { AuthService } from '@core/auth/auth.service';
+import { BranchContext } from '@core/state/branch-context';
+import { ToastService } from '@core/state/toast.service';
+import { Dashboard as DashboardModel } from '@core/models';
+import { Icon } from '@shared/ui/icon';
+import { StatCard, EmptyState, LoadingRow } from '@shared/ui/ui';
 
 @Component({
   selector: 'app-dashboard',

@@ -1,12 +1,12 @@
 import { NgIf, NgFor } from '@angular/common';
 import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { AuthService } from '../core/auth.service';
-import { BranchContext } from '../core/branch-context';
-import { ToastService } from '../core/toast.service';
-import { UserRoleLabel } from '../core/models';
-import { Icon } from '../shared/icon';
-import { Modal } from '../shared/ui';
+import { AuthService } from '@core/auth/auth.service';
+import { BranchContext } from '@core/state/branch-context';
+import { ToastService } from '@core/state/toast.service';
+import { UserRoleLabel } from '@core/models';
+import { Icon } from '@shared/ui/icon';
+import { Modal } from '@shared/ui/ui';
 
 interface NavItem {
   path: string;

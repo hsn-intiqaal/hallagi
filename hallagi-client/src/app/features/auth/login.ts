@@ -2,10 +2,10 @@ import { Component, inject, signal } from '@angular/core';
 import { NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { AuthService } from '../../core/auth.service';
-import { BranchContext } from '../../core/branch-context';
-import { ToastService } from '../../core/toast.service';
-import { Icon } from '../../shared/icon';
+import { AuthService } from '@core/auth/auth.service';
+import { BranchContext } from '@core/state/branch-context';
+import { ToastService } from '@core/state/toast.service';
+import { Icon } from '@shared/ui/icon';
 
 @Component({
   selector: 'app-login',

@@ -1,12 +1,12 @@
 import { NgIf, NgFor } from '@angular/common';
 import { Component, ElementRef, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService } from '../../core/api.service';
-import { BranchContext } from '../../core/branch-context';
-import { ToastService } from '../../core/toast.service';
-import { SarPipe, PctPipe } from '../../core/format.pipes';
-import { Icon } from '../../shared/icon';
-import { LoadingRow, StatCard, EmptyState } from '../../shared/ui';
+import { ApiService } from '@core/http/api.service';
+import { BranchContext } from '@core/state/branch-context';
+import { ToastService } from '@core/state/toast.service';
+import { SarPipe, PctPipe } from '@shared/pipes/format.pipes';
+import { Icon } from '@shared/ui/icon';
+import { LoadingRow, StatCard, EmptyState } from '@shared/ui/ui';
 import { Chart, registerables } from 'chart.js';
 
 Chart.register(...registerables);

@@ -1,8 +1,8 @@
 import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { NgIf, NgFor } from '@angular/common';
-import { Icon } from './icon';
-import { SarPipe } from '../core/format.pipes';
-import { ToastService } from '../core/toast.service';
+import { Icon } from '@shared/ui/icon';
+import { SarPipe } from '@shared/pipes/format.pipes';
+import { ToastService } from '@core/state/toast.service';
 /** Big financial value card for dashboards. */
 @Component({
   selector: 'app-stat-card',
@@ -51,7 +51,7 @@ export class StatCard {
 @Component({
   selector: 'app-empty',
   standalone: true,
-  imports: [NgIf, NgFor, Icon],
+  imports: [NgIf, Icon],
   template: `
     <div class="empty">
       <div class="empty-icon"><app-icon [name]="icon" [size]="30"></app-icon></div>
@@ -75,7 +75,7 @@ export class EmptyState {
 @Component({
   selector: 'app-modal',
   standalone: true,
-  imports: [NgIf, NgFor, Icon],
+  imports: [NgIf, Icon],
   template: `
     <div class="modal-backdrop" (click)="onBackdrop($event)">
       <div class="modal" role="dialog" aria-modal="true">
@@ -115,7 +115,7 @@ export class LoadingRow {
 @Component({
   selector: 'app-toasts',
   standalone: true,
-  imports: [NgIf, NgFor, Icon],
+  imports: [NgFor, Icon],
   template: `
     <div class="toast-wrap">
       <div *ngFor="let t of toasts().slice(-3)" class="toast" [class]="'toast-' + t.kind">

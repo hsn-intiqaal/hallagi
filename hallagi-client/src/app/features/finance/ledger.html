@@ -45,7 +45,7 @@
       <table class="table">
         <thead><tr><th>التاريخ</th><th>المبلغ</th><th>المتبقي</th><th>السبب</th><th>الحالة</th><th></th></tr></thead>
         <tbody>
-          <tr *ngFor="let a in advances()">
+          <tr *ngFor="let a of advances()">
             <td>{{ a.advanceDate | dateAr }}</td>
             <td class="money">{{ a.originalAmount | sar }}</td>
             <td class="money" [class.text-red]="a.outstanding > 0">{{ a.outstanding | sar }}</td>

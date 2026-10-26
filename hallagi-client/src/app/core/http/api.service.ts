@@ -2,7 +2,10 @@ import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http'
 import { inject, Injectable } from '@angular/core';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
-import { environment } from '../../environments/environment';
+import { environment } from '@env/environment';
+
+/** Normalized error every API call fails with — components only ever show `message`. */
+export interface ApiFailure { status: number; code?: string; message: string; }
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -12,7 +15,10 @@ export class ApiService {
   get<T>(path: string, params?: Record<string, any>): Observable<T> {
     let p = new HttpParams();
     for (const [k, v] of Object.entries(params ?? {})) {
-      if (v !== undefined && v !== null && v !== '') p = p.set(k, String(v));
+      if (v === undefined || v === null || v === '') continue;
+      // arrays become repeated keys: ?serviceIds=a&serviceIds=b (ASP.NET Core list binding)
+      if (Array.isArray(v)) v.forEach(item => (p = p.append(k, String(item))));
+      else p = p.set(k, String(v));
     }
     return this.http.get<T>(`${this.base}${path}`, { params: p }).pipe(catchError(e => this.toFriendly(e)));
   }
@@ -25,19 +31,20 @@ export class ApiService {
     return this.http.put<T>(`${this.base}${path}`, body).pipe(catchError(e => this.toFriendly(e)));
   }
 
-    /** Converts API errors into Arabic user-facing messages. */
-    toFriendly(e: HttpErrorResponse): Observable<never> {
-        const serverMessage: string | undefined = e.error?.error?.message;
+  /** Converts API errors into Arabic user-facing messages. */
+  toFriendly(e: HttpErrorResponse): Observable<never> {
+    const serverMessage: string | undefined = e.error?.error?.message;
     let message = serverMessage;
     if (!message) {
       if (e.status === 0) message = 'تعذّر الاتصال بالخادم. تحقق من الشبكة وحاول مرة أخرى';
       else if (e.status === 401) message = 'انتهت جلسة الدخول. سجّل الدخول مرة أخرى';
       else if (e.status === 403) message = 'ليس لديك صلاحية لتنفيذ هذا الإجراء';
       else if (e.status === 404) message = 'العنصر المطلوب غير موجود';
+      else if (e.status === 429) message = 'محاولات كثيرة. انتظر دقيقة ثم حاول مرة أخرى';
       else if (e.status === 409) message = 'هناك تعارض في البيانات. حدّث الصفحة وحاول مرة أخرى';
       else if (e.status >= 500) message = 'حدث خطأ في الخادم. حاول مرة أخرى';
       else message = 'لم نتمكن من إكمال العملية. تحقق من البيانات وحاول مرة أخرى';
     }
-    return throwError(() => ({ status: e.status, message }));
+    return throwError((): ApiFailure => ({ status: e.status, code: e.error?.error?.code, message: message! }));
   }
 }

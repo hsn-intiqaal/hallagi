@@ -135,7 +135,7 @@
 
 <!-- إعادة تعيين كلمة المرور -->
 <app-modal *ngIf="resetTarget" title="إعادة تعيين كلمة المرور" (close)="resetTarget = null">
-  <p class="mb-16">سيتم تعيين كلمة مرور جديدة للمستخدم <b>{{ resetTarget?.fullName }}</b>. شاركها معه بخصوصية واطلب تغييرها بعد الدخول.</p>
+  <p class="mb-16">سيتم تعيين كلمة مرور جديدة للمستخدم <b>{{ resetTarget.fullName }}</b>. شاركها معه بخصوصية واطلب تغييرها بعد الدخول.</p>
   <div class="field">
     <label>كلمة المرور الجديدة</label>
     <input class="input" [(ngModel)]="resetPassword" dir="ltr" placeholder="••••••">

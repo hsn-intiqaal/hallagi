@@ -1,13 +1,13 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { NgIf, NgFor } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService } from '../../core/api.service';
-import { BranchContext } from '../../core/branch-context';
-import { AuthService } from '../../core/auth.service';
-import { ToastService } from '../../core/toast.service';
-import { DateArPipe, SarPipe } from '../../core/format.pipes';
-import { Icon } from '../../shared/icon';
-import { EmptyState, LoadingRow, Modal } from '../../shared/ui';
+import { ApiService } from '@core/http/api.service';
+import { BranchContext } from '@core/state/branch-context';
+import { AuthService } from '@core/auth/auth.service';
+import { ToastService } from '@core/state/toast.service';
+import { DateArPipe, SarPipe } from '@shared/pipes/format.pipes';
+import { Icon } from '@shared/ui/icon';
+import { EmptyState, LoadingRow, Modal } from '@shared/ui/ui';
 
 @Component({
   selector: 'app-handovers',

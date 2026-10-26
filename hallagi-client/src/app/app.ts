@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { Toasts } from './shared/ui';
+import { Toasts } from '@shared/ui/ui';
 
 @Component({
   selector: 'app-root',

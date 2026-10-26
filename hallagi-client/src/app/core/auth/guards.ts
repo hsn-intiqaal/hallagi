@@ -1,8 +1,8 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { catchError, map, Observable, of } from 'rxjs';
-import { AuthService } from './auth.service';
-import { ToastService } from './toast.service';
+import { AuthService } from '@core/auth/auth.service';
+import { ToastService } from '@core/state/toast.service';
 
 /** Waits until the authenticated profile (role + permissions) is loaded. */
 function ensureLoaded(auth: AuthService): Observable<boolean> {

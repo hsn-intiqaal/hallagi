@@ -1,15 +1,15 @@
 import { NgIf, NgFor } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService } from '../../core/api.service';
-import { AuthService } from '../../core/auth.service';
-import { ToastService } from '../../core/toast.service';
-import { ThemeService } from '../../core/theme.service';
-import { Settings as SettingsModel } from '../../core/models';
-import { Icon } from '../../shared/icon';
-import { SarPipe } from '../../core/format.pipes';
-import { LoadingRow } from '../../shared/ui';
-import { resizeImageFile } from '../../shared/image-upload';
+import { ApiService } from '@core/http/api.service';
+import { AuthService } from '@core/auth/auth.service';
+import { ToastService } from '@core/state/toast.service';
+import { ThemeService } from '@core/state/theme.service';
+import { Settings as SettingsModel } from '@core/models';
+import { Icon } from '@shared/ui/icon';
+import { SarPipe } from '@shared/pipes/format.pipes';
+import { LoadingRow } from '@shared/ui/ui';
+import { resizeImageFile } from '@shared/ui/image-upload';
 
 interface Palette { name: string; primary: string; secondary: string; }
 

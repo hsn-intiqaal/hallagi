@@ -2,12 +2,12 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { NgIf, NgFor } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { ApiService } from '../../core/api.service';
-import { ToastService } from '../../core/toast.service';
-import { ThemeService } from '../../core/theme.service';
-import { SarPipe } from '../../core/format.pipes';
-import { Icon } from '../../shared/icon';
-import { resizeImageFile } from '../../shared/image-upload';
+import { ApiService } from '@core/http/api.service';
+import { ToastService } from '@core/state/toast.service';
+import { ThemeService } from '@core/state/theme.service';
+import { SarPipe } from '@shared/pipes/format.pipes';
+import { Icon } from '@shared/ui/icon';
+import { resizeImageFile } from '@shared/ui/image-upload';
 
 interface Palette { name: string; primary: string; secondary: string; }
 interface Plan { id: string; name: string; description: string; maxBranches: number; maxUsers: number; maxBarbers: number; monthlyPrice: number; }

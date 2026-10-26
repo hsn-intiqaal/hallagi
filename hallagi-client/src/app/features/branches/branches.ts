@@ -1,12 +1,12 @@
 import { NgIf, NgFor } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService } from '../../core/api.service';
-import { BranchContext } from '../../core/branch-context';
-import { ToastService } from '../../core/toast.service';
-import { Branch } from '../../core/models';
-import { Icon } from '../../shared/icon';
-import { LoadingRow, Modal } from '../../shared/ui';
+import { ApiService } from '@core/http/api.service';
+import { BranchContext } from '@core/state/branch-context';
+import { ToastService } from '@core/state/toast.service';
+import { Branch } from '@core/models';
+import { Icon } from '@shared/ui/icon';
+import { LoadingRow, Modal } from '@shared/ui/ui';
 
 @Component({
   selector: 'app-branches',

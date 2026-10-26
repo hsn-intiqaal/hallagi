@@ -2,11 +2,11 @@ import { NgIf, NgFor } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { ApiService } from '../../core/api.service';
-import { BranchContext } from '../../core/branch-context';
-import { ToastService } from '../../core/toast.service';
-import { Icon } from '../../shared/icon';
-import { SarPipe } from '../../core/format.pipes';
+import { ApiService } from '@core/http/api.service';
+import { BranchContext } from '@core/state/branch-context';
+import { ToastService } from '@core/state/toast.service';
+import { Icon } from '@shared/ui/icon';
+import { SarPipe } from '@shared/pipes/format.pipes';
 
 const SUGGESTED_SERVICES = [
   { name: 'حلاقة شعر', price: 25 },

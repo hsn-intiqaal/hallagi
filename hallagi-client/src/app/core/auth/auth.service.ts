@@ -1,10 +1,10 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
-import { ApiService } from './api.service';
-import { TOKEN_KEY } from './auth.interceptor';
-import { Me, Profile, UserRole } from './models';
-import { ThemeService } from './theme.service';
+import { ApiService } from '@core/http/api.service';
+import { tokenStorage } from './token-storage';
+import { LoginResult, Me, Profile, UserRole } from '@core/models';
+import { ThemeService } from '@core/state/theme.service';
 
 const BRANCH_KEY = 'hallagi.branch';
 
@@ -14,7 +14,7 @@ export class AuthService {
   private router = inject(Router);
   private theme = inject(ThemeService);
 
-  readonly token = signal<string | null>(localStorage.getItem(TOKEN_KEY));
+  readonly token = signal<string | null>(tokenStorage.access());
   readonly me = signal<Me | null>(null);
   readonly isLoggedIn = computed(() => !!this.token());
   readonly role = computed<UserRole | null>(() => this.me()?.role ?? null);
@@ -30,10 +30,10 @@ export class AuthService {
     }
   }
 
-  login(email: string, password: string): Observable<any> {
-    return this.api.post('/auth/login', { email, password }).pipe(
-      tap((res: any) => {
-        localStorage.setItem(TOKEN_KEY, res.token);
+  login(email: string, password: string): Observable<LoginResult> {
+    return this.api.post<LoginResult>('/auth/login', { email, password }).pipe(
+      tap(res => {
+        tokenStorage.save(res.token, res.refreshToken);
         this.token.set(res.token);
         this.loadMe().subscribe();
       })
@@ -62,7 +62,10 @@ export class AuthService {
   }
 
   logout(navigate = true): void {
-    localStorage.removeItem(TOKEN_KEY);
+    // Revoke the refresh token server-side; local sign-out never waits on the network
+    const refreshToken = tokenStorage.refresh();
+    if (refreshToken) this.api.post('/auth/logout', { refreshToken }).subscribe({ error: () => undefined });
+    tokenStorage.clear();
     localStorage.removeItem(BRANCH_KEY);
     this.token.set(null);
     this.me.set(null);

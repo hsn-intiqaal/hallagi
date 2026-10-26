@@ -1,6 +1,6 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { Branch } from './models';
-import { AuthService, branchStorage } from './auth.service';
+import { Branch } from '@core/models';
+import { AuthService, branchStorage } from '@core/auth/auth.service';
 
 @Injectable({ providedIn: 'root' })
 export class BranchContext {

@@ -1,13 +1,13 @@
 import { NgIf, NgFor } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService } from '../../core/api.service';
-import { BranchContext } from '../../core/branch-context';
-import { AuthService } from '../../core/auth.service';
-import { ToastService } from '../../core/toast.service';
-import { Branch, UserRow, UserRole, UserRoleLabel } from '../../core/models';
-import { Icon } from '../../shared/icon';
-import { LoadingRow, Modal } from '../../shared/ui';
+import { ApiService } from '@core/http/api.service';
+import { BranchContext } from '@core/state/branch-context';
+import { AuthService } from '@core/auth/auth.service';
+import { ToastService } from '@core/state/toast.service';
+import { Branch, UserRow, UserRole, UserRoleLabel } from '@core/models';
+import { Icon } from '@shared/ui/icon';
+import { LoadingRow, Modal } from '@shared/ui/ui';
 
 const PERMISSION_LABELS: Record<string, string> = {
   'sale.create': 'تسجيل المبيعات',

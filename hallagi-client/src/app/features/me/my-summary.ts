@@ -1,11 +1,11 @@
 import { NgIf, NgFor } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { ApiService } from '../../core/api.service';
-import { AuthService } from '../../core/auth.service';
-import { ToastService } from '../../core/toast.service';
-import { SarPipe, DateShortPipe, PctPipe } from '../../core/format.pipes';
-import { Icon } from '../../shared/icon';
-import { LoadingRow, EmptyState } from '../../shared/ui';
+import { ApiService } from '@core/http/api.service';
+import { AuthService } from '@core/auth/auth.service';
+import { ToastService } from '@core/state/toast.service';
+import { SarPipe, DateShortPipe, PctPipe } from '@shared/pipes/format.pipes';
+import { Icon } from '@shared/ui/icon';
+import { LoadingRow, EmptyState } from '@shared/ui/ui';
 
 @Component({
   selector: 'app-my-summary',

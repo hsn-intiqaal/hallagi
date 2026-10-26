@@ -2,12 +2,12 @@ import { NgIf, NgFor } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { ApiService } from '../../core/api.service';
-import { ToastService } from '../../core/toast.service';
-import { CustomerFile } from '../../core/models';
-import { Icon } from '../../shared/icon';
-import { SarPipe, DateTimeArPipe, DateShortPipe } from '../../core/format.pipes';
-import { LoadingRow } from '../../shared/ui';
+import { ApiService } from '@core/http/api.service';
+import { ToastService } from '@core/state/toast.service';
+import { CustomerFile } from '@core/models';
+import { Icon } from '@shared/ui/icon';
+import { SarPipe, DateTimeArPipe, DateShortPipe } from '@shared/pipes/format.pipes';
+import { LoadingRow } from '@shared/ui/ui';
 
 @Component({
   selector: 'app-customer-profile',

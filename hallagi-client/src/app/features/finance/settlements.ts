@@ -1,12 +1,12 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { NgIf, NgFor } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService } from '../../core/api.service';
-import { AuthService } from '../../core/auth.service';
-import { ToastService } from '../../core/toast.service';
-import { DateShortPipe, SarPipe } from '../../core/format.pipes';
-import { Icon } from '../../shared/icon';
-import { EmptyState, LoadingRow, Modal } from '../../shared/ui';
+import { ApiService } from '@core/http/api.service';
+import { AuthService } from '@core/auth/auth.service';
+import { ToastService } from '@core/state/toast.service';
+import { DateShortPipe, SarPipe } from '@shared/pipes/format.pipes';
+import { Icon } from '@shared/ui/icon';
+import { EmptyState, LoadingRow, Modal } from '@shared/ui/ui';
 
 interface Period { id: string; name: string; startDate: string; endDate: string; status: string; settlementsCount: number; draftCount: number; approvedCount: number; paidCount: number; totalNet: number; }
 interface Settlement {

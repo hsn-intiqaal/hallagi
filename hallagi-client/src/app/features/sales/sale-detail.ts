@@ -1,12 +1,12 @@
 import { NgIf, NgFor } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ApiService } from '../../core/api.service';
-import { ToastService } from '../../core/toast.service';
-import { Sale } from '../../core/models';
-import { Icon } from '../../shared/icon';
-import { DateTimeArPipe, SarPipe } from '../../core/format.pipes';
-import { LoadingRow } from '../../shared/ui';
+import { ApiService } from '@core/http/api.service';
+import { ToastService } from '@core/state/toast.service';
+import { Sale } from '@core/models';
+import { Icon } from '@shared/ui/icon';
+import { DateTimeArPipe, SarPipe } from '@shared/pipes/format.pipes';
+import { LoadingRow } from '@shared/ui/ui';
 
 @Component({
   selector: 'app-sale-detail',

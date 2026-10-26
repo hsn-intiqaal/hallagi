@@ -2,12 +2,12 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { NgIf, NgFor } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { ApiService } from '../../core/api.service';
-import { AuthService } from '../../core/auth.service';
-import { ToastService } from '../../core/toast.service';
-import { DateShortPipe, SarPipe } from '../../core/format.pipes';
-import { Icon } from '../../shared/icon';
-import { EmptyState, LoadingRow, StatCard, Modal } from '../../shared/ui';
+import { ApiService } from '@core/http/api.service';
+import { AuthService } from '@core/auth/auth.service';
+import { ToastService } from '@core/state/toast.service';
+import { DateShortPipe, SarPipe } from '@shared/pipes/format.pipes';
+import { Icon } from '@shared/ui/icon';
+import { EmptyState, LoadingRow, StatCard, Modal } from '@shared/ui/ui';
 
 interface Org {
   id: string; name: string; currency: string; timeZone: string;
