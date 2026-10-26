@@ -23,7 +23,7 @@ builder.Services
     .AddApiControllers()
     .AddApiAuthentication(jwt, builder.Environment)
     .AddApiCors(builder.Configuration)
-    .AddApiRateLimiting()
+    .AddApiRateLimiting(builder.Configuration)
     .AddApiHosting();
 
 var app = builder.Build();

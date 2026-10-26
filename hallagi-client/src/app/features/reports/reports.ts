@@ -11,6 +11,14 @@ import { Chart, registerables } from 'chart.js';
 
 Chart.register(...registerables);
 
+/** VAT return helper + discounts + retail products for the selected period. */
+interface TaxReport {
+  tax: { gross: number; discount: number; taxable: number; vat: number; total: number; invoices: number };
+  loyalty: { pointsEarned: number; pointsRedeemed: number };
+  coupons: { code: string; uses: number; discount: number }[];
+  products: { name: string; quantity: number; revenue: number; cost: number; profit: number }[];
+}
+
 @Component({
   selector: 'app-reports',
   standalone: true,
@@ -27,6 +35,7 @@ export class Reports implements OnInit {
   readonly expensesReport = signal<any>(null);
   readonly duesReport = signal<any>(null);
   readonly branchesReport = signal<any>(null);
+  readonly taxReport = signal<TaxReport | null>(null);
   readonly loading = signal(true);
   from = '';
   to = '';
@@ -60,6 +69,10 @@ export class Reports implements OnInit {
         this.api.get<any>('/reports/barber-dues', { branchId, from, to }).subscribe({
           next: d => this.duesReport.set(d),
           error: () => this.duesReport.set(null)
+        });
+        this.api.get<TaxReport>('/reports/tax', { branchId, from, to }).subscribe({
+          next: t => this.taxReport.set(t),
+          error: () => this.taxReport.set(null)
         });
         this.api.get<any>('/reports/branches', { from, to }).subscribe({
           next: b => this.branchesReport.set(b),

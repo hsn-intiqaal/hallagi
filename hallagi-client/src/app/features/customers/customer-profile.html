@@ -19,6 +19,37 @@
       <div class="kpi"><div class="l">إجمالي الإنفاق التاريخي</div><div class="v money">{{ f.summary.total | sar }}</div></div>
       <div class="kpi"><div class="l">آخر زيارة</div><div class="v" style="font-size: 1rem">{{ f.summary.lastVisit | dateShort }}</div></div>
       <div class="kpi"><div class="l">تاريخ إنشاء الملف</div><div class="v" style="font-size: 1rem">{{ f.customer.createdAt | dateShort }}</div></div>
+      <button class="kpi kpi-btn" *ngIf="loyalty()?.enabled" (click)="showLoyalty.set(!showLoyalty())">
+        <div class="l">نقاط الولاء</div>
+        <div class="v text-orange">{{ f.customer.loyaltyPoints }}</div>
+        <div class="text-2 text-sm">قيمتها {{ loyalty()!.balanceValue | sar }}</div>
+      </button>
+    </div>
+
+    <div class="card mb-16" *ngIf="f.appointments.length">
+      <div class="section-head"><h2>مواعيد قادمة</h2></div>
+      <div class="upcoming" *ngFor="let a of f.appointments">
+        <app-icon name="calendar" [size]="16"></app-icon>
+        <span class="grow">{{ a.startAt | dateTimeAr }} — {{ a.branchName }}</span>
+        <span class="badge badge-blue" dir="ltr">{{ a.reference }}</span>
+      </div>
+    </div>
+
+    <div class="card mb-16" *ngIf="showLoyalty() && loyalty() as l">
+      <div class="section-head flex-between">
+        <h2>سجل النقاط</h2>
+        <div class="flex gap-8" *ngIf="auth.can('settings.manage')">
+          <input class="input adjust-input" type="number" [(ngModel)]="adjustPoints" placeholder="±نقاط">
+          <button class="btn btn-sm btn-outline" (click)="adjust()">تعديل يدوي</button>
+        </div>
+      </div>
+      <div *ngIf="!l.items.length" class="text-2 text-sm">لا توجد حركات نقاط بعد.</div>
+      <div class="pts-row" *ngFor="let t of l.items">
+        <span class="text-sm text-2">{{ t.createdAt | dateTimeAr }}</span>
+        <span class="grow">{{ t.note || t.typeText }}</span>
+        <b dir="ltr" [class.text-green]="t.points > 0" [class.text-red]="t.points < 0">{{ t.points > 0 ? '+' : '' }}{{ t.points }}</b>
+        <span class="text-2 text-sm">= {{ t.balanceAfter }}</span>
+      </div>
     </div>
 
     <div class="card mb-16" *ngIf="editing()">

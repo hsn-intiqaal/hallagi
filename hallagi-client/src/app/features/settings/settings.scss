@@ -72,3 +72,17 @@
   .branding-logo { align-items: flex-start; text-align: start; }
   .branding-logo .text-sm { max-width: none; }
 }
+
+.readout { padding: 10px 12px; background: var(--bg); border-radius: var(--radius-sm); font-weight: 700; color: var(--green); }
+.slug-row { display: flex; align-items: stretch; }
+.slug-row .prefix {
+  display: inline-flex; align-items: center; padding: 0 10px; background: var(--navy-soft);
+  border: 1px solid var(--border); border-inline-end: 0; border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+  color: var(--text-2); font-weight: 600;
+}
+.slug-row .input { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+.booking-link {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 12px;
+  background: var(--blue-soft); border-radius: var(--radius-sm); color: var(--primary-dark);
+  a { font-weight: 700; word-break: break-all; flex: 1; color: inherit; }
+}

@@ -36,10 +36,13 @@ export class Layout implements OnInit {
   navItems: NavItem[] = [
     { path: 'dashboard', label: 'الرئيسية', icon: 'home', permission: undefined, roles: ['Owner', 'BranchManager', 'Cashier'] },
     { path: 'pos', label: 'بيع جديد', icon: 'scissors', permission: 'sale.create' },
+    { path: 'appointments', label: 'المواعيد', icon: 'calendar', permission: 'appointment.view' },
     { path: 'sales', label: 'المبيعات', icon: 'receipt', permission: 'sale.view' },
     { path: 'customers', label: 'العملاء', icon: 'users', permission: 'customer.manage' },
     { path: 'barbers', label: 'الحلاقون', icon: 'user', permission: 'barber.view' },
     { path: 'services', label: 'الخدمات والأسعار', icon: 'tag', permission: 'service.manage', roles: ['Owner'] },
+    { path: 'products', label: 'المنتجات والمخزون', icon: 'package', permission: 'product.view', roles: ['Owner', 'BranchManager', 'Cashier'] },
+    { path: 'coupons', label: 'أكواد الخصم', icon: 'percent', permission: 'coupon.manage' },
     { path: 'expenses', label: 'المصروفات', icon: 'wallet', permission: 'expense.view' },
     { path: 'treasury', label: 'الخزينة والوردية', icon: 'safe', permission: 'shift.view' },
     { path: 'reports', label: 'التقارير', icon: 'chart', permission: 'report.view', roles: ['Owner', 'BranchManager'] },
@@ -70,7 +73,7 @@ export class Layout implements OnInit {
     const role = this.auth.role();
     if (role === 'Barber') return this.visibleItems().slice(0, 4);
     return this.visibleItems()
-      .filter(i => ['dashboard', 'pos', 'sales', 'customers', 'treasury'].includes(i.path))
+      .filter(i => ['dashboard', 'pos', 'appointments', 'sales', 'customers'].includes(i.path))
       .slice(0, 4);
   }
 

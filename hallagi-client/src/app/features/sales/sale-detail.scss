@@ -19,3 +19,21 @@
 .receipt .r-item .qty { color: var(--text-2); }
 .receipt .r-total { display: flex; justify-content: space-between; align-items: center; font-size: 1.25rem; font-weight: 800; }
 .receipt .r-foot { margin-top: 18px; text-align: center; color: var(--text-2); font-size: .82rem; border-top: 1px solid var(--border); padding-top: 12px; }
+.receipt .r-head .logo { width: 64px; height: 64px; object-fit: contain; margin: 0 auto 6px; display: block; }
+.receipt .r-head .doc-title {
+  display: inline-block; margin-top: 10px; padding: 4px 14px; border-radius: 999px;
+  background: var(--navy); color: #fff; font-weight: 800; font-size: .9rem;
+}
+.receipt .r-sums { font-size: .9rem; margin-bottom: 8px; }
+.receipt .r-sums .row { display: flex; justify-content: space-between; padding: 3px 0; color: var(--text-2); }
+.receipt .r-qr { display: flex; justify-content: center; margin-top: 16px; }
+.receipt .r-points { text-align: center; margin-top: 8px; color: var(--orange); font-weight: 700; font-size: .88rem; }
+.receipt .r-cancelled {
+  background: var(--red-soft); color: var(--red); font-weight: 800; text-align: center;
+  border-radius: var(--radius-sm); padding: 8px; margin-bottom: 12px;
+}
+
+/* Thermal / A4 printing: only the invoice, edge to edge */
+@media print {
+  .receipt { border: 0; max-width: 80mm; padding: 0; }
+}

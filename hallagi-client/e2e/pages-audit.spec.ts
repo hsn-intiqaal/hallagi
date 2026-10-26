@@ -1,4 +1,4 @@
-import { test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 const APP = 'http://localhost:4300';
 const API = 'http://localhost:5095';
@@ -31,7 +31,12 @@ const ROUTES = [
   { path: '/finance/handovers', expect: 'التسليمات النقدية', role: 'owner' },
   { path: '/devices', expect: 'أجهزة POS', role: 'owner' },
   { path: '/me', expect: 'ملخصي', role: 'barber' },
-  { path: '/onboarding', expect: 'إعداد سريع', role: 'owner' }
+  { path: '/onboarding', expect: 'إعداد سريع', role: 'owner' },
+  { path: '/appointments', expect: 'المواعيد', role: 'owner' },
+  { path: '/appointments', expect: 'قائمة الانتظار', role: 'cashier' },
+  { path: '/products', expect: 'المنتجات والمخزون', role: 'owner' },
+  { path: '/coupons', expect: 'أكواد الخصم', role: 'owner' },
+  { path: '/book/elite', expect: 'احجز موعدك', role: 'none' }
 ];
 
 test('كل الصفحات تُفتح بدون أخطاء', async ({ page }) => {
@@ -90,4 +95,5 @@ test('كل الصفحات تُفتح بدون أخطاء', async ({ page }) => {
   }
 
   console.log('\n===== PAGE REPORT =====\n' + report.join('\n'));
+  expect(report.filter(line => line.startsWith('FAIL'))).toEqual([]);
 });

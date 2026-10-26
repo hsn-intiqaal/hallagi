@@ -24,7 +24,7 @@ export class Branches implements OnInit {
   readonly loading = signal(true);
   readonly showForm = signal(false);
   readonly editing = signal<Branch | null>(null);
-  form = { name: '', city: '', address: '', active: true };
+  form = { name: '', city: '', address: '', phone: '', opensAt: '09:00', closesAt: '23:00', active: true };
   formError = '';
 
   ngOnInit(): void { this.load(); }
@@ -38,14 +38,17 @@ export class Branches implements OnInit {
   }
 
   openAdd(): void {
-    this.form = { name: '', city: 'الرياض', address: '', active: true };
+    this.form = { name: '', city: 'الرياض', address: '', phone: '', opensAt: '09:00', closesAt: '23:00', active: true };
     this.formError = '';
     this.editing.set(null);
     this.showForm.set(true);
   }
 
   openEdit(b: Branch): void {
-    this.form = { name: b.name, city: b.city, address: b.address ?? '', active: (b.status ?? 'Active') === 'Active' };
+    this.form = {
+      name: b.name, city: b.city, address: b.address ?? '', phone: b.phone ?? '',
+      opensAt: b.opensAt ?? '09:00', closesAt: b.closesAt ?? '23:00', active: (b.status ?? 'Active') === 'Active'
+    };
     this.formError = '';
     this.editing.set(b);
     this.showForm.set(true);
@@ -54,7 +57,10 @@ export class Branches implements OnInit {
   save(): void {
     if (!this.form.name.trim()) { this.formError = 'اسم الفرع مطلوب'; return; }
     if (!this.form.city.trim()) { this.formError = 'المدينة مطلوبة'; return; }
-    const body = { name: this.form.name.trim(), city: this.form.city.trim(), address: this.form.address?.trim() || null, active: this.form.active };
+    const body = {
+      name: this.form.name.trim(), city: this.form.city.trim(), address: this.form.address?.trim() || null,
+      phone: this.form.phone?.trim() || null, opensAt: this.form.opensAt, closesAt: this.form.closesAt, active: this.form.active
+    };
     const editing = this.editing();
     const req = editing ? this.api.put(`/branches/${editing.id}`, body) : this.api.post('/branches', body);
     req.subscribe({

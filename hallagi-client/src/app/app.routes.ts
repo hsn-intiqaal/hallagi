@@ -18,6 +18,11 @@ export const routes: Routes = [
     loadComponent: () => import('@features/platform/org-create').then(m => m.OrgCreate)
   },
   {
+    // Public online booking page — no account, branded per salon
+    path: 'book/:slug',
+    loadComponent: () => import('@features/booking/public-booking').then(m => m.PublicBooking)
+  },
+  {
     path: 'onboarding',
     canActivate: [authGuard],
     loadComponent: () => import('@features/onboarding/onboarding').then(m => m.Onboarding)
@@ -34,6 +39,9 @@ export const routes: Routes = [
       { path: 'sales', canActivate: [permissionGuard('sale.view')], loadComponent: () => import('@features/sales/sales-list').then(m => m.SalesList) },
       { path: 'sales/:id', canActivate: [permissionGuard('sale.view')], loadComponent: () => import('@features/sales/sale-detail').then(m => m.SaleDetail) },
 
+      // ===== Booking =====
+      { path: 'appointments', canActivate: [permissionGuard('appointment.view')], loadComponent: () => import('@features/appointments/appointments').then(m => m.Appointments) },
+
       // ===== People =====
       { path: 'customers', canActivate: [permissionGuard('customer.manage')], loadComponent: () => import('@features/customers/customers-list').then(m => m.CustomersList) },
       { path: 'customers/:id', canActivate: [permissionGuard('customer.manage')], loadComponent: () => import('@features/customers/customer-profile').then(m => m.CustomerProfile) },
@@ -44,6 +52,9 @@ export const routes: Routes = [
 
       // ===== Catalog =====
       { path: 'services', canActivate: [permissionGuard('service.view')], loadComponent: () => import('@features/services/services').then(m => m.Services) },
+
+      { path: 'products', canActivate: [permissionGuard('product.view')], loadComponent: () => import('@features/products/products').then(m => m.Products) },
+      { path: 'coupons', canActivate: [permissionGuard('coupon.manage')], loadComponent: () => import('@features/coupons/coupons').then(m => m.Coupons) },
 
       // ===== Money =====
       { path: 'expenses', canActivate: [permissionGuard('expense.view')], loadComponent: () => import('@features/expenses/expenses').then(m => m.Expenses) },

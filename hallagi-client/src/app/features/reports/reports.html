@@ -94,4 +94,42 @@
       </table>
     </div>
   </ng-container>
+
+  <!-- الضريبة والخصومات والمنتجات -->
+  <ng-container *ngIf="!loading() && taxReport() as t">
+    <div class="card mt-16">
+      <h2 class="mb-16">ضريبة القيمة المضافة والخصومات</h2>
+      <div class="stats-grid">
+        <app-stat-card label="المبيعات قبل الخصم" [value]="t.tax.gross" icon="receipt" tone="navy" hint="إجمالي البنود" />
+        <app-stat-card label="الخصومات" [value]="t.tax.discount" icon="percent" tone="orange" hint="كوبونات ويدوي ونقاط" />
+        <app-stat-card label="المبيعات الخاضعة للضريبة" [value]="t.tax.taxable" icon="chart" tone="blue" hint="بدون الضريبة" />
+        <app-stat-card label="الضريبة المحصّلة" [value]="t.tax.vat" icon="shield" tone="green" [hint]="t.tax.invoices + ' فاتورة ضريبية'" />
+      </div>
+      <p class="text-2 text-sm">استخدم «الضريبة المحصّلة» عند تعبئة إقرار ضريبة القيمة المضافة لهذه الفترة. نقاط الولاء: اكتُسبت {{ t.loyalty.pointsEarned }} واستُبدلت {{ t.loyalty.pointsRedeemed }}.</p>
+
+      <div class="table-wrap mt-16" *ngIf="t.coupons.length">
+        <h3 class="mb-8">أداء أكواد الخصم</h3>
+        <table class="table">
+          <thead><tr><th>الكود</th><th>مرات الاستخدام</th><th>إجمالي الخصم</th></tr></thead>
+          <tbody><tr *ngFor="let c of t.coupons"><td dir="ltr"><b>{{ c.code }}</b></td><td>{{ c.uses }}</td><td class="money">{{ c.discount | sar }}</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card mt-16" *ngIf="t.products.length">
+      <h2 class="mb-16">مبيعات المنتجات</h2>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>المنتج</th><th>الكمية</th><th>الإيراد</th><th>التكلفة</th><th>الربح</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let p of t.products">
+              <td>{{ p.name }}</td><td>{{ p.quantity }}</td>
+              <td class="money">{{ p.revenue | sar }}</td><td class="money text-2">{{ p.cost | sar }}</td>
+              <td class="money" [class.text-green]="p.profit >= 0" [class.text-red]="p.profit < 0">{{ p.profit | sar }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </ng-container>
 </div>

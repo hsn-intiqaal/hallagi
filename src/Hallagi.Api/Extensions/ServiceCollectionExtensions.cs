@@ -75,9 +75,15 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    /// <summary>Per-IP limits on sign-in and the anonymous booking API (brute force / scraping).</summary>
-    public static IServiceCollection AddApiRateLimiting(this IServiceCollection services)
+    /// <summary>
+    /// Per-IP limits on sign-in and the anonymous booking API (brute force / scraping).
+    /// Strict defaults; development config relaxes them for local work and test suites.
+    /// </summary>
+    public static IServiceCollection AddApiRateLimiting(this IServiceCollection services, IConfiguration configuration)
     {
+        var authPerMinute = configuration.GetValue("RateLimiting:AuthPerMinute", 10);
+        var publicPerMinute = configuration.GetValue("RateLimiting:PublicPerMinute", 60);
+
         services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -87,8 +93,8 @@ public static class ServiceCollectionExtensions
                 await context.HttpContext.Response.WriteAsync(
                     "{\"error\":{\"code\":\"rate_limited\",\"message\":\"محاولات كثيرة. انتظر دقيقة ثم حاول مرة أخرى\"}}", ct);
             };
-            options.AddPolicy(AuthRateLimit, http => PerIp(http, permitPerMinute: 10));
-            options.AddPolicy(PublicRateLimit, http => PerIp(http, permitPerMinute: 60));
+            options.AddPolicy(AuthRateLimit, http => PerIp(http, authPerMinute));
+            options.AddPolicy(PublicRateLimit, http => PerIp(http, publicPerMinute));
         });
         return services;
     }

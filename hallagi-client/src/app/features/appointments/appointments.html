@@ -1,0 +1,257 @@
+<div class="page">
+  <div class="page-title">
+    <div>
+      <h1>المواعيد</h1>
+      <p class="text-2 text-sm" *ngIf="day() as d">{{ d.branch.name }} — يعمل من {{ d.branch.opensAt }} إلى {{ d.branch.closesAt }}</p>
+    </div>
+    <div class="flex gap-8 wrap" *ngIf="canManage()">
+      <button class="btn btn-outline" (click)="newBooking(true)">
+        <app-icon name="clock" [size]="18"></app-icon> إضافة للانتظار
+      </button>
+      <button class="btn btn-primary" (click)="newBooking()">
+        <app-icon name="plus" [size]="18"></app-icon> حجز موعد
+      </button>
+    </div>
+  </div>
+
+  <!-- شريط التاريخ -->
+  <div class="toolbar card mb-16">
+    <div class="date-nav">
+      <button class="icon-btn" (click)="shiftDay(-1)" aria-label="اليوم السابق"><app-icon name="chevronRight" [size]="20"></app-icon></button>
+      <input class="input date-input" type="date" [ngModel]="date()" (ngModelChange)="setDate($event)">
+      <button class="icon-btn" (click)="shiftDay(1)" aria-label="اليوم التالي"><app-icon name="chevronLeft" [size]="20"></app-icon></button>
+      <button class="btn btn-ghost btn-sm" *ngIf="!isToday()" (click)="today()">اليوم</button>
+    </div>
+    <div class="seg">
+      <button [class.active]="view() === 'schedule'" (click)="view.set('schedule')">جدول</button>
+      <button [class.active]="view() === 'list'" (click)="view.set('list')">قائمة</button>
+    </div>
+  </div>
+
+  <div *ngIf="loading()"><app-loading message="جارٍ تحميل المواعيد…" /></div>
+
+  <app-empty *ngIf="!loading() && !branchId()" icon="building" title="اختر فرعًا"
+    message="المواعيد تُدار لكل فرع على حدة — اختر الفرع من الشريط العلوي." />
+
+  <ng-container *ngIf="!loading() && day() as d">
+    <div class="stats-row">
+      <div class="stat-chip"><b>{{ d.summary.total }}</b><span>موعد</span></div>
+      <div class="stat-chip"><b>{{ d.summary.completed }}</b><span>مكتمل</span></div>
+      <div class="stat-chip"><b>{{ d.summary.waiting }}</b><span>في الانتظار</span></div>
+      <div class="stat-chip"><b>{{ d.summary.online }}</b><span>حجز إلكتروني</span></div>
+      <div class="stat-chip"><b class="money">{{ d.summary.expectedRevenue | sar }}</b><span>إيراد متوقع</span></div>
+    </div>
+
+    <div class="layout">
+      <!-- قائمة الانتظار -->
+      <aside class="card waitlist">
+        <h2 class="mb-8"><app-icon name="clock" [size]="18"></app-icon> قائمة الانتظار</h2>
+        <p class="text-2 text-sm" *ngIf="!d.waitlist.length">لا يوجد عملاء في الانتظار.</p>
+        <div class="wait-item" *ngFor="let a of d.waitlist; let i = index">
+          <span class="pos-no">{{ i + 1 }}</span>
+          <div class="grow">
+            <b>{{ a.customerName }}</b>
+            <div class="text-2 text-sm">{{ a.items[0]?.serviceName }}<span *ngIf="a.items.length > 1"> +{{ a.items.length - 1 }}</span> · منذ {{ a.startTime }}</div>
+          </div>
+          <button *ngIf="canManage()" class="btn btn-success btn-sm" (click)="startService(a)">
+            <app-icon name="play" [size]="14"></app-icon> ابدأ
+          </button>
+          <button *ngIf="canManage()" class="icon-btn" style="color: var(--red)" (click)="askCancel(a)" aria-label="إلغاء">
+            <app-icon name="x" [size]="16"></app-icon>
+          </button>
+        </div>
+      </aside>
+
+      <!-- جدول اليوم -->
+      <section class="card schedule-card" *ngIf="view() === 'schedule'">
+        <div class="schedule-scroll">
+          <div class="schedule" [style.--cols]="d.barbers.length + (unassigned().length ? 1 : 0)">
+            <div class="col-head time-head"></div>
+            <div class="col-head" *ngFor="let b of d.barbers">{{ b.fullName }}</div>
+            <div class="col-head" *ngIf="unassigned().length">أي حلاق</div>
+
+            <div class="time-col" [style.height.px]="scheduleHeight()">
+              <span *ngFor="let h of hours()" class="hour" [style.top.px]="h.top">{{ h.label }}</span>
+            </div>
+
+            <div class="barber-col" *ngFor="let b of d.barbers" [style.height.px]="scheduleHeight()"
+                 (dblclick)="canManage() && newBooking(false, b.id)">
+              <div class="hour-line" *ngFor="let h of hours()" [style.top.px]="h.top"></div>
+              <div class="now-line" *ngIf="nowLine() !== null" [style.top.px]="nowLine()"></div>
+              <button class="appt" *ngFor="let a of barberAppointments(b.id)" [class]="'appt ' + statusClass(a.status)"
+                      [style.top.px]="top(a)" [style.height.px]="height(a)" (click)="open(a)">
+                <span class="appt-time">{{ a.startTime }}–{{ a.endTime }}</span>
+                <b class="appt-name">{{ a.customerName }}</b>
+                <span class="appt-svc">{{ a.items[0]?.serviceName }}<span *ngIf="a.items.length > 1"> +{{ a.items.length - 1 }}</span></span>
+                <app-icon *ngIf="a.source === 'Online'" name="link" [size]="12" class="appt-src"></app-icon>
+              </button>
+            </div>
+
+            <div class="barber-col" *ngIf="unassigned().length" [style.height.px]="scheduleHeight()">
+              <div class="hour-line" *ngFor="let h of hours()" [style.top.px]="h.top"></div>
+              <button *ngFor="let a of unassigned()" [class]="'appt ' + statusClass(a.status)"
+                      [style.top.px]="top(a)" [style.height.px]="height(a)" (click)="open(a)">
+                <span class="appt-time">{{ a.startTime }}</span>
+                <b class="appt-name">{{ a.customerName }}</b>
+              </button>
+            </div>
+          </div>
+        </div>
+        <p class="text-2 text-sm mt-8" *ngIf="canManage()">نقرتان على عمود الحلاق لحجز موعد جديد له.</p>
+      </section>
+
+      <!-- عرض القائمة -->
+      <section class="card" *ngIf="view() === 'list'">
+        <p class="text-2" *ngIf="!d.appointments.length">لا توجد مواعيد في هذا اليوم.</p>
+        <button class="list-item" *ngFor="let a of d.appointments" (click)="open(a)">
+          <span class="li-time">{{ a.startTime }}</span>
+          <div class="grow">
+            <b>{{ a.customerName }}</b>
+            <div class="text-2 text-sm">{{ a.barberName ?? 'أي حلاق' }} · {{ a.items[0]?.serviceName }}<span *ngIf="a.items.length > 1"> +{{ a.items.length - 1 }}</span></div>
+          </div>
+          <span class="badge" [class]="'badge ' + statusClass(a.status)">{{ a.statusText }}</span>
+        </button>
+      </section>
+    </div>
+
+    <details class="card mt-16" *ngIf="closed().length">
+      <summary class="text-2">مواعيد ملغاة / لم يحضر ({{ closed().length }})</summary>
+      <div class="list-item static" *ngFor="let a of closed()">
+        <span class="li-time">{{ a.startTime }}</span>
+        <div class="grow"><b>{{ a.customerName }}</b><div class="text-2 text-sm">{{ a.cancelReason }}</div></div>
+        <span class="badge badge-gray">{{ a.statusText }}</span>
+      </div>
+    </details>
+  </ng-container>
+</div>
+
+<!-- تفاصيل الموعد -->
+<app-modal *ngIf="selected() as a" [title]="'موعد ' + a.customerName" [showFooter]="false" (close)="selected.set(null)">
+  <div class="detail">
+    <div class="row"><span>الحالة</span><span class="badge" [class]="'badge ' + statusClass(a.status)">{{ a.statusText }}</span></div>
+    <div class="row"><span>الوقت</span><b>{{ a.date }} · {{ a.startTime }}–{{ a.endTime }}</b></div>
+    <div class="row"><span>الحلاق</span><span>{{ a.barberName ?? 'أي حلاق متاح' }}</span></div>
+    <div class="row"><span>الخدمات</span><span>{{ serviceNames(a) }}</span></div>
+    <div class="row"><span>الإجمالي المتوقع</span><span class="money">{{ a.total | sar }}</span></div>
+    <div class="row" *ngIf="a.customerPhone"><span>الجوال</span><span dir="ltr">{{ a.customerPhone }}</span></div>
+    <div class="row"><span>المصدر</span><span>{{ a.sourceText }} · {{ a.reference }}</span></div>
+    <div class="row" *ngIf="a.notes"><span>ملاحظات</span><span>{{ a.notes }}</span></div>
+  </div>
+
+  <div class="actions-grid" *ngIf="canManage() && a.status !== 'Completed'">
+    <button class="btn btn-success" *ngIf="a.status === 'InService' || a.status === 'Confirmed' || a.status === 'Waiting'" (click)="checkout(a)">
+      <app-icon name="cash" [size]="17"></app-icon> تحصيل
+    </button>
+    <button class="btn btn-primary" *ngIf="a.status === 'Pending'" (click)="confirm(a)">
+      <app-icon name="check" [size]="17"></app-icon> تأكيد
+    </button>
+    <button class="btn btn-outline" *ngIf="a.status === 'Confirmed' || a.status === 'Pending' || a.status === 'Waiting'" (click)="startService(a)">
+      <app-icon name="play" [size]="17"></app-icon> بدء الخدمة
+    </button>
+    <a class="btn btn-outline" *ngIf="whatsAppLink(a) as link" [href]="link" target="_blank" rel="noopener">
+      <app-icon name="message" [size]="17"></app-icon> تذكير واتساب
+    </a>
+    <button class="btn btn-ghost" *ngIf="a.status !== 'InService'" (click)="edit(a)">
+      <app-icon name="edit" [size]="17"></app-icon> تعديل
+    </button>
+    <button class="btn btn-ghost" *ngIf="a.status === 'Confirmed' || a.status === 'Pending'" (click)="noShow(a)">
+      <app-icon name="userX" [size]="17"></app-icon> لم يحضر
+    </button>
+    <button class="btn btn-ghost text-red" (click)="selected.set(null); askCancel(a)">
+      <app-icon name="x" [size]="17"></app-icon> إلغاء
+    </button>
+  </div>
+  <div class="alert alert-success mt-16" *ngIf="a.status === 'Completed'">
+    <app-icon name="checkCircle" [size]="18"></app-icon> تم تحصيل هذا الموعد.
+  </div>
+</app-modal>
+
+<!-- نموذج الحجز -->
+<app-modal *ngIf="form() as f" [title]="f.id ? 'تعديل الموعد' : f.walkIn ? 'إضافة عميل للانتظار' : 'حجز موعد جديد'" (close)="form.set(null)">
+  <div class="field customer-field">
+    <label>العميل</label>
+    <input class="input" [ngModel]="f.customerName" (ngModelChange)="searchCustomers($event)"
+           placeholder="ابحث باسم عميل مسجل أو اكتب اسمًا جديدًا" [disabled]="!!f.id && !!f.customerId">
+    <div class="suggestions" *ngIf="customerResults().length">
+      <button *ngFor="let c of customerResults()" (click)="pickCustomer(c)">
+        <b>{{ c.fullName }}</b><span class="text-2" *ngIf="c.phone"> — {{ c.phone }}</span>
+      </button>
+    </div>
+    <div class="text-2 text-sm mt-8" *ngIf="f.customerId">عميل مسجل ✓</div>
+  </div>
+  <div class="field" *ngIf="!f.customerId">
+    <label>الجوال (اختياري — يُنشئ ملف عميل)</label>
+    <input class="input" dir="ltr" [ngModel]="f.customerPhone" (ngModelChange)="patchForm({ customerPhone: $event })" placeholder="05XXXXXXXX">
+  </div>
+
+  <div class="field">
+    <label>الخدمات</label>
+    <div class="chips">
+      <button *ngFor="let s of services()" class="chip" [class.selected]="f.serviceIds.includes(s.id)" (click)="toggleService(s.id)">
+        {{ s.name }} · {{ s.price | sar }}
+      </button>
+    </div>
+    <div class="text-2 text-sm mt-8" *ngIf="f.serviceIds.length">المدة {{ formDuration() }} دقيقة · {{ formTotal() | sar }}</div>
+  </div>
+
+  <div class="grid-2">
+    <div class="field">
+      <label>الحلاق</label>
+      <select class="input" [ngModel]="f.barberId" (ngModelChange)="patchForm({ barberId: $event })">
+        <option [ngValue]="null">أي حلاق متاح</option>
+        <option *ngFor="let b of day()?.barbers" [ngValue]="b.id">{{ b.fullName }}</option>
+      </select>
+    </div>
+    <div class="field" *ngIf="!f.walkIn">
+      <label>التاريخ</label>
+      <input class="input" type="date" [ngModel]="f.date" (ngModelChange)="patchForm({ date: $event })">
+    </div>
+  </div>
+
+  <div class="field" *ngIf="!f.walkIn">
+    <label>الوقت المتاح</label>
+    <div *ngIf="slotsLoading()" class="text-2 text-sm">جارٍ البحث عن الأوقات المتاحة…</div>
+    <div class="text-2 text-sm" *ngIf="!slotsLoading() && !f.serviceIds.length">اختر الخدمات أولًا لعرض الأوقات.</div>
+    <div class="text-2 text-sm" *ngIf="!slotsLoading() && f.serviceIds.length && !slots().length">لا توجد أوقات متاحة في هذا اليوم.</div>
+    <div class="slots" *ngIf="!slotsLoading() && slots().length">
+      <button *ngFor="let s of slots()" class="chip" [class.selected]="f.time === s.time" (click)="patchForm({ time: s.time })">{{ s.time }}</button>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>ملاحظات</label>
+    <input class="input" [ngModel]="f.notes" (ngModelChange)="patchForm({ notes: $event })" placeholder="اختياري">
+  </div>
+
+  <div footer class="flex gap-8">
+    <button class="btn btn-primary" [disabled]="saving()" (click)="saveForm()">
+      <span class="spinner" *ngIf="saving()"></span> {{ f.id ? 'حفظ التعديل' : f.walkIn ? 'إضافة للانتظار' : 'تأكيد الحجز' }}
+    </button>
+    <button class="btn btn-outline" (click)="form.set(null)">إلغاء</button>
+  </div>
+</app-modal>
+
+<!-- اختيار الحلاق لبدء خدمة عميل منتظر -->
+<app-modal *ngIf="starting() as a" title="بدء خدمة العميل" (close)="starting.set(null)">
+  <p class="mb-16">اختر الحلاق الذي سيخدم <b>{{ a.customerName }}</b>:</p>
+  <div class="chips">
+    <button *ngFor="let b of day()?.barbers" class="chip" [class.selected]="startBarberId === b.id" (click)="startBarberId = b.id">{{ b.fullName }}</button>
+  </div>
+  <div footer class="flex gap-8">
+    <button class="btn btn-success" (click)="confirmStart()">بدء الخدمة</button>
+    <button class="btn btn-outline" (click)="starting.set(null)">رجوع</button>
+  </div>
+</app-modal>
+
+<!-- إلغاء موعد -->
+<app-modal *ngIf="cancelling() as a" title="إلغاء الموعد" (close)="cancelling.set(null)">
+  <p class="mb-16">سيتم إلغاء موعد <b>{{ a.customerName }}</b> ({{ a.startTime }}).</p>
+  <div class="field">
+    <label>سبب الإلغاء (اختياري)</label>
+    <input class="input" [(ngModel)]="cancelReason" placeholder="مثال: طلب العميل">
+  </div>
+  <div footer class="flex gap-8">
+    <button class="btn btn-danger" (click)="confirmCancel()">تأكيد الإلغاء</button>
+    <button class="btn btn-outline" (click)="cancelling.set(null)">رجوع</button>
+  </div>
+</app-modal>

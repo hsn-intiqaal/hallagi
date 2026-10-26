@@ -26,7 +26,7 @@ export class Services implements OnInit {
   readonly editing = signal<PosService | null>(null);
   readonly showForm = signal(false);
 
-  form = { name: '', description: '', basePrice: 0, active: true };
+  form = { name: '', description: '', basePrice: 0, durationMinutes: 30, active: true };
   formError = '';
 
   ngOnInit(): void { this.load(); }
@@ -40,14 +40,14 @@ export class Services implements OnInit {
   }
 
   openAdd(): void {
-    this.form = { name: '', description: '', basePrice: 0, active: true };
+    this.form = { name: '', description: '', basePrice: 0, durationMinutes: 30, active: true };
     this.formError = '';
     this.editing.set(null);
     this.showForm.set(true);
   }
 
   openEdit(s: PosService): void {
-    this.form = { name: s.name, description: s.description ?? '', basePrice: s.basePrice ?? s.price, active: s.status === 'Active' };
+    this.form = { name: s.name, description: s.description ?? '', basePrice: s.basePrice ?? s.price, durationMinutes: s.durationMinutes ?? 30, active: s.status === 'Active' };
     this.formError = '';
     this.editing.set(s);
     this.showForm.set(true);
@@ -63,6 +63,7 @@ export class Services implements OnInit {
       name: this.form.name.trim(),
       description: this.form.description?.trim() || null,
       basePrice: this.form.basePrice,
+      durationMinutes: Number(this.form.durationMinutes) || 30,
       active: this.form.active
     };
     const editing = this.editing();

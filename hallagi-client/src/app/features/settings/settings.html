@@ -141,6 +141,116 @@
     </div>
 
     <div class="card mb-16" *ngIf="canManage()">
+      <h2 class="mb-8">الضريبة والفاتورة الإلكترونية</h2>
+      <p class="text-2 text-sm mb-16">عند التفعيل تصدر كل عملية بيع «فاتورة ضريبية مبسطة» برمز QR متوافق مع متطلبات هيئة الزكاة والضريبة والجمارك (المرحلة الأولى).</p>
+      <label class="switch-row mb-16"><input type="checkbox" [(ngModel)]="tax.vatEnabled"> تفعيل ضريبة القيمة المضافة</label>
+      <ng-container *ngIf="tax.vatEnabled">
+        <div class="grid-2">
+          <div class="field">
+            <label>الرقم الضريبي</label>
+            <input class="input" dir="ltr" maxlength="15" [(ngModel)]="tax.vatNumber" placeholder="3XXXXXXXXXXXXX3"
+                   [class.invalid]="tax.vatNumber && !vatNumberValid()">
+            <div class="field-error" *ngIf="tax.vatNumber && !vatNumberValid()">15 رقمًا يبدأ وينتهي بالرقم 3</div>
+          </div>
+          <div class="field">
+            <label>السجل التجاري</label>
+            <input class="input" dir="ltr" maxlength="20" [(ngModel)]="tax.commercialRegistration">
+          </div>
+          <div class="field">
+            <label>الاسم القانوني للمنشأة (يظهر في الفاتورة)</label>
+            <input class="input" [(ngModel)]="tax.legalName" [placeholder]="form.organizationName">
+          </div>
+          <div class="field">
+            <label>نسبة الضريبة</label>
+            <select class="input" [(ngModel)]="tax.vatRate">
+              <option [ngValue]="0.15">15%</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>العنوان الوطني / عنوان الفاتورة</label>
+          <input class="input" [(ngModel)]="tax.taxAddress">
+        </div>
+        <label class="switch-row"><input type="checkbox" [(ngModel)]="tax.pricesIncludeVat"> أسعار الخدمات والمنتجات شاملة الضريبة</label>
+        <p class="text-2 text-sm mt-8">{{ tax.pricesIncludeVat ? 'مثال: خدمة بسعر 25 ر.س → يدفع العميل 25 منها 3.26 ضريبة.' : 'مثال: خدمة بسعر 25 ر.س → يدفع العميل 28.75 شاملة الضريبة.' }}</p>
+      </ng-container>
+    </div>
+
+    <div class="card mb-16" *ngIf="canManage()">
+      <h2 class="mb-8">برنامج الولاء</h2>
+      <p class="text-2 text-sm mb-16">العميل المسجّل يكسب نقاطًا مع كل عملية ويستبدلها كخصم في زيارة لاحقة.</p>
+      <label class="switch-row mb-16"><input type="checkbox" [(ngModel)]="loyalty.enabled"> تفعيل برنامج الولاء</label>
+      <div class="grid-2" *ngIf="loyalty.enabled">
+        <div class="field">
+          <label>نقاط لكل 1 ر.س مدفوع</label>
+          <input class="input" type="number" min="0" step="0.5" [(ngModel)]="loyalty.pointsPerSar">
+        </div>
+        <div class="field">
+          <label>قيمة النقطة (ر.س)</label>
+          <input class="input" type="number" min="0" step="0.01" [(ngModel)]="loyalty.pointValue">
+        </div>
+        <div class="field">
+          <label>أقل عدد نقاط للاستبدال</label>
+          <input class="input" type="number" min="0" step="10" [(ngModel)]="loyalty.minRedeem">
+        </div>
+        <div class="field">
+          <label>العائد للعميل</label>
+          <div class="readout">{{ loyaltyReturnPercent() }}% من قيمة مشترياته</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-16" *ngIf="canManage()">
+      <h2 class="mb-8">الحجز الإلكتروني</h2>
+      <p class="text-2 text-sm mb-16">صفحة حجز باسم محلك يفتحها العميل من الجوال ويختار الخدمة والحلاق والوقت المتاح — ضعها في واتساب وإنستغرام وخرائط قوقل.</p>
+      <label class="switch-row mb-16"><input type="checkbox" [(ngModel)]="booking.enabled"> تفعيل الحجز الإلكتروني</label>
+      <ng-container *ngIf="booking.enabled">
+        <div class="field">
+          <label>رابط الصفحة</label>
+          <div class="slug-row" dir="ltr">
+            <span class="prefix">/book/</span>
+            <input class="input" [(ngModel)]="booking.slug" placeholder="my-salon" maxlength="40">
+          </div>
+          <div class="text-2 text-sm mt-8">أحرف إنجليزية صغيرة وأرقام وشرطة — اتركه فارغًا ليُنشأ تلقائيًا.</div>
+        </div>
+        <div class="booking-link" *ngIf="bookingUrl() as url">
+          <app-icon name="link" [size]="16"></app-icon>
+          <a [href]="url" target="_blank" rel="noopener" dir="ltr">{{ url }}</a>
+          <button class="btn btn-sm btn-outline" type="button" (click)="copyBookingUrl()"><app-icon name="copy" [size]="14"></app-icon> نسخ</button>
+        </div>
+        <div class="grid-2 mt-16">
+          <div class="field">
+            <label>دقة الأوقات المعروضة</label>
+            <select class="input" [(ngModel)]="booking.slotMinutes">
+              <option [ngValue]="10">كل 10 دقائق</option>
+              <option [ngValue]="15">كل 15 دقيقة</option>
+              <option [ngValue]="20">كل 20 دقيقة</option>
+              <option [ngValue]="30">كل 30 دقيقة</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>الحجز مسبقًا حتى</label>
+            <select class="input" [(ngModel)]="booking.maxDaysAhead">
+              <option [ngValue]="7">أسبوع</option>
+              <option [ngValue]="14">أسبوعين</option>
+              <option [ngValue]="30">شهر</option>
+            </select>
+          </div>
+        </div>
+        <p class="text-2 text-sm">ساعات العمل لكل فرع تُضبط من صفحة الفروع، ومدة كل خدمة من صفحة الخدمات.</p>
+      </ng-container>
+    </div>
+
+    <div class="card mb-16" *ngIf="canManage()">
+      <h2 class="mb-16">الخصومات</h2>
+      <div class="field" style="max-width: 320px">
+        <label>الحد الأعلى للخصم اليدوي (% من الفاتورة)</label>
+        <input class="input" type="number" min="0" max="100" [(ngModel)]="maxManualDiscountPercent">
+        <div class="text-2 text-sm mt-8">ينطبق على المدير والكاشير المصرّح لهم — المالك بلا حد.</div>
+      </div>
+    </div>
+
+    <div class="card mb-16" *ngIf="canManage()">
       <h2 class="mb-16">إعدادات الإيصال</h2>
       <div class="field">
         <label>هاتف المحل (يظهر في الإيصال)</label>
@@ -150,7 +260,7 @@
         <label>عبارة أسفل الإيصال</label>
         <input class="input" [(ngModel)]="form.receiptFooter" placeholder="شكرًا لزيارتكم">
       </div>
-      <p class="text-2 text-sm">الإيصال الحالي غير متوافق مع متطلبات الفاتورة الضريبية الإلكترونية (فاتورة) — يتم التعامل معه كإيصال داخلي فقط.</p>
+      <p class="text-2 text-sm" *ngIf="!tax.vatEnabled">بدون تفعيل الضريبة يُطبع «إيصال داخلي» — فعّلها أعلاه لإصدار فواتير ضريبية مبسطة.</p>
     </div>
 
     <div class="card mb-16">

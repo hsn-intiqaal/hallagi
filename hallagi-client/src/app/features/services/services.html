@@ -21,7 +21,7 @@
       <app-icon name="scissors" [size]="22" class="text-2"></app-icon>
       <div class="info">
         <div class="n">{{ s.name }}</div>
-        <div class="d">{{ s.description || 'بدون وصف' }}</div>
+        <div class="d">{{ s.description || 'بدون وصف' }}<span *ngIf="s.durationMinutes"> · {{ s.durationMinutes }} دقيقة</span></div>
       </div>
       <span class="badge" [class]="s.status === 'Active' ? 'badge-green' : 'badge-gray'">{{ s.statusText }}</span>
       <div class="price">
@@ -51,6 +51,12 @@
   <div class="field">
     <label>السعر الأساسي (ريال)</label>
     <input class="input money" type="number" min="0" step="0.5" [class.invalid]="formError" [(ngModel)]="form.basePrice" placeholder="25">
+  </div>
+  <div class="field">
+    <label>مدة الخدمة (دقيقة) — تُستخدم في المواعيد</label>
+    <select class="input" [(ngModel)]="form.durationMinutes">
+      <option *ngFor="let m of [10, 15, 20, 30, 40, 45, 60, 75, 90, 120]" [ngValue]="m">{{ m }} دقيقة</option>
+    </select>
   </div>
   <div class="field flex gap-8" style="align-items: center">
     <input type="checkbox" id="svcActive" [(ngModel)]="form.active" style="width: 20px; height: 20px">

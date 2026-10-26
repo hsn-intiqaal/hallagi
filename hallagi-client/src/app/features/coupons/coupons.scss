@@ -1,0 +1,7 @@
+.coupon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+.coupon { display: flex; flex-direction: column; gap: 6px; border-inline-start: 4px solid var(--primary); }
+.coupon.off { border-inline-start-color: var(--border); opacity: .75; }
+.code { font-weight: 800; font-size: 1.15rem; letter-spacing: 1px; color: var(--navy); font-family: ui-monospace, monospace; }
+.value { font-size: 1.5rem; font-weight: 800; color: var(--primary); direction: ltr; text-align: end; }
+.rules { margin: 4px 0 8px; padding-inline-start: 18px; color: var(--text-2); }
+.code-input { text-transform: uppercase; font-family: ui-monospace, monospace; letter-spacing: 1px; }

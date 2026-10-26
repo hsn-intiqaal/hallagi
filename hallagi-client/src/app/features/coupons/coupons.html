@@ -1,0 +1,87 @@
+<div class="page">
+  <div class="page-title">
+    <div>
+      <h1>أكواد الخصم</h1>
+      <p class="text-2 text-sm">أكواد للعروض والحملات — تُطبّق من شاشة البيع ويُحسب الخصم قبل الضريبة.</p>
+    </div>
+    <button class="btn btn-primary" (click)="openAdd()">
+      <app-icon name="plus" [size]="18"></app-icon> كود جديد
+    </button>
+  </div>
+
+  <div *ngIf="loading()"><app-loading /></div>
+
+  <app-empty *ngIf="!loading() && !items().length" icon="percent" title="لا توجد أكواد خصم"
+    message="أنشئ كودًا مثل WELCOME10 لجذب عملاء جدد أو EID20 لعروض المواسم." actionLabel="كود جديد" (action)="openAdd()" />
+
+  <div class="coupon-grid" *ngIf="!loading() && items().length">
+    <div class="card coupon" *ngFor="let c of items()" [class.off]="c.status !== 'Active' || isExpired(c)">
+      <div class="flex-between">
+        <span class="code" dir="ltr">{{ c.code }}</span>
+        <span class="badge" [class]="c.status !== 'Active' ? 'badge badge-gray' : isExpired(c) ? 'badge badge-red' : 'badge badge-green'">
+          {{ c.status !== 'Active' ? c.statusText : isExpired(c) ? 'منتهي' : c.statusText }}
+        </span>
+      </div>
+      <div class="value">{{ c.typeText }}</div>
+      <div class="text-2 text-sm" *ngIf="c.description">{{ c.description }}</div>
+      <ul class="rules text-sm">
+        <li *ngIf="c.minSubtotal">حد أدنى للفاتورة {{ c.minSubtotal | sar }}</li>
+        <li *ngIf="c.maxDiscount">أقصى خصم {{ c.maxDiscount | sar }}</li>
+        <li *ngIf="c.validFrom || c.validTo">
+          صالح <span *ngIf="c.validFrom">من {{ c.validFrom | dateShort }}</span> <span *ngIf="c.validTo">حتى {{ c.validTo | dateShort }}</span>
+        </li>
+        <li>الاستخدام: {{ usage(c) }}</li>
+      </ul>
+      <button class="btn btn-outline btn-sm" (click)="openEdit(c)"><app-icon name="edit" [size]="14"></app-icon> تعديل</button>
+    </div>
+  </div>
+</div>
+
+<app-modal *ngIf="form() as f" [title]="f.id ? 'تعديل الكود' : 'كود خصم جديد'" (close)="form.set(null)">
+  <div class="field">
+    <label>الكود</label>
+    <input class="input code-input" dir="ltr" [(ngModel)]="f.code" placeholder="WELCOME10" maxlength="40">
+  </div>
+  <div class="field">
+    <label>الوصف (اختياري)</label>
+    <input class="input" [(ngModel)]="f.description" placeholder="خصم للعملاء الجدد">
+  </div>
+  <div class="field">
+    <label>نوع الخصم</label>
+    <div class="seg">
+      <button [class.active]="f.type === 'Percent'" (click)="setType('Percent')">نسبة %</button>
+      <button [class.active]="f.type === 'Fixed'" (click)="setType('Fixed')">مبلغ ثابت</button>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="field">
+      <label>{{ f.type === 'Percent' ? 'النسبة (%)' : 'المبلغ (ر.س)' }}</label>
+      <input class="input money" type="number" min="0" [max]="f.type === 'Percent' ? 100 : 100000" [(ngModel)]="f.value">
+    </div>
+    <div class="field" *ngIf="f.type === 'Percent'">
+      <label>أقصى خصم (ر.س) — اختياري</label>
+      <input class="input money" type="number" min="0" [(ngModel)]="f.maxDiscount">
+    </div>
+    <div class="field">
+      <label>حد أدنى للفاتورة — اختياري</label>
+      <input class="input money" type="number" min="0" [(ngModel)]="f.minSubtotal">
+    </div>
+    <div class="field">
+      <label>عدد مرات الاستخدام — اختياري</label>
+      <input class="input" type="number" min="1" [(ngModel)]="f.maxUses">
+    </div>
+    <div class="field">
+      <label>يبدأ من</label>
+      <input class="input" type="date" [(ngModel)]="f.validFrom">
+    </div>
+    <div class="field">
+      <label>ينتهي في</label>
+      <input class="input" type="date" [(ngModel)]="f.validTo">
+    </div>
+  </div>
+  <label class="switch-row"><input type="checkbox" [(ngModel)]="f.active"> الكود مفعّل</label>
+  <div footer class="flex gap-8">
+    <button class="btn btn-primary" [disabled]="saving()" (click)="save()">حفظ</button>
+    <button class="btn btn-outline" (click)="form.set(null)">إلغاء</button>
+  </div>
+</app-modal>

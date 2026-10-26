@@ -24,6 +24,7 @@
       </div>
       <div class="meta">
         <span *ngIf="b.address">📍 {{ b.address }}</span>
+        <span *ngIf="b.opensAt">🕘 {{ b.opensAt }} – {{ b.closesAt }}</span>
         <span>عدد الحلاقين المسندين: {{ b.barberCount ?? 0 }}</span>
         <span>عدد المستخدمين المرتبطين: {{ b.userCount ?? 0 }}</span>
         <span *ngIf="b.hasOpenShift" class="text-green">● وردية مفتوحة حاليًا</span>
@@ -48,6 +49,20 @@
   <div class="field">
     <label>العنوان (اختياري)</label>
     <input class="input" [(ngModel)]="form.address" placeholder="الحي، الشارع">
+  </div>
+  <div class="field">
+    <label>هاتف الفرع (اختياري)</label>
+    <input class="input" dir="ltr" [(ngModel)]="form.phone" placeholder="0112345678">
+  </div>
+  <div class="grid-2">
+    <div class="field">
+      <label>يفتح الساعة</label>
+      <input class="input" type="time" [(ngModel)]="form.opensAt">
+    </div>
+    <div class="field">
+      <label>يغلق الساعة</label>
+      <input class="input" type="time" [(ngModel)]="form.closesAt">
+    </div>
   </div>
   <div class="field flex gap-8" style="align-items: center">
     <input type="checkbox" id="bActive" [(ngModel)]="form.active" style="width: 20px; height: 20px">

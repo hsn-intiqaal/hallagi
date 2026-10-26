@@ -14,7 +14,7 @@ import { ToastService } from '@core/state/toast.service';
         <span class="stat-label">{{ label }}</span>
         <app-icon [name]="icon" [size]="19"></app-icon>
       </div>
-      <div class="stat-value money" [class.negative]="value < 0">{{ value | sar }}</div>
+      <div class="stat-value money" [class.negative]="value < 0">{{ format === 'number' ? value : (value | sar) }}</div>
       <div class="stat-hint">{{ hint }}</div>
       <div class="stat-sub" *ngIf="sub">
         <span [class]="subTone === 'up' ? 'text-green' : subTone === 'down' ? 'text-red' : 'text-2'">{{ sub }}</span>
@@ -45,6 +45,7 @@ export class StatCard {
   @Input() tone: 'blue' | 'green' | 'orange' | 'red' | 'navy' = 'blue';
   @Input() sub?: string;
   @Input() subTone?: 'up' | 'down' | 'flat';
+  @Input() format: 'money' | 'number' = 'money';
 }
 
 /** Empty state block with a call to action. */

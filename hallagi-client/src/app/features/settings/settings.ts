@@ -5,7 +5,7 @@ import { ApiService } from '@core/http/api.service';
 import { AuthService } from '@core/auth/auth.service';
 import { ToastService } from '@core/state/toast.service';
 import { ThemeService } from '@core/state/theme.service';
-import { Settings as SettingsModel } from '@core/models';
+import { BookingSettings, LoyaltySettings, Settings as SettingsModel, TaxSettings } from '@core/models';
 import { Icon } from '@shared/ui/icon';
 import { SarPipe } from '@shared/pipes/format.pipes';
 import { LoadingRow } from '@shared/ui/ui';
@@ -46,6 +46,14 @@ export class Settings implements OnInit {
   };
   password = { current: '', next: '' };
 
+  tax: TaxSettings = {
+    vatEnabled: false, vatRate: 0.15, pricesIncludeVat: true,
+    vatNumber: null, commercialRegistration: null, legalName: null, taxAddress: null
+  };
+  loyalty: LoyaltySettings = { enabled: false, pointsPerSar: 1, pointValue: 0.05, minRedeem: 100 };
+  booking: BookingSettings = { enabled: false, slug: null, slotMinutes: 15, maxDaysAhead: 14 };
+  maxManualDiscountPercent = 30;
+
   readonly palettes: Palette[] = [
     { name: 'كحلي كلاسيكي', primary: '#2563EB', secondary: '#173653' },
     { name: 'ذهبي ملكي', primary: '#C79A3B', secondary: '#2A2113' },
@@ -81,6 +89,10 @@ export class Settings implements OnInit {
           primaryColor: s.organization?.primaryColor ?? DEFAULT_PRIMARY,
           secondaryColor: s.organization?.secondaryColor ?? DEFAULT_SECONDARY
         };
+        this.tax = { ...s.tax };
+        this.loyalty = { ...s.loyalty };
+        this.booking = { ...s.booking };
+        this.maxManualDiscountPercent = s.settings.maxManualDiscountPercent;
         this.logoUrl.set(s.organization?.logoUrl ?? null);
         this.coverUrl.set(s.organization?.coverImageUrl ?? null);
         this.loading.set(false);
@@ -119,8 +131,35 @@ export class Settings implements OnInit {
     }
   }
 
+  /** Saudi VAT registration: 15 digits starting and ending with 3. */
+  vatNumberValid(): boolean {
+    return /^3\d{13}3$/.test(this.tax.vatNumber ?? '');
+  }
+
+  /** 100 points × 0.05 = 5 SAR → shown as a percentage of spend returned to the customer. */
+  loyaltyReturnPercent(): number {
+    return Math.round(this.loyalty.pointsPerSar * this.loyalty.pointValue * 1000) / 10;
+  }
+
+  bookingUrl(): string | null {
+    return this.booking.slug ? `${location.origin}/book/${this.booking.slug}` : null;
+  }
+
+  copyBookingUrl(): void {
+    const url = this.bookingUrl();
+    if (!url) return;
+    navigator.clipboard?.writeText(url).then(
+      () => this.toast.success('تم نسخ رابط الحجز'),
+      () => this.toast.info(url)
+    );
+  }
+
   save(): void {
     if (!this.form.organizationName.trim()) { this.toast.error('اسم المنشأة مطلوب'); return; }
+    if (this.tax.vatEnabled && !this.vatNumberValid()) {
+      this.toast.error('الرقم الضريبي يجب أن يكون 15 رقمًا يبدأ وينتهي بالرقم 3');
+      return;
+    }
     this.api.put('/settings', {
       organizationName: this.form.organizationName.trim(),
       currency: this.form.currency,
@@ -132,9 +171,18 @@ export class Settings implements OnInit {
       receiptPhone: this.form.receiptPhone?.trim() || null,
       coverImageUrl: this.coverRemoved() ? '' : this.coverUrl(),
       primaryColor: this.form.primaryColor,
-      secondaryColor: this.form.secondaryColor
+      secondaryColor: this.form.secondaryColor,
+      tax: { ...this.tax, vatRate: Number(this.tax.vatRate) },
+      loyalty: this.loyalty,
+      booking: { ...this.booking, slug: this.booking.slug?.trim().toLowerCase() || null },
+      maxManualDiscountPercent: Number(this.maxManualDiscountPercent)
     }).subscribe({
-      next: () => { this.toast.success('تم حفظ الإعدادات بنجاح'); this.auth.refreshMe(); },
+      next: () => {
+        this.toast.success('تم حفظ الإعدادات بنجاح');
+        this.auth.refreshMe();
+        // the server may have generated a booking slug
+        this.api.get<SettingsModel>('/settings').subscribe({ next: s => (this.booking = { ...s.booking }) });
+      },
       error: (e: any) => this.toast.error(e?.message ?? 'تعذّر حفظ الإعدادات')
     });
   }

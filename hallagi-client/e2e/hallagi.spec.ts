@@ -53,10 +53,11 @@ test('رحلة بيع كاملة: خدمة + حلاق + حفظ + شاشة تأك
   await expect(page.locator('.success h1', { hasText: 'تم تسجيل البيع بنجاح' })).toBeVisible({ timeout: 20000 });
   await expect(page.getByText('رقم العملية')).toBeVisible();
   await expect(page.getByRole('button', { name: 'بيع جديد' })).toBeVisible();
-  await expect(page.getByRole('button', { name: /عرض الإيصال/ })).toBeVisible();
+  // the demo salon is VAT-registered, so every sale is a simplified tax invoice
+  await expect(page.getByRole('button', { name: /عرض الفاتورة|عرض الإيصال/ })).toBeVisible();
 });
 
-test('شاشة التأكيد تعرض إيصالاً قابلًا للطباعة', async ({ page }) => {
+test('شاشة التأكيد تعرض فاتورة ضريبية مبسطة مع رمز QR', async ({ page }) => {
   const token = await tokenFor(page, CASHIER);
   await page.addInitScript(`localStorage.setItem('hallagi.token', '${token}')`);
   await page.goto(`${APP}/pos`);
@@ -68,10 +69,13 @@ test('شاشة التأكيد تعرض إيصالاً قابلًا للطباع�
   await page.getByRole('button', { name: /تأكيد البيع وحفظه/ }).click();
   await expect(page.locator('.success h1', { hasText: 'تم تسجيل البيع بنجاح' })).toBeVisible({ timeout: 20000 });
 
-  await page.getByRole('button', { name: /عرض الإيصال/ }).click();
+  await page.getByRole('button', { name: /عرض الفاتورة/ }).click();
   await expect(page.locator('.receipt')).toBeVisible({ timeout: 20000 });
-  await expect(page.getByText('الإجمالي', { exact: false }).first()).toBeVisible();
-  await expect(page.getByText('إيصال داخلي غير ضريبي')).toBeVisible();
+  await expect(page.getByText('فاتورة ضريبية مبسطة')).toBeVisible();
+  await expect(page.getByText('الرقم الضريبي')).toBeVisible();
+  await expect(page.getByText(/ضريبة القيمة المضافة/)).toBeVisible();
+  // ZATCA QR rendered as an image data URL
+  await expect(page.locator('.r-qr img')).toHaveAttribute('src', /^data:image\/png;base64,/, { timeout: 10000 });
 });
 
 test('الحلاق يرى معلوماته فقط: لا مصروفات ولا خزينة في القائمة', async ({ page }) => {

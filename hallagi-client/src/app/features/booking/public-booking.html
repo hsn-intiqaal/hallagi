@@ -1,0 +1,157 @@
+<div class="booking" [style.--brand]="brand()">
+  <div *ngIf="loading()" class="center"><app-loading message="جارٍ التحميل…" /></div>
+
+  <div *ngIf="notFound() as msg" class="center empty-state">
+    <app-icon name="calendar" [size]="40"></app-icon>
+    <h1>الحجز غير متاح</h1>
+    <p class="text-2">{{ msg }}</p>
+  </div>
+
+  <ng-container *ngIf="info() as info">
+    <header class="hero" [style.background-image]="info.organization.coverImageUrl ? 'url(&quot;' + info.organization.coverImageUrl + '&quot;)' : null">
+      <div class="hero-inner">
+        <span class="logo">
+          <img *ngIf="info.organization.logoUrl" [src]="info.organization.logoUrl" alt="">
+          <app-icon *ngIf="!info.organization.logoUrl" name="scissors" [size]="26"></app-icon>
+        </span>
+        <div>
+          <h1>{{ info.organization.name }}</h1>
+          <p>احجز موعدك خلال أقل من دقيقة</p>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+      <!-- مؤشر الخطوات -->
+      <ol class="steps" *ngIf="step() !== 'done'">
+        <li [class.active]="step() === 'services'" [class.done]="step() !== 'services'">الخدمة</li>
+        <li [class.active]="step() === 'time'" [class.done]="step() === 'details'">الموعد</li>
+        <li [class.active]="step() === 'details'">بياناتك</li>
+      </ol>
+
+      <!-- 1) الفرع والخدمات -->
+      <section *ngIf="step() === 'services'">
+        <ng-container *ngIf="info.branches.length > 1">
+          <h2>اختر الفرع</h2>
+          <div class="cards">
+            <button *ngFor="let b of info.branches" class="pick" [class.selected]="branchId() === b.id" (click)="selectBranch(b.id)">
+              <b>{{ b.name }}</b>
+              <span class="text-2 text-sm">{{ b.city }}<span *ngIf="b.address"> — {{ b.address }}</span></span>
+              <span class="text-2 text-sm">{{ b.opensAt }} – {{ b.closesAt }}</span>
+            </button>
+          </div>
+        </ng-container>
+
+        <h2>اختر الخدمات</h2>
+        <div class="cards">
+          <button *ngFor="let s of info.services" class="pick service" [class.selected]="serviceIds().includes(s.id)" (click)="toggleService(s.id)">
+            <span class="check"><app-icon name="check" [size]="14"></app-icon></span>
+            <b>{{ s.name }}</b>
+            <span class="text-2 text-sm">{{ s.durationMinutes }} دقيقة</span>
+            <span class="price">{{ s.price | sar }}</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- 2) الحلاق واليوم والوقت -->
+      <section *ngIf="step() === 'time'">
+        <button class="back" (click)="step.set('services')"><app-icon name="arrowRight" [size]="16"></app-icon> تغيير الخدمات</button>
+
+        <h2>الحلاق</h2>
+        <div class="chips">
+          <button class="chip" [class.selected]="barberId() === null" (click)="selectBarber(null)">أي حلاق متاح</button>
+          <button *ngFor="let b of branchBarbers()" class="chip" [class.selected]="barberId() === b.id" (click)="selectBarber(b.id)">{{ b.fullName }}</button>
+        </div>
+
+        <h2>اليوم</h2>
+        <div class="days">
+          <button *ngFor="let d of days()" class="day" [class.selected]="date() === d.value" (click)="selectDate(d.value)">
+            <span class="wd">{{ d.weekday }}</span>
+            <b>{{ d.day }}</b>
+            <span class="mo">{{ d.month }}</span>
+          </button>
+        </div>
+
+        <h2>الوقت</h2>
+        <div *ngIf="slotsLoading()" class="text-2">جارٍ البحث عن الأوقات المتاحة…</div>
+        <div *ngIf="!slotsLoading() && !slots().length" class="text-2">لا توجد أوقات متاحة في هذا اليوم — جرّب يومًا آخر.</div>
+        <div class="slots" *ngIf="!slotsLoading()">
+          <button *ngFor="let t of slots()" class="chip slot" [class.selected]="time() === t" (click)="selectTime(t)">{{ t }}</button>
+        </div>
+      </section>
+
+      <!-- 3) البيانات والتأكيد -->
+      <section *ngIf="step() === 'details'">
+        <button class="back" (click)="step.set('time')"><app-icon name="arrowRight" [size]="16"></app-icon> تغيير الوقت</button>
+
+        <div class="summary">
+          <div class="row"><span>الفرع</span><b>{{ branch()?.name }}</b></div>
+          <div class="row"><span>الموعد</span><b>{{ date() }} — {{ time() }}</b></div>
+          <div class="row"><span>الخدمات</span><b>{{ selectedServices().length }} خدمة · {{ duration() }} دقيقة</b></div>
+          <div class="row total"><span>الإجمالي</span><b>{{ total() | sar }}</b></div>
+        </div>
+
+        <div class="field">
+          <label>الاسم</label>
+          <input class="input" [(ngModel)]="name" autocomplete="name" placeholder="اسمك الكريم">
+        </div>
+        <div class="field">
+          <label>رقم الجوال</label>
+          <input class="input" [(ngModel)]="phone" dir="ltr" inputmode="tel" autocomplete="tel" placeholder="05XXXXXXXX">
+        </div>
+        <div class="field">
+          <label>ملاحظة (اختياري)</label>
+          <input class="input" [(ngModel)]="notes" maxlength="300">
+        </div>
+        <p class="text-2 text-sm">الدفع في المحل بعد الخدمة.</p>
+      </section>
+
+      <!-- 4) تم -->
+      <section *ngIf="step() === 'done' && result() as r" class="done">
+        <div class="ok"><app-icon name="checkCircle" [size]="48"></app-icon></div>
+        <h2>{{ r.message }}</h2>
+        <div class="ref">رقم الحجز <b dir="ltr">{{ r.reference }}</b></div>
+        <div class="summary">
+          <div class="row"><span>الفرع</span><b>{{ r.branch }}</b></div>
+          <div class="row"><span>الموعد</span><b>{{ r.date }} — {{ r.time }}</b></div>
+          <div class="row" *ngIf="r.barber"><span>الحلاق</span><b>{{ r.barber }}</b></div>
+          <div class="row"><span>الخدمات</span><b>{{ r.services.join(' + ') }}</b></div>
+          <div class="row total"><span>الإجمالي</span><b>{{ r.total | sar }}</b></div>
+        </div>
+        <p class="text-2 text-sm">احتفظ برقم الحجز — تحتاجه مع رقم جوالك لإلغاء الموعد.</p>
+        <button class="btn btn-outline" (click)="restart()">حجز موعد آخر</button>
+      </section>
+
+      <div class="alert alert-danger mt-16" *ngIf="error() as e">
+        <app-icon name="alert" [size]="18"></app-icon> {{ e }}
+      </div>
+
+      <!-- إلغاء حجز -->
+      <div class="cancel-box" *ngIf="step() !== 'done'">
+        <button class="link" (click)="showCancel.set(!showCancel())">تريد إلغاء حجز سابق؟</button>
+        <div *ngIf="showCancel()" class="cancel-form">
+          <input class="input" [(ngModel)]="cancelRef" dir="ltr" placeholder="رقم الحجز">
+          <input class="input" [(ngModel)]="cancelPhone" dir="ltr" placeholder="05XXXXXXXX">
+          <button class="btn btn-outline" (click)="cancelBooking()">إلغاء الحجز</button>
+          <p class="text-sm" *ngIf="cancelMessage() as m">{{ m }}</p>
+        </div>
+      </div>
+    </main>
+
+    <!-- الشريط السفلي الثابت -->
+    <footer class="bar" *ngIf="step() === 'services' || step() === 'details'">
+      <div>
+        <div class="text-2 text-sm">{{ selectedServices().length }} خدمة · {{ duration() }} دقيقة</div>
+        <b>{{ total() | sar }}</b>
+      </div>
+      <button *ngIf="step() === 'services'" class="btn btn-brand btn-lg" [disabled]="!branchId() || !serviceIds().length" (click)="goToTime()">
+        اختر الموعد
+      </button>
+      <button *ngIf="step() === 'details'" class="btn btn-brand btn-lg" [disabled]="submitting()" (click)="book()">
+        <span class="spinner" *ngIf="submitting()"></span> تأكيد الحجز
+      </button>
+    </footer>
+
+    <div class="powered">مدعوم بواسطة <b>حلاقي</b></div>
+  </ng-container>
+</div>
