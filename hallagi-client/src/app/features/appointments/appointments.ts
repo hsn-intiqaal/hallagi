@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AppointmentsApi } from '@core/api/appointments.api';
 import { AuthService } from '@core/auth/auth.service';
+import { addDays } from '@core/time/local-date';
 import { ApiFailure, ApiService } from '@core/http/api.service';
 import { Appointment, AppointmentDay, AppointmentStatus, CustomerRow, PosService } from '@core/models';
 import { BranchContext } from '@core/state/branch-context';
@@ -28,15 +29,19 @@ interface BookingForm {
 }
 
 /** Vertical scale of the day schedule. */
-const PX_PER_MINUTE = 1.6;
+const PX_PER_MINUTE = 1.2;
 
 const toMinutes = (hhmm: string): number => {
   const [h, m] = hhmm.split(':').map(Number);
   return h * 60 + m;
 };
 
-const isoDate = (d: Date): string =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+/** Minutes since midnight right now, on the salon's wall clock. */
+const nowMinutesIn = (timeZone: string): number => {
+  const [h, m] = new Intl.DateTimeFormat('en-GB', { timeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+    .format(new Date()).split(':').map(Number);
+  return h * 60 + m;
+};
 
 @Component({
   selector: 'app-appointments',
@@ -53,7 +58,7 @@ export class Appointments implements OnInit {
   private router = inject(Router);
   readonly auth = inject(AuthService);
 
-  readonly date = signal(isoDate(new Date()));
+  readonly date = signal(this.auth.today());
   readonly day = signal<AppointmentDay | null>(null);
   readonly loading = signal(true);
   readonly view = signal<View>(window.innerWidth < 900 ? 'list' : 'schedule');
@@ -120,14 +125,12 @@ export class Appointments implements OnInit {
   }
 
   shiftDay(delta: number): void {
-    const d = new Date(this.date() + 'T00:00:00');
-    d.setDate(d.getDate() + delta);
-    this.date.set(isoDate(d));
+    this.date.set(addDays(this.date(), delta));
     this.load();
   }
 
   today(): void {
-    this.date.set(isoDate(new Date()));
+    this.date.set(this.auth.today());
     this.load();
   }
 
@@ -137,7 +140,7 @@ export class Appointments implements OnInit {
     this.load();
   }
 
-  isToday(): boolean { return this.date() === isoDate(new Date()); }
+  isToday(): boolean { return this.date() === this.auth.today(); }
 
   // ===== schedule geometry =====
 
@@ -171,9 +174,8 @@ export class Appointments implements OnInit {
   nowLine(): number | null {
     const d = this.day();
     if (!d || !this.isToday()) return null;
-    const now = new Date();
     const open = toMinutes(d.branch.opensAt);
-    const offset = now.getHours() * 60 + now.getMinutes() - open;
+    const offset = nowMinutesIn(this.auth.timeZone()) - open;
     return offset >= 0 && offset * PX_PER_MINUTE <= this.scheduleHeight() ? offset * PX_PER_MINUTE : null;
   }
 

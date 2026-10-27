@@ -26,18 +26,38 @@
 
   <ng-container *ngIf="!loading() && data() as d">
     <div class="stats-grid">
-      <app-stat-card label="مبيعات {{ periodLabel() }}" [value]="d.metrics.totalSales" hint="إجمالي المبيعات المسجلة" icon="cash" tone="blue" />
-      <app-stat-card label="عدد الخدمات المكتملة" [value]="d.metrics.servicesCount" hint="عدد الخدمات المنفذة خلال الفترة" icon="scissors" tone="navy" />
-      <app-stat-card label="المصروفات المسجلة" [value]="d.metrics.expensesTotal" hint="المصروفات المعتمدة في الفترة" icon="wallet" tone="orange" />
-      <app-stat-card label="صافي التشغيل التقديري" [value]="d.metrics.netOperatingEstimate"
-                     [hint]="d.metrics.netOperatingHint" icon="chart" tone="green" />
+      <app-stat-card [label]="'صافي مبيعات ' + periodLabel()" [value]="d.metrics.netSales" icon="chart" tone="blue"
+                     hint="بدون ضريبة القيمة المضافة" [sub]="d.comparison.changeText" [subTone]="changeTone()" />
+      <app-stat-card label="المحصّل من العملاء" [value]="d.metrics.totalSales" icon="cash" tone="navy"
+                     [hint]="'نقدي ' + (d.metrics.cashSales | sar) + ' · بطاقة ' + (d.metrics.cardSales | sar)" />
+      <app-stat-card label="عدد العمليات" [value]="d.metrics.salesCount" format="number" icon="receipt" tone="orange"
+                     [hint]="d.metrics.servicesCount + ' خدمة · متوسط الفاتورة ' + (d.metrics.averageTicket | sar)" />
+      <app-stat-card label="نتيجة التشغيل" [value]="d.metrics.netOperatingEstimate" icon="wallet"
+                     [tone]="d.metrics.netOperatingEstimate >= 0 ? 'green' : 'red'" [hint]="d.metrics.netOperatingHint" />
+    </div>
+
+    <div class="signals">
+      <a class="signal" routerLink="/appointments" *ngIf="auth.can('appointment.view')">
+        <span class="ic blue"><app-icon name="calendar" [size]="20"></app-icon></span>
+        <div><b>{{ d.signals.appointmentsRemaining }}</b><span>مواعيد متبقية اليوم من {{ d.signals.appointmentsToday }}</span></div>
+      </a>
+      <a class="signal" routerLink="/appointments" *ngIf="auth.can('appointment.view')">
+        <span class="ic orange"><app-icon name="clock" [size]="20"></app-icon></span>
+        <div><b>{{ d.signals.waiting }}</b><span>في قائمة الانتظار</span></div>
+      </a>
+      <a class="signal" routerLink="/products" *ngIf="auth.can('product.view')">
+        <span class="ic" [class.red]="d.signals.lowStockProducts > 0" [class.green]="d.signals.lowStockProducts === 0">
+          <app-icon name="package" [size]="20"></app-icon>
+        </span>
+        <div><b>{{ d.signals.lowStockProducts }}</b><span>{{ d.signals.lowStockProducts ? 'منتجات تحتاج إعادة طلب' : 'المخزون بحالة جيدة' }}</span></div>
+      </a>
     </div>
 
     <div class="split-grid">
       <div class="flex-col gap-16">
         <div class="card">
           <div class="section-head">
-            <h2>الفلوس اليوم</h2>
+            <h2>المحصّل حسب طريقة الدفع</h2>
             <span class="text-2 text-sm">منفصلة حسب طريقة الدفع</span>
           </div>
           <div class="money-split">
@@ -72,7 +92,8 @@
             <span class="text-2 text-sm">إجمالي كل يوم</span>
           </div>
           <div class="chart">
-            <div class="bar" *ngFor="let b of chartBars()" [class.today]="b.label !== 'الخميس' ? false : b.day === todayStr">
+            <div class="bar" *ngFor="let b of chartBars()" [class.today]="b.isToday" [attr.title]="b.count + ' عملية'">
+              <div class="val">{{ b.total | number:'1.0-0' }}</div>
               <div class="fill" [style.height.%]="b.pct"></div>
               <div class="lbl">{{ b.label }}</div>
             </div>
@@ -108,14 +129,10 @@
           </div>
         </div>
 
-        <div class="card" *ngIf="d.branches.length > 1">
-          <div class="section-head"><h2>الفروع</h2></div>
-          <div class="text-2 text-sm">{{ d.branches.length }} فروع تابعة للمنشأة — بدّل الفرع من الأعلى لعرض بيانات كل فرع.</div>
-        </div>
       </div>
     </div>
 
-    <div *ngIf="d.metrics.totalSales === 0" class="card mt-16">
+    <div *ngIf="d.metrics.salesCount === 0" class="card mt-16">
       <app-empty icon="scissors" title="لم تُسجل مبيعات اليوم بعد"
         message="ابدأ بأول عملية بيع وسيتم تحديث الأرقام هنا تلقائيًا."
         actionLabel="بيع جديد" (action)="newSale()" />

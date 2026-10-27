@@ -1,7 +1,7 @@
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, map } from 'rxjs/operators';
 import { environment } from '@env/environment';
 
 /** Normalized error every API call fails with — components only ever show `message`. */
@@ -13,6 +13,28 @@ export class ApiService {
   private base = environment.apiUrl;
 
   get<T>(path: string, params?: Record<string, any>): Observable<T> {
+    return this.http.get<T>(`${this.base}${path}`, { params: this.toParams(params) }).pipe(catchError(e => this.toFriendly(e)));
+  }
+
+  /**
+   * Downloads a file through the normal HTTP pipeline (auth header + silent session renewal)
+   * and saves it with the given name.
+   */
+  download(path: string, params: Record<string, any>, fileName: string): Observable<void> {
+    return this.http.get(`${this.base}${path}`, { params: this.toParams(params), responseType: 'blob' }).pipe(
+      map(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }),
+      catchError(e => this.toFriendly(e))
+    );
+  }
+
+  private toParams(params?: Record<string, any>): HttpParams {
     let p = new HttpParams();
     for (const [k, v] of Object.entries(params ?? {})) {
       if (v === undefined || v === null || v === '') continue;
@@ -20,7 +42,7 @@ export class ApiService {
       if (Array.isArray(v)) v.forEach(item => (p = p.append(k, String(item))));
       else p = p.set(k, String(v));
     }
-    return this.http.get<T>(`${this.base}${path}`, { params: p }).pipe(catchError(e => this.toFriendly(e)));
+    return p;
   }
 
   post<T>(path: string, body: any): Observable<T> {

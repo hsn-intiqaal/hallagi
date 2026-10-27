@@ -163,6 +163,8 @@ input, select, textarea {
 .text-sm { font-size: .85rem; }
 .text-lg { font-size: 1.15rem; }
 .money { font-weight: 700; font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: embed; display: inline-block; }
+/* inside tables a money cell must stay a table cell (inline-block breaks column alignment) */
+td.money, th.money { display: table-cell; text-align: right; }
 .flex { display: flex; }
 .flex-between { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .flex-col { display: flex; flex-direction: column; }
@@ -325,3 +327,11 @@ input, select, textarea {
 }
 .chip.selected { border-color: var(--primary); background: var(--blue-soft); color: var(--primary-dark); }
 .chip:disabled { opacity: .45; cursor: not-allowed; }
+
+/* ===== Phones ===== */
+@media (max-width: 720px) {
+  /* wide tables scroll inside their card instead of stretching the page */
+  .table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; white-space: nowrap; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .page-title { flex-wrap: wrap; gap: 10px; }
+}

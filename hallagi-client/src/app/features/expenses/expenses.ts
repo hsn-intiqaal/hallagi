@@ -43,13 +43,9 @@ export class Expenses implements OnInit {
   voidReason = '';
 
   ngOnInit(): void {
-    this.form.expenseDate = new Date().toISOString().slice(0, 10);
-    this.api.get<any>('/auth/me').subscribe({
-      next: (m: any) => {
-        this.canCreate.set(m.permissions?.['expense.create'] === true);
-        this.canVoid.set(m.permissions?.['expense.void'] === true);
-      }
-    });
+    this.form.expenseDate = this.auth.today();
+    this.canCreate.set(this.auth.can('expense.create'));
+    this.canVoid.set(this.auth.can('expense.void'));
     this.load();
   }
 
@@ -62,7 +58,7 @@ export class Expenses implements OnInit {
   }
 
   openAdd(): void {
-    this.form = { category: 'Supplies', amount: 0, expenseDate: new Date().toISOString().slice(0, 10), description: '', source: 'CashDrawer' };
+    this.form = { category: 'Supplies', amount: 0, expenseDate: this.auth.today(), description: '', source: 'CashDrawer' };
     this.formError = '';
     this.showForm.set(true);
   }

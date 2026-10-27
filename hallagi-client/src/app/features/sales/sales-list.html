@@ -38,7 +38,8 @@
       actionLabel="بيع جديد" (action)="router.navigate(['/pos'])" />
 
     <div class="rows" *ngIf="sales().length > 0">
-      <button class="row-item" *ngFor="let s of sales()" [class.cancelled]="s.status === 'Cancelled'" (click)="open(s)">
+      <div class="row-item" role="link" tabindex="0" *ngFor="let s of sales()" [class.cancelled]="s.status === 'Cancelled'"
+           (click)="open(s)" (keydown.enter)="open(s)">
         <span class="no">#{{ s.receiptNo }}</span>
         <div class="who">
           <div class="n">{{ s.barberName }} — {{ s.customerName }}</div>
@@ -51,7 +52,7 @@
                 (click)="askCancel(s, $event)">
           <app-icon name="x" [size]="15"></app-icon> إلغاء
         </button>
-      </button>
+      </div>
     </div>
 
     <div class="pager" *ngIf="pages > 1">

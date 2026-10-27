@@ -135,3 +135,44 @@ test('تجديد الجلسة تلقائيًا عند انتهاء التوكن'
   await expect(page.getByText('سجل المبيعات')).toBeVisible({ timeout: 20000 });
   await expect(page).toHaveURL(/\/sales/);
 });
+
+test('تبديل الفرع يعيد تحميل بيانات الصفحة الحالية', async ({ page }) => {
+  await signIn(page);
+  await page.goto(`${APP}/sales`);
+  await page.locator('.branch-btn').click();
+  await page.locator('.branch-menu button', { hasText: 'فرع النرجس' }).click();
+  const rows = page.locator('.row-item');
+  await expect(rows.first()).toBeVisible({ timeout: 20000 });
+  await expect(rows.first()).toContainText('فرع النرجس');
+
+  await page.locator('.branch-btn').click();
+  await page.locator('.branch-menu button', { hasText: 'فرع الياسمين' }).click();
+  await expect(rows.first()).toContainText('فرع الياسمين', { timeout: 20000 });
+  // no row from the previous branch survives the switch
+  await expect(page.locator('.row-item', { hasText: 'فرع النرجس' })).toHaveCount(0);
+});
+
+test('أرقام شاشة التقارير تطابق حسابات الخادم', async ({ page }) => {
+  const login = await (await page.request.post(`${API}/api/auth/login`, { data: OWNER })).json();
+  await signIn(page);
+  await page.goto(`${APP}/reports`);
+  await page.locator('.branch-btn').click();
+  await page.locator('.branch-menu button', { hasText: 'كل الفروع' }).click();
+  await page.getByRole('button', { name: 'آخر 7 أيام' }).click();
+
+  const statValue = (label: string) =>
+    page.locator('app-stat-card').filter({ has: page.locator('.stat-label', { hasText: new RegExp(`^${label}$`) }) }).locator('.stat-value');
+  const card = statValue('صافي المبيعات');
+  await expect(card).not.toHaveText('', { timeout: 20000 });
+  const today = await page.evaluate(() => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Riyadh' }).format(new Date()));
+  const from = new Date(Date.parse(today + 'T00:00:00Z') - 6 * 86_400_000).toISOString().slice(0, 10);
+  const api = await (await page.request.get(`${API}/api/reports/sales?from=${from}&to=${today}`, {
+    headers: { Authorization: `Bearer ${login.token}` }
+  })).json();
+
+  // "4,391.76 ر.س" → 4391.76 (the currency symbol contains a dot too)
+  const shown = Number((await card.innerText()).match(/[\d,]+\.\d{2}/)![0].replace(/,/g, ''));
+  expect(shown).toBeCloseTo(api.summary.netSales, 2);
+  const count = Number((await statValue('عدد العمليات').innerText()).trim());
+  expect(count).toBe(api.summary.salesCount);
+});

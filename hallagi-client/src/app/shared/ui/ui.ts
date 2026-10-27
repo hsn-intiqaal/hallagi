@@ -35,6 +35,12 @@ import { ToastService } from '@core/state/toast.service';
     .stat-orange .stat-icon { color: var(--orange); }
     .stat-red .stat-icon { color: var(--red); }
     .stat-navy .stat-icon { color: var(--navy); }
+    @media (max-width: 720px) {
+      .stat { padding: 12px; }
+      .stat-value { font-size: 1.2rem; }
+      .stat-hint { display: none; }
+      .stat-label { font-size: .8rem; }
+    }
   `]
 })
 export class StatCard {

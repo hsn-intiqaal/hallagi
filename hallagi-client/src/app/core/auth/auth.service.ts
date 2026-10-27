@@ -5,6 +5,7 @@ import { ApiService } from '@core/http/api.service';
 import { tokenStorage } from './token-storage';
 import { LoginResult, Me, Profile, UserRole } from '@core/models';
 import { ThemeService } from '@core/state/theme.service';
+import { IsoDate, todayIn } from '@core/time/local-date';
 
 const BRANCH_KEY = 'hallagi.branch';
 
@@ -51,6 +52,16 @@ export class AuthService {
   /** Where each role should land after login. */
   landingRoute(): string {
     return this.role() === 'SuperAdmin' ? '/platform' : this.role() === 'Barber' ? '/me' : '/dashboard';
+  }
+
+  /** The organization's time zone (all calendar dates are expressed in it). */
+  timeZone(): string {
+    return this.me()?.organization?.timeZone || 'Asia/Riyadh';
+  }
+
+  /** Today in the organization's calendar. */
+  today(): IsoDate {
+    return todayIn(this.timeZone());
   }
 
   can(action: string): boolean {

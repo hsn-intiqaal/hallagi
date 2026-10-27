@@ -1,4 +1,5 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, computed, inject, signal } from '@angular/core';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 /** Inline SVG icon set (Lucide-style paths) — no runtime icon dependency. */
 const PATHS: Record<string, string> = {
@@ -47,19 +48,32 @@ const PATHS: Record<string, string> = {
   userX: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M17 8l5 5"/><path d="M22 8l-5 5"/>'
 };
 
+/**
+ * Renders one of the built-in icons. Markup comes only from the constant PATHS table above
+ * (never from user input), so it is safe to mark as trusted — Angular's sanitizer would
+ * otherwise strip every <path>/<circle> and leave the icon blank.
+ */
 @Component({
   selector: 'app-icon',
   standalone: true,
-  template: `<svg
-    [attr.width]="size" [attr.height]="size" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-    [class]="'icon icon-' + name" aria-hidden="true"><g [innerHTML]="path()"></g></svg>`
+  host: { class: 'app-icon', 'aria-hidden': 'true', '[innerHTML]': 'svg()' },
+  styles: [':host { display: inline-flex; flex-shrink: 0; line-height: 0; }'],
+  template: ''
 })
 export class Icon {
-  @Input() name = 'info';
-  @Input() size = 20;
+  private sanitizer = inject(DomSanitizer);
+  private readonly name$ = signal('info');
+  private readonly size$ = signal(20);
 
-  path(): string {
-    return PATHS[this.name] ?? PATHS['info'];
-  }
+  @Input() set name(value: string) { this.name$.set(value); }
+  @Input() set size(value: number) { this.size$.set(value); }
+
+  readonly svg = computed<SafeHtml>(() => {
+    const name = this.name$();
+    const size = this.size$();
+    const paths = PATHS[name] ?? PATHS['info'];
+    return this.sanitizer.bypassSecurityTrustHtml(
+      `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ` +
+      `stroke-linecap="round" stroke-linejoin="round" class="icon icon-${name.replace(/[^a-zA-Z]/g, '')}" focusable="false">${paths}</svg>`);
+  });
 }

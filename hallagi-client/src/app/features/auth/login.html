@@ -22,7 +22,8 @@
         <div class="password-wrap">
           <input class="input" [type]="showPassword() ? 'text' : 'password'" [(ngModel)]="password" name="password"
                  placeholder="••••••••" autocomplete="current-password" dir="ltr">
-          <button type="button" class="toggle" (click)="showPassword.set(!showPassword())">
+          <button type="button" class="toggle" (click)="showPassword.set(!showPassword())"
+                  [attr.aria-label]="showPassword() ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'">
             <app-icon name="eye" [size]="19"></app-icon>
           </button>
         </div>

@@ -1,5 +1,5 @@
-import { NgIf, NgFor } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { DecimalPipe, NgIf, NgFor } from '@angular/common';
+import { Component, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { DateArPipe, SarPipe } from '@shared/pipes/format.pipes';
 import { ApiService } from '@core/http/api.service';
@@ -13,7 +13,7 @@ import { StatCard, EmptyState, LoadingRow } from '@shared/ui/ui';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [RouterLink, Icon, StatCard, EmptyState, LoadingRow, DateArPipe, SarPipe, NgIf, NgFor],
+  imports: [RouterLink, Icon, StatCard, EmptyState, LoadingRow, DateArPipe, SarPipe, DecimalPipe, NgIf, NgFor],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss'
 })
@@ -24,8 +24,8 @@ export class Dashboard implements OnInit {
   readonly router = inject(Router);
 
   readonly auth = inject(AuthService);
-  readonly today = new Date();
-  readonly todayStr = this.today.toISOString().slice(0, 10);
+  /** The salon's calendar day (not the browser's UTC date). */
+  readonly today = this.auth.today();
   readonly loading = signal(true);
   readonly data = signal<DashboardModel | null>(null);
   readonly period = signal<'today' | 'week' | 'month'>('today');
@@ -35,8 +35,19 @@ export class Dashboard implements OnInit {
     return items.map(i => ({ ...i, pct: Math.round((i.total / max) * 100) }));
   });
 
-  ngOnInit(): void {
-    this.load();
+  constructor() {
+    // reload when the branch selector in the top bar changes
+    effect(() => {
+      this.branches.currentBranchId();
+      untracked(() => this.load());
+    });
+  }
+
+  ngOnInit(): void {}
+
+  changeTone(): 'up' | 'down' | 'flat' {
+    const p = this.data()?.comparison.changePercent;
+    return p === null || p === undefined || p === 0 ? 'flat' : p > 0 ? 'up' : 'down';
   }
 
   setPeriod(p: 'today' | 'week' | 'month'): void {
@@ -49,7 +60,7 @@ export class Dashboard implements OnInit {
     this.loading.set(true);
     this.api.get<DashboardModel>('/dashboard', { branchId, period: this.period() }).subscribe({
       next: d => { this.data.set(d); this.loading.set(false); },
-      error: (e: any) => { this.toast.error(e?.message ?? 'تعذّر تحميل لوحة الرئيسية'); this.loading.set(false); }
+      error: (e: { message: string }) => { this.toast.error(e.message ?? 'تعذّر تحميل لوحة الرئيسية'); this.loading.set(false); }
     });
   }
 

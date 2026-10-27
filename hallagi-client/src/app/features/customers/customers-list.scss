@@ -12,3 +12,9 @@
 .c-row .num { text-align: center; min-width: 96px; }
 .c-row .num .l { font-size: .76rem; color: var(--text-2); }
 .c-row .num .v { font-weight: 800; }
+
+@media (max-width: 720px) {
+  .c-row { flex-wrap: wrap; row-gap: 8px; }
+  .c-row .who { flex-basis: calc(100% - 60px); }
+  .c-row .num { min-width: 0; flex: 1; text-align: start; }
+}

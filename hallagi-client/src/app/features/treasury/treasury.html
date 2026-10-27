@@ -14,6 +14,9 @@
 
   <div *ngIf="loading()"><app-loading message="جارٍ تحميل الخزينة…" /></div>
 
+  <app-empty *ngIf="!loading() && !branches.scopeId()" icon="building" title="اختر فرعًا"
+    message="لكل فرع درج نقدي ووردية مستقلة — اختر الفرع من الشريط العلوي لإدارة خزينته." />
+
   <ng-container *ngIf="state() as s">
     <!-- الوردية المفتوحة -->
     <div class="shift-card" *ngIf="s.current as c; else noShift">

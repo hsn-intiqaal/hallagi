@@ -6,9 +6,10 @@ import { BranchContext } from '@core/state/branch-context';
 import { ToastService } from '@core/state/toast.service';
 import { UserRoleLabel } from '@core/models';
 import { Icon } from '@shared/ui/icon';
-import { Modal } from '@shared/ui/ui';
+import { LoadingRow, Modal } from '@shared/ui/ui';
 
 interface NavItem {
+  group: NavGroup;
   path: string;
   label: string;
   icon: string; // lucide icon name key
@@ -16,9 +17,18 @@ interface NavItem {
   roles?: string[];
 }
 
+type NavGroup = 'daily' | 'catalog' | 'money' | 'admin';
+
+const NAV_GROUPS: { id: NavGroup; label: string }[] = [
+  { id: 'daily', label: 'اليوم' },
+  { id: 'catalog', label: 'الفريق والكتالوج' },
+  { id: 'money', label: 'المالية والتقارير' },
+  { id: 'admin', label: 'الإدارة' }
+];
+
 @Component({
   selector: 'app-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, NgIf, NgFor, Modal],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, NgIf, NgFor, Modal, LoadingRow],
   templateUrl: './layout.html',
   styleUrl: './layout.scss'
 })
@@ -34,30 +44,41 @@ export class Layout implements OnInit {
   readonly roleLabel = computed(() => (this.auth.role() ? UserRoleLabel[this.auth.role()!] : ''));
 
   navItems: NavItem[] = [
-    { path: 'dashboard', label: 'الرئيسية', icon: 'home', permission: undefined, roles: ['Owner', 'BranchManager', 'Cashier'] },
-    { path: 'pos', label: 'بيع جديد', icon: 'scissors', permission: 'sale.create' },
-    { path: 'appointments', label: 'المواعيد', icon: 'calendar', permission: 'appointment.view' },
-    { path: 'sales', label: 'المبيعات', icon: 'receipt', permission: 'sale.view' },
-    { path: 'customers', label: 'العملاء', icon: 'users', permission: 'customer.manage' },
-    { path: 'barbers', label: 'الحلاقون', icon: 'user', permission: 'barber.view' },
-    { path: 'services', label: 'الخدمات والأسعار', icon: 'tag', permission: 'service.manage', roles: ['Owner'] },
-    { path: 'products', label: 'المنتجات والمخزون', icon: 'package', permission: 'product.view', roles: ['Owner', 'BranchManager', 'Cashier'] },
-    { path: 'coupons', label: 'أكواد الخصم', icon: 'percent', permission: 'coupon.manage' },
-    { path: 'expenses', label: 'المصروفات', icon: 'wallet', permission: 'expense.view' },
-    { path: 'treasury', label: 'الخزينة والوردية', icon: 'safe', permission: 'shift.view' },
-    { path: 'reports', label: 'التقارير', icon: 'chart', permission: 'report.view', roles: ['Owner', 'BranchManager'] },
-    { path: 'finance/settlements', label: 'التسويات المالية', icon: 'receipt', permission: 'settlement.preview' },
-    { path: 'finance/handovers', label: 'التسليمات النقدية', icon: 'cash', permission: 'handover.create' },
-    { path: 'branches', label: 'الفروع', icon: 'building', permission: 'branch.manage' },
-    { path: 'devices', label: 'أجهزة POS', icon: 'card', permission: 'device.manage' },
-    { path: 'users', label: 'المستخدمون والصلاحيات', icon: 'shield', permission: 'user.manage' },
-    { path: 'settings', label: 'الإعدادات', icon: 'settings', permission: 'settings.manage' },
-    { path: 'me', label: 'ملخصي', icon: 'user', roles: ['Barber'] }
+    { group: 'daily', path: 'dashboard', label: 'الرئيسية', icon: 'home', permission: undefined, roles: ['Owner', 'BranchManager', 'Cashier'] },
+    { group: 'daily', path: 'pos', label: 'بيع جديد', icon: 'scissors', permission: 'sale.create' },
+    { group: 'daily', path: 'appointments', label: 'المواعيد', icon: 'calendar', permission: 'appointment.view' },
+    { group: 'daily', path: 'sales', label: 'المبيعات', icon: 'receipt', permission: 'sale.view' },
+    { group: 'daily', path: 'customers', label: 'العملاء', icon: 'users', permission: 'customer.manage' },
+    { group: 'catalog', path: 'barbers', label: 'الحلاقون', icon: 'user', permission: 'barber.view' },
+    { group: 'catalog', path: 'services', label: 'الخدمات والأسعار', icon: 'tag', permission: 'service.manage', roles: ['Owner'] },
+    { group: 'catalog', path: 'products', label: 'المنتجات والمخزون', icon: 'package', permission: 'product.view', roles: ['Owner', 'BranchManager', 'Cashier'] },
+    { group: 'catalog', path: 'coupons', label: 'أكواد الخصم', icon: 'percent', permission: 'coupon.manage' },
+    { group: 'money', path: 'expenses', label: 'المصروفات', icon: 'wallet', permission: 'expense.view' },
+    { group: 'money', path: 'treasury', label: 'الخزينة والوردية', icon: 'safe', permission: 'shift.view' },
+    { group: 'money', path: 'reports', label: 'التقارير', icon: 'chart', permission: 'report.view', roles: ['Owner', 'BranchManager'] },
+    { group: 'money', path: 'finance/settlements', label: 'التسويات المالية', icon: 'receipt', permission: 'settlement.preview' },
+    { group: 'money', path: 'finance/handovers', label: 'التسليمات النقدية', icon: 'cash', permission: 'handover.create' },
+    { group: 'admin', path: 'branches', label: 'الفروع', icon: 'building', permission: 'branch.manage' },
+    { group: 'admin', path: 'devices', label: 'أجهزة POS', icon: 'card', permission: 'device.manage' },
+    { group: 'admin', path: 'users', label: 'المستخدمون والصلاحيات', icon: 'shield', permission: 'user.manage' },
+    { group: 'admin', path: 'settings', label: 'الإعدادات', icon: 'settings', permission: 'settings.manage' },
+    { group: 'daily', path: 'me', label: 'ملخصي', icon: 'user', roles: ['Barber'] }
   ];
 
   ngOnInit(): void {
     this.auth.loadMe().subscribe({ next: () => this.branches.init() });
   }
+
+  /**
+   * Sidebar sections with only the items this user may open. Memoized: returning fresh
+   * objects on every change-detection pass would make *ngFor rebuild the links endlessly.
+   */
+  readonly visibleGroups = computed(() => {
+    const items = this.visibleItems();
+    return NAV_GROUPS
+      .map(g => ({ label: g.label, items: items.filter(i => i.group === g.id) }))
+      .filter(g => g.items.length > 0);
+  });
 
   visibleItems(): NavItem[] {
     const role = this.auth.role();

@@ -244,5 +244,12 @@
         </button>
       </section>
     </div>
+
+    <!-- الجوال: ملخص ثابت يبقى ظاهرًا أثناء اختيار الخدمات -->
+    <button class="mobile-checkout" *ngIf="cart().length && data()" (click)="scrollToCart()">
+      <span class="count">{{ cartCount() }}</span>
+      <span class="grow">متابعة إلى الدفع</span>
+      <b class="money">{{ price().total | sar }}</b>
+    </button>
   </div>
 </ng-template>

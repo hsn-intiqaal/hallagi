@@ -14,10 +14,13 @@ export class BranchContext {
     return this.branches().find(b => b.id === id) ?? null;
   });
   readonly showAllOption = computed(() => this.auth.me()?.allBranches === true);
+  /** True once the session is loaded and a branch scope has been chosen — pages render only after this. */
+  readonly ready = signal(false);
 
   init(): void {
     const me = this.auth.me();
     if (!me) return;
+    this.ready.set(true);
     const stored = branchStorage.get();
     const isValid = stored && me.branchIds.includes(stored);
     const first = me.branches[0]?.id ?? null;

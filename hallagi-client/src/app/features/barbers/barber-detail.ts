@@ -42,7 +42,7 @@ export class BarberDetailPage implements OnInit {
     this.api.get<{ items: { id: string; name: string }[] }>('/branches').subscribe({
       next: (res: any) => this.branches.set(res.items)
     });
-    this.api.get<any>('/auth/me').subscribe({ next: (m: any) => this.canManage.set(m.permissions?.['barber.manage'] === true) });
+    this.canManage.set(this.auth.can('barber.manage'));
   }
 
   load(): void {

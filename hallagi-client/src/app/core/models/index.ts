@@ -8,3 +8,4 @@ export * from './finance.models';
 export * from './admin.models';
 export * from './commerce.models';
 export * from './booking.models';
+export * from './reports.models';

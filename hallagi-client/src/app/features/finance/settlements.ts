@@ -1,6 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { NgIf, NgFor } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { endOfMonth, startOfMonth } from '@core/time/local-date';
 import { ApiService } from '@core/http/api.service';
 import { AuthService } from '@core/auth/auth.service';
 import { ToastService } from '@core/state/toast.service';
@@ -77,13 +78,11 @@ export class Settlements implements OnInit {
   }
 
   openNewPeriod(): void {
-    const today = new Date();
-    const first = new Date(today.getFullYear(), today.getMonth(), 1);
-    const last = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    const today = this.auth.today();
     this.newPeriod = {
-      name: today.toLocaleDateString('ar-SA-u-nu-latn', { month: 'long', year: 'numeric' }),
-      startDate: first.toISOString().slice(0, 10),
-      endDate: last.toISOString().slice(0, 10)
+      name: new Date(today + 'T12:00:00').toLocaleDateString('ar-SA-u-nu-latn-ca-gregory', { month: 'long', year: 'numeric' }),
+      startDate: startOfMonth(today),
+      endDate: endOfMonth(today)
     };
     this.showNewPeriod.set(true);
   }

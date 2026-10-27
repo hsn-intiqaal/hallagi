@@ -65,18 +65,8 @@ export class SalesList implements OnInit {
   }
 
   exportCsv(): void {
-    const branchId = this.branches.scopeId();
-    const url = `${this.api['base']}/sales/export.csv?branchId=${branchId ?? ''}${this.from ? '&from=' + this.from : ''}${this.to ? '&to=' + this.to : ''}`;
-    const token = this.auth.token() ?? '';
-    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.blob())
-      .then(b => {
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(b);
-        a.download = 'sales.csv';
-        a.click();
-      })
-      .catch(() => this.toast.error('تعذّر تصدير الملف'));
+    this.api.download('/sales/export.csv', { branchId: this.branches.scopeId(), from: this.from, to: this.to }, `sales-${this.from || 'all'}.csv`)
+      .subscribe({ error: (e: { message: string }) => this.toast.error(e.message) });
   }
 
   canCancel(): boolean { return this.auth.can('sale.void'); }

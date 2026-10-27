@@ -28,3 +28,22 @@
 
 .pager { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 16px; }
 .pager .p { color: var(--text-2); font-weight: 600; }
+
+/* Phones: receipt no + amount on top, details below */
+@media (max-width: 720px) {
+  .row-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas: "no when amt" "who who who" "badge badge cancel";
+    row-gap: 6px; column-gap: 8px;
+  }
+  .row-item .no { grid-area: no; justify-self: start; }
+  .row-item .when { grid-area: when; font-size: .78rem; }
+  .row-item .amt { grid-area: amt; }
+  .row-item .who { grid-area: who; }
+  .row-item .who .n { white-space: normal; }
+  .row-item .badge { grid-area: badge; justify-self: start; }
+  .row-item > .btn { grid-area: cancel; justify-self: end; }
+  .filters .field { min-width: 100%; }
+  .filters .btn { width: 100%; }
+}

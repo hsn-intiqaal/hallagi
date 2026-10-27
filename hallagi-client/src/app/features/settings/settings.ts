@@ -65,9 +65,7 @@ export class Settings implements OnInit {
   ];
 
   ngOnInit(): void {
-    this.api.get<any>('/auth/me').subscribe({
-      next: (m: any) => this.canManage.set(m.permissions?.['settings.manage'] === true)
-    });
+    this.canManage.set(this.auth.can('settings.manage'));
     this.api.get<any>('/subscription').subscribe({
       next: s => this.subscription.set(s),
       error: () => this.subscription.set(null)
@@ -139,6 +137,12 @@ export class Settings implements OnInit {
   /** 100 points × 0.05 = 5 SAR → shown as a percentage of spend returned to the customer. */
   loyaltyReturnPercent(): number {
     return Math.round(this.loyalty.pointsPerSar * this.loyalty.pointValue * 1000) / 10;
+  }
+
+  subscriptionStatus(): string {
+    const labels: Record<string, string> = { Active: 'نشط', Trial: 'فترة تجريبية', PastDue: 'متأخر السداد', Cancelled: 'ملغى' };
+    const status = this.subscription()?.status as string | undefined;
+    return status ? labels[status] ?? status : '—';
   }
 
   bookingUrl(): string | null {

@@ -46,6 +46,8 @@
 .tabs button.active { background: #fff; color: var(--navy); box-shadow: var(--shadow); }
 
 .password-wrap { position: relative; }
+/* the toggle sits at the left edge (RTL end) where the LTR password text starts */
+.password-wrap .input { padding-left: 46px; }
 .password-wrap .toggle {
   position: absolute;
   inset-inline-end: 8px; top: 50%;

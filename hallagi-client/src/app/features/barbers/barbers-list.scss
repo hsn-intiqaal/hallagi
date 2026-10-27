@@ -20,3 +20,10 @@
 .b-row .comp { text-align: end; min-width: 130px; }
 .b-row .comp .l { font-size: .78rem; color: var(--text-2); }
 .b-row .comp .v { font-weight: 700; font-size: .92rem; }
+
+@media (max-width: 720px) {
+  .b-row { flex-wrap: wrap; row-gap: 10px; }
+  .b-row .who { flex-basis: calc(100% - 100px); }
+  .b-row .stat, .b-row .comp { min-width: 0; flex: 1; text-align: start; }
+  .b-row > app-icon { display: none; }
+}

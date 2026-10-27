@@ -34,7 +34,7 @@
   position: sticky; top: 0; z-index: 2; background: var(--card);
   padding: 8px 6px; font-weight: 800; text-align: center; border-bottom: 2px solid var(--border);
 }
-.time-col, .barber-col { position: relative; }
+.time-col, .barber-col { position: relative; margin-top: 12px; margin-bottom: 12px; }
 .barber-col { border-inline-start: 1px solid var(--border); }
 .hour { position: absolute; inset-inline-end: 8px; transform: translateY(-50%); font-size: .75rem; color: var(--text-2); direction: ltr; }
 .hour-line { position: absolute; inset-inline: 0; border-top: 1px dashed var(--border); }
@@ -47,7 +47,7 @@
   font-family: inherit; text-align: start; cursor: pointer; box-shadow: var(--shadow);
 }
 .appt-time { font-size: .72rem; direction: ltr; opacity: .85; }
-.appt-name { font-size: .85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.appt-name { font-size: .82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .appt-svc { font-size: .75rem; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .appt-src { position: absolute; top: 5px; inset-inline-end: 6px; }
 

@@ -10,7 +10,7 @@
 }
 .hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.55), rgba(0,0,0,.1)); }
 .hero-inner { position: relative; display: flex; align-items: center; gap: 14px; padding: 20px 16px; }
-.hero h1 { font-size: 1.4rem; margin: 0; }
+.hero h1 { font-size: 1.4rem; margin: 0; color: #fff; }
 .hero p { margin: 2px 0 0; opacity: .9; }
 .logo {
   width: 58px; height: 58px; border-radius: 16px; background: #fff; color: var(--brand);

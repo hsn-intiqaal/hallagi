@@ -48,6 +48,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken ct = default)
         => Database.BeginTransactionAsync(ct);
 
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        configurationBuilder.Properties<DateTime>().HaveConversion<UtcDateTimeConverter>();
+        configurationBuilder.Properties<DateTime?>().HaveConversion<UtcDateTimeConverter>();
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

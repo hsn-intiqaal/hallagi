@@ -103,7 +103,7 @@
         </div>
         <div>
           <div class="text-2 text-sm">الحالة</div>
-          <span class="badge badge-green">{{ subscription()?.status }}</span>
+          <span class="badge" [class.badge-green]="subscription()?.status === 'Active'" [class.badge-orange]="subscription()?.status !== 'Active'">{{ subscriptionStatus() }}</span>
         </div>
         <div>
           <div class="text-2 text-sm">حدود الخطة</div>
@@ -278,8 +278,11 @@
       </div>
     </div>
 
-    <button class="btn btn-success btn-lg" *ngIf="canManage()" (click)="save()">
-      <app-icon name="check" [size]="19"></app-icon> حفظ الإعدادات
-    </button>
+    <div class="save-bar" *ngIf="canManage()">
+      <span class="text-2 text-sm">التغييرات لا تُطبّق إلا بعد الحفظ.</span>
+      <button class="btn btn-success btn-lg" (click)="save()">
+        <app-icon name="check" [size]="19"></app-icon> حفظ الإعدادات
+      </button>
+    </div>
   </ng-container>
 </div>

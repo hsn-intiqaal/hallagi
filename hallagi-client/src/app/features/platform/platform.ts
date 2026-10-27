@@ -108,4 +108,11 @@ export class Platform implements OnInit {
   }
 
   logout(): void { this.auth.logout(); }
+
+  statusText(status: string | null | undefined): string {
+    const labels: Record<string, string> = {
+      Active: 'اشتراك فعّال', Trial: 'فترة تجريبية', PastDue: 'متأخر السداد', Suspended: 'موقوف', Cancelled: 'ملغى'
+    };
+    return status ? labels[status] ?? status : 'بدون اشتراك';
+  }
 }

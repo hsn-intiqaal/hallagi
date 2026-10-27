@@ -9,12 +9,6 @@
 .period-tabs button { min-height: 40px; padding: 6px 16px; border-radius: 8px; font-weight: 600; color: var(--text-2); font-size: .92rem; }
 .period-tabs button.active { background: var(--navy); color: #fff; }
 
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
-  gap: 14px;
-  margin-bottom: 14px;
-}
 
 .split-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
 @media (min-width: 900px) { .split-grid { grid-template-columns: 1.15fr .85fr; } }
@@ -50,18 +44,25 @@
 .top-svc .name { flex: 1; font-weight: 600; font-size: .93rem; }
 .top-svc .qty { color: var(--text-2); font-size: .85rem; }
 
-.alert {
-  display: flex; align-items: center; gap: 10px;
-  background: var(--orange-soft);
-  border: 1px solid #F0D9AE;
-  color: #8A5A08;
-  padding: 12px 14px;
-  border-radius: var(--radius-sm);
-  margin-bottom: 14px;
-  font-weight: 600;
-  font-size: .92rem;
-}
 
 .drawer-note { display: flex; align-items: center; gap: 10px; background: var(--navy); color: #fff; border-radius: var(--radius); padding: 14px 16px; }
 .drawer-note .l { opacity: .85; font-size: .88rem; }
 .drawer-note .v { font-size: 1.35rem; font-weight: 800; margin-top: 2px; }
+
+.dashboard .alert { margin-bottom: 14px; }
+.chart .bar .val { font-size: .7rem; color: var(--text-2); font-weight: 700; direction: ltr; }
+
+.signals { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.signal {
+  display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  color: var(--text); text-decoration: none; box-shadow: var(--shadow);
+  .ic { width: 38px; height: 38px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  b { font-size: 1.25rem; display: block; line-height: 1.2; }
+  span { color: var(--text-2); font-size: .82rem; font-weight: 600; }
+}
+.signal:hover { border-color: var(--primary); }
+.signal .ic.blue { background: var(--blue-soft); color: var(--blue); }
+.signal .ic.orange { background: var(--orange-soft); color: var(--orange); }
+.signal .ic.red { background: var(--red-soft); color: var(--red); }
+.signal .ic.green { background: var(--green-soft); color: var(--green); }

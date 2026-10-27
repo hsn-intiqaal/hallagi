@@ -52,7 +52,7 @@
             <div class="s">
               <span class="badge plan-badge" [class]="planClass(o.planName)">{{ o.planName || 'بدون خطة' }}</span>
               <span class="badge" [class]="o.subscriptionStatus === 'Active' ? 'badge-green' : 'badge-red'">
-                {{ o.subscriptionStatus === 'Active' ? 'اشتراك فعّال' : o.subscriptionStatus }}
+                {{ statusText(o.subscriptionStatus) }}
               </span>
               <span class="color-dots" *ngIf="o.primaryColor || o.secondaryColor">
                 <span class="cdot" [style.background]="o.primaryColor" title="اللون الأساسي"></span>

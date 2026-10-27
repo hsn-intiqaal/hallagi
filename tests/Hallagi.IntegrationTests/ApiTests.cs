@@ -97,6 +97,15 @@ public class ApiTests(HallagiApiFactory factory)
     }
 
     [Fact]
+    public async Task Timestamps_AreSerializedAsUtc()
+    {
+        var (client, _) = await SignInAsync("owner@hallagi.sa");
+        var sales = await client.GetFromJsonAsync<JsonElement>("/api/sales?pageSize=1");
+        // without the "Z" browsers would read UTC wall-clock values as local time
+        sales.GetProperty("items")[0].GetProperty("createdAt").GetString()!.ShouldEndWith("Z");
+    }
+
+    [Fact]
     public async Task Cashier_CannotOpenOwnerOnlyScreens()
     {
         var (client, _) = await SignInAsync("cashier@hallagi.sa");

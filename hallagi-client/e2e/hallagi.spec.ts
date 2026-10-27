@@ -29,8 +29,10 @@ test('دخول المالك يفتح لوحة الرئيسية مع مؤشرات
   await page.addInitScript(`localStorage.setItem('hallagi.token', '${token}')`);
   await page.goto(`${APP}/dashboard`);
   await expect(page.getByRole('heading', { name: /مرحبًا/ })).toBeVisible({ timeout: 20000 });
-  await expect(page.getByText('مبيعات اليوم').first()).toBeVisible();
-  await expect(page.locator('.stat-label', { hasText: 'صافي التشغيل التقديري' })).toBeVisible();
+  await expect(page.locator('.stat-label', { hasText: 'صافي مبيعات اليوم' })).toBeVisible();
+  await expect(page.locator('.stat-label', { hasText: 'نتيجة التشغيل' })).toBeVisible();
+  // icons must actually render (Angular's sanitizer used to strip their SVG paths)
+  expect(await page.locator('.sidebar app-icon svg path').count()).toBeGreaterThan(10);
   await expect(page.locator('.money-split')).toBeVisible();
 });
 

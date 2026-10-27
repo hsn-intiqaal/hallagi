@@ -8,18 +8,18 @@ import { ToastService } from '@core/state/toast.service';
 import { TreasuryState, ShiftRow } from '@core/models';
 import { Icon } from '@shared/ui/icon';
 import { DateTimeArPipe, SarPipe, DateShortPipe } from '@shared/pipes/format.pipes';
-import { LoadingRow, Modal } from '@shared/ui/ui';
+import { EmptyState, LoadingRow, Modal } from '@shared/ui/ui';
 
 @Component({
   selector: 'app-treasury',
   standalone: true,
-  imports: [FormsModule, Icon, DateTimeArPipe, SarPipe, DateShortPipe, LoadingRow, Modal, NgIf, NgFor],
+  imports: [FormsModule, Icon, DateTimeArPipe, SarPipe, DateShortPipe, LoadingRow, Modal, EmptyState, NgIf, NgFor],
   templateUrl: './treasury.html',
   styleUrl: './treasury.scss'
 })
 export class Treasury implements OnInit {
   private api = inject(ApiService);
-  private branches = inject(BranchContext);
+  readonly branches = inject(BranchContext);
   readonly auth = inject(AuthService);
   private toast = inject(ToastService);
 
@@ -43,18 +43,18 @@ export class Treasury implements OnInit {
   });
 
   ngOnInit(): void {
-    this.api.get<any>('/auth/me').subscribe({
-      next: (m: any) => {
-        this.canOpen.set(m.permissions?.['shift.open'] === true);
-        this.canClose.set(m.permissions?.['shift.close'] === true);
-      }
-    });
+    this.canOpen.set(this.auth.can('shift.open'));
+    this.canClose.set(this.auth.can('shift.close'));
     this.load();
   }
 
   load(): void {
     const id = this.branches.scopeId();
-    if (!id) return;
+    if (!id) {
+      // the drawer belongs to one branch: "all branches" has no single treasury
+      this.loading.set(false);
+      return;
+    }
     this.loading.set(true);
     this.api.get<TreasuryState>('/treasury/state', { branchId: id }).subscribe({
       next: s => { this.state.set(s); this.loading.set(false); },

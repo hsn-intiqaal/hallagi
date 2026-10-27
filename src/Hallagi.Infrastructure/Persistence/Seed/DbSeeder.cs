@@ -86,7 +86,10 @@ public static class DbSeeder
     private static async Task SeedDemoOrganizationAsync(AppDbContext db, CancellationToken ct)
     {
         var now = DateTime.UtcNow;
-        var localToday = DateTime.Today; // server local day used for demo sales window
+        // demo activity is laid out on the salon's wall clock (Riyadh), never in the future
+        var zone = OrgTime.Resolve("Asia/Riyadh");
+        var localToday = OrgTime.Today(zone).ToDateTime(TimeOnly.MinValue);
+        DateTime LocalToUtc(DateTime day, int hour, int minute) => OrgTime.ToUtc(new DateTime(day.Year, day.Month, day.Day, hour, minute, 0), zone);
 
         // ===== Organization + branches =====
         var org = new Organization
@@ -301,7 +304,7 @@ public static class DbSeeder
             for (int dayOffset = -7; dayOffset <= 0; dayOffset++)
             {
                 var day = localToday.AddDays(dayOffset);
-                var openedAt = new DateTime(day.Year, day.Month, day.Day, 9, 0, 0, DateTimeKind.Local).ToUniversalTime();
+                var openedAt = LocalToUtc(day, 9, 0);
                 var shift = new Shift
                 {
                     Id = Guid.NewGuid(),
@@ -371,8 +374,9 @@ public static class DbSeeder
                     .Select(a => a.BranchId).First();
 
                 var hour = 9 + rnd.Next(11);
-                var createdAt = new DateTime(day.Year, day.Month, day.Day, hour, rnd.Next(60), 0, DateTimeKind.Local).ToUniversalTime();
-                if (dayOffset == 0 && createdAt > DateTime.UtcNow.AddHours(3)) createdAt = DateTime.UtcNow.AddMinutes(-30 - i);
+                var createdAt = LocalToUtc(day, hour, rnd.Next(60));
+                // today's sales happen before "now" (spaced out over the last hours)
+                if (dayOffset == 0 && createdAt > now) createdAt = now.AddMinutes(-25 * (salesCount - i));
 
                 // 1..3 services
                 int itemCount = 1 + rnd.Next(3);

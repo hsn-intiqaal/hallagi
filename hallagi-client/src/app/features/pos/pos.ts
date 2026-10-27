@@ -364,6 +364,11 @@ export class Pos implements OnInit {
     });
   }
 
+  /** Phones: jump from the catalog to the cart/payment panel. */
+  scrollToCart(): void {
+    document.querySelector('.cart-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
   viewReceipt(sale: Sale): void {
     this.router.navigate(['/sales', sale.id]);
   }
