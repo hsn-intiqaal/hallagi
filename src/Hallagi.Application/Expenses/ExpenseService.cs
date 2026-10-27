@@ -1,6 +1,6 @@
 namespace Hallagi.Application.Expenses;
 
-public class ExpenseService(IAppDbContext db)
+public class ExpenseService(IAppDbContext db, OrgClock clock)
 {
     public async Task<Guid> CreateAsync(CurrentUser user, CreateExpenseRequest req, CancellationToken ct = default)
     {
@@ -22,7 +22,7 @@ public class ExpenseService(IAppDbContext db)
             BranchId = branch.Id,
             Category = req.Category,
             Amount = req.Amount,
-            ExpenseDate = req.ExpenseDate == default ? DateOnly.FromDateTime(DateTime.Today) : req.ExpenseDate,
+            ExpenseDate = req.ExpenseDate == default ? await clock.TodayAsync(user.OrganizationId, ct) : req.ExpenseDate,
             Description = req.Description?.Trim(),
             Source = req.Source,
             Status = ExpenseStatus.Active,

@@ -11,7 +11,7 @@ public class SalesFinancialTests : IDisposable
     [Fact] // Test 1: cash sale increases drawer expected cash by the sale amount
     public async Task CashSale_IncreasesDrawerExpectedCash()
     {
-        var sales = new SalesService(_db.Db);
+        var sales = new SalesService(_db.Db, _db.Clock);
         var shiftService = new ShiftService(_db.Db);
         var cashier = _db.AsCashier();
 
@@ -34,7 +34,7 @@ public class SalesFinancialTests : IDisposable
     [Fact] // Test 2: card sale never touches drawer cash
     public async Task CardSale_DoesNotChangeDrawerCash()
     {
-        var sales = new SalesService(_db.Db);
+        var sales = new SalesService(_db.Db, _db.Clock);
         var shiftService = new ShiftService(_db.Db);
         var cashier = _db.AsCashier();
         await shiftService.OpenAsync(cashier, _db.BranchA, 200m);
@@ -52,7 +52,7 @@ public class SalesFinancialTests : IDisposable
     [Fact] // Test 10: same idempotency key replays without creating a duplicate sale
     public async Task Idempotency_PreventsDuplicateSales()
     {
-        var sales = new SalesService(_db.Db);
+        var sales = new SalesService(_db.Db, _db.Clock);
         var cashier = _db.AsCashier();
         var req = new CreateSaleRequest(_db.BranchA, _db.BarberId, null, PaymentMethod.Cash,
             new List<CreateSaleItem> { new(_db.SaleServiceId, 1) }, "same-key");
@@ -68,7 +68,7 @@ public class SalesFinancialTests : IDisposable
     [Fact] // Test 9: sale stores the price at the time of sale
     public async Task Sale_SnapshotsUnitPrice()
     {
-        var sales = new SalesService(_db.Db);
+        var sales = new SalesService(_db.Db, _db.Clock);
         var cashier = _db.AsCashier();
         var result = await sales.CreateAsync(cashier, new CreateSaleRequest(
             _db.BranchA, _db.BarberId, null, PaymentMethod.Cash,
@@ -83,7 +83,7 @@ public class SalesFinancialTests : IDisposable
     [Fact] // server rejects a barber not assigned to the branch
     public async Task Sale_RejectsBarberFromOtherBranch()
     {
-        var sales = new SalesService(_db.Db);
+        var sales = new SalesService(_db.Db, _db.Clock);
         var owner = _db.AsOwner();
         var otherBarberId = Guid.NewGuid();
         _db.Db.Barbers.Add(new Barber { Id = otherBarberId, OrganizationId = _db.OrgId, FullName = "حلاق فرع آخر", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow });
@@ -99,7 +99,7 @@ public class SalesFinancialTests : IDisposable
     [Fact] // Test 8: cashier cannot sell in a branch he is not assigned to
     public async Task Cashier_CannotSellInOtherBranch()
     {
-        var sales = new SalesService(_db.Db);
+        var sales = new SalesService(_db.Db, _db.Clock);
         var cashier = _db.AsCashier(); // only branch A
         var ex = await Assert.ThrowsAsync<AppException>(() => sales.CreateAsync(cashier, new CreateSaleRequest(
             _db.BranchB, _db.BarberId, null, PaymentMethod.Cash,
@@ -110,7 +110,7 @@ public class SalesFinancialTests : IDisposable
     [Fact] // total is always computed by the server
     public async Task Total_ComputedServerSide()
     {
-        var sales = new SalesService(_db.Db);
+        var sales = new SalesService(_db.Db, _db.Clock);
         var owner = _db.AsOwner();
         var result = await sales.CreateAsync(owner, new CreateSaleRequest(
             _db.BranchA, _db.BarberId, null, PaymentMethod.Cash,
@@ -122,7 +122,7 @@ public class SalesFinancialTests : IDisposable
     [Fact] // barber-operated POS: a barber records sales for himself (never for others)
     public async Task Barber_Can_Create_Own_Sale()
     {
-        var sales = new SalesService(_db.Db);
+        var sales = new SalesService(_db.Db, _db.Clock);
         var result = await sales.CreateAsync(_db.AsBarber(), new CreateSaleRequest(
             _db.BranchA, _db.BarberId, null, PaymentMethod.Cash,
             new List<CreateSaleItem> { new(_db.SaleServiceId, 1) }, "barber-own-sale"));
@@ -145,13 +145,13 @@ public class ShiftTests : IDisposable
         var shifts = new ShiftService(_db.Db);
         await shifts.OpenAsync(owner, _db.BranchA, 200m);
 
-        var sales = new SalesService(_db.Db);
+        var sales = new SalesService(_db.Db, _db.Clock);
         await sales.CreateAsync(owner, new CreateSaleRequest(_db.BranchA, _db.BarberId, null, PaymentMethod.Cash,
             new List<CreateSaleItem> { new(_db.SaleServiceId, 3) }, "cash-3"));                // +75
         await sales.CreateAsync(owner, new CreateSaleRequest(_db.BranchA, _db.BarberId, null, PaymentMethod.Card,
             new List<CreateSaleItem> { new(_db.OtherServiceId, 1) }, "card-1"));            // card, ignored by drawer
 
-        var expenses = new ExpenseService(_db.Db);
+        var expenses = new ExpenseService(_db.Db, _db.Clock);
         await expenses.CreateAsync(owner, new CreateExpenseRequest(_db.BranchA, ExpenseCategory.Supplies, 50m,
             DateOnly.FromDateTime(DateTime.Today), "مستلزمات", ExpenseSource.CashDrawer));   // -50
 
@@ -205,7 +205,7 @@ public class ShiftTests : IDisposable
         var shifts = new ShiftService(_db.Db);
         await shifts.OpenAsync(owner, _db.BranchA, 200m);
 
-        var expenses = new ExpenseService(_db.Db);
+        var expenses = new ExpenseService(_db.Db, _db.Clock);
         var id = await expenses.CreateAsync(owner, new CreateExpenseRequest(_db.BranchA, ExpenseCategory.Supplies, 50m,
             DateOnly.FromDateTime(DateTime.Today), "اختبار", ExpenseSource.CashDrawer));
 
@@ -222,7 +222,7 @@ public class ShiftTests : IDisposable
     public async Task VoidExpense_RequiresReason()
     {
         var owner = _db.AsOwner();
-        var expenses = new ExpenseService(_db.Db);
+        var expenses = new ExpenseService(_db.Db, _db.Clock);
         var id = await expenses.CreateAsync(owner, new CreateExpenseRequest(_db.BranchA, ExpenseCategory.Supplies, 50m,
             DateOnly.FromDateTime(DateTime.Today), "اختبار", ExpenseSource.Bank));
         var ex = await Assert.ThrowsAsync<AppException>(() => expenses.VoidAsync(owner, id, ""));

@@ -29,39 +29,34 @@ public class TreasuryController(ShiftService shifts) : BaseApiController
         => Ok(await shifts.GetOpenShiftStateAsync(id, ct));
 }
 
+/// <summary>
+/// Management reports. <c>from</c>/<c>to</c> are the organization's local calendar days (inclusive);
+/// any time part is ignored. Missing bounds default to the last 7 (or 30) days.
+/// </summary>
 [Route("api/reports")]
 public class ReportsController(ReportsService reports) : BaseApiController
 {
     [HttpGet("sales")]
-    public async Task<IActionResult> Sales([FromQuery] Guid? branchId, [FromQuery] DateTime? from, [FromQuery] DateTime? to,
-        [FromQuery] string? groupBy = "day", CancellationToken ct = default)
-        => Ok(await reports.SalesReportAsync(CurrentUser, branchId,
-            from ?? DateTime.Today.AddDays(-6), to ?? DateTime.Today.AddDays(1).AddTicks(-1), (groupBy ?? "day"), ct));
+    public async Task<IActionResult> Sales([FromQuery] Guid? branchId, [FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken ct)
+        => Ok(await reports.SalesReportAsync(CurrentUser, branchId, from, to, ct));
 
     [HttpGet("expenses")]
-    public async Task<IActionResult> Expenses([FromQuery] Guid? branchId, [FromQuery] DateTime? from, [FromQuery] DateTime? to,
-        CancellationToken ct = default)
-        => Ok(await reports.ExpensesByCategoryAsync(CurrentUser, branchId,
-            from ?? DateTime.Today.AddDays(-6), to ?? DateTime.Today.AddDays(1).AddTicks(-1), ct));
+    public async Task<IActionResult> Expenses([FromQuery] Guid? branchId, [FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken ct)
+        => Ok(await reports.ExpensesByCategoryAsync(CurrentUser, branchId, from, to, ct));
 
     [HttpGet("barber-dues")]
-    public async Task<IActionResult> BarberDues([FromQuery] Guid? branchId, [FromQuery] DateTime? from, [FromQuery] DateTime? to,
-        CancellationToken ct = default)
-        => Ok(await reports.BarberDuesAsync(CurrentUser, branchId,
-            from ?? DateTime.Today.AddDays(-6), to ?? DateTime.Today.AddDays(1), ct));
+    public async Task<IActionResult> BarberDues([FromQuery] Guid? branchId, [FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken ct)
+        => Ok(await reports.BarberDuesAsync(CurrentUser, branchId, from, to, ct));
 
     [HttpGet("branches")]
-    public async Task<IActionResult> Branches([FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken ct = default)
-        => Ok(await reports.BranchComparisonAsync(CurrentUser,
-            from ?? DateTime.Today.AddDays(-6), to ?? DateTime.Today.AddDays(1).AddTicks(-1), ct));
-
-    [HttpGet("tax")]
-    public async Task<IActionResult> Tax([FromQuery] Guid? branchId, [FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken ct = default)
-        => Ok(await reports.TaxAndProductsAsync(CurrentUser, branchId,
-            from ?? DateTime.Today.AddDays(-29), to ?? DateTime.Today.AddDays(1).AddTicks(-1), ct));
+    public async Task<IActionResult> Branches([FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken ct)
+        => Ok(await reports.BranchComparisonAsync(CurrentUser, from, to, ct));
 
     [HttpGet("customers")]
-    public async Task<IActionResult> Customers([FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken ct = default)
-        => Ok(await reports.CustomerRepeatAsync(CurrentUser,
-            from ?? DateTime.Today.AddDays(-6), to ?? DateTime.Today.AddDays(1).AddTicks(-1), ct));
+    public async Task<IActionResult> Customers([FromQuery] Guid? branchId, [FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken ct)
+        => Ok(await reports.CustomersAsync(CurrentUser, branchId, from, to, ct));
+
+    [HttpGet("tax")]
+    public async Task<IActionResult> Tax([FromQuery] Guid? branchId, [FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken ct)
+        => Ok(await reports.TaxAndProductsAsync(CurrentUser, branchId, from, to, ct));
 }

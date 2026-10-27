@@ -14,5 +14,7 @@ public class SaleItem
     public decimal UnitPrice { get; set; }
     public int Quantity { get; set; }
     public decimal LineTotal { get; set; }
+    /// <summary>Product cost at the time of sale (cost of goods sold); null for services.</summary>
+    public decimal? UnitCost { get; set; }
     public Sale Sale { get; set; } = default!;
 }

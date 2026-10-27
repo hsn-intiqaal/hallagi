@@ -16,6 +16,8 @@ public class TestDb : IDisposable
     public Guid BarberId { get; }
     public Guid SaleServiceId { get; }
     public Guid OtherServiceId { get; }
+    public TestClock Time { get; } = new();
+    public OrgClock Clock { get; }
 
     public TestDb()
     {
@@ -26,6 +28,7 @@ public class TestDb : IDisposable
         Db = new AppDbContext(options);
         Db.Database.OpenConnection();
         Db.Database.EnsureCreated();
+        Clock = new OrgClock(Db, Time);
 
         var now = DateTime.UtcNow;
         OrgId = Guid.NewGuid();
@@ -85,4 +88,12 @@ public static class TestServices
 
     public static AuthService Auth(AppDbContext db)
         => new(db, new JwtTokenService(new JwtSettings { Key = new string('k', 48), Issuer = "t", Audience = "t" }), Hasher);
+}
+
+/// <summary>Controllable "now" for deterministic date/time tests (defaults to the real clock).</summary>
+public sealed class TestClock : TimeProvider
+{
+    private DateTimeOffset? _fixed;
+    public override DateTimeOffset GetUtcNow() => _fixed ?? DateTimeOffset.UtcNow;
+    public void Set(DateTime utc) => _fixed = new DateTimeOffset(DateTime.SpecifyKind(utc, DateTimeKind.Utc));
 }

@@ -1,6 +1,6 @@
 namespace Hallagi.Application.Catalog;
 
-public partial class CatalogService(IAppDbContext db)
+public partial class CatalogService(IAppDbContext db, OrgClock clock)
 {
     // ================= SERVICES =================
     public async Task<object> ListServicesAsync(CurrentUser user, Guid? branchId, string? search, CancellationToken ct = default)
@@ -138,8 +138,10 @@ public partial class CatalogService(IAppDbContext db)
         var barbers = await query.OrderBy(b => b.FullName)
             .Include(b => b.BranchAssignments)
             .ToListAsync(ct);
-        var rangeFrom = from ?? DateTime.Today.AddDays(-30);
-        var rangeTo = to ?? DateTime.Today.AddDays(1).AddTicks(-1);
+        // local calendar days → UTC window (inclusive end kept for the existing <= comparisons)
+        var range = await clock.RangeAsync(user.OrganizationId, from, to, 30, ct);
+        var rangeFrom = range.FromUtc;
+        var rangeTo = range.ToUtc.AddTicks(-1);
 
         var result = new List<object>();
         foreach (var b in barbers)
@@ -175,7 +177,7 @@ public partial class CatalogService(IAppDbContext db)
                 Compensation = comp is null ? null : CompensationText(comp)
             });
         }
-        return new { items = result, from = rangeFrom, to = rangeTo };
+        return new { items = result, from = range.From, to = range.To };
     }
 
     /// <summary>A barber's own profile view: personal data only, compensation visible when permitted.</summary>
@@ -286,8 +288,10 @@ public partial class CatalogService(IAppDbContext db)
         if (user.Role == UserRole.Barber && barber.LinkedProfileId != user.ProfileId)
             throw AppException.Forbidden("لا تملك صلاحية على هذا الحلاق");
 
-        var rangeFrom = from ?? DateTime.Today.AddDays(-30);
-        var rangeTo = to ?? DateTime.Today.AddDays(1).AddTicks(-1);
+        // local calendar days → UTC window (inclusive end kept for the existing <= comparisons)
+        var range = await clock.RangeAsync(user.OrganizationId, from, to, 30, ct);
+        var rangeFrom = range.FromUtc;
+        var rangeTo = range.ToUtc.AddTicks(-1);
 
         var comp = await db.BarberCompensations.AsNoTracking()
             .Where(c => c.BarberId == id && c.Status == EntityStatus.Active)
@@ -357,8 +361,8 @@ public partial class CatalogService(IAppDbContext db)
                 Count = summary?.Count ?? 0,
                 ServicesCount = summary?.ServicesCount ?? 0
             },
-            from = rangeFrom,
-            to = rangeTo,
+            from = range.From,
+            to = range.To,
             sales
         };
     }
@@ -405,7 +409,7 @@ public partial class CatalogService(IAppDbContext db)
         foreach (var br in input.BranchIds.Distinct())
             db.BarberBranchAssignments.Add(new BarberBranchAssignment { Id = Guid.NewGuid(), BarberId = barber.Id, BranchId = br });
 
-        AddCompensation(barber, input.Compensation, now);
+        AddCompensation(barber, input.Compensation, now, await clock.TodayAsync(user.OrganizationId, ct));
 
         db.AuditLogs.Add(Audit("barber.created", nameof(Barber), barber.Id.ToString(), $"name={barber.FullName}", user, now));
         await db.SaveChangesAsync(ct);
@@ -433,13 +437,13 @@ public partial class CatalogService(IAppDbContext db)
         foreach (var br in input.BranchIds.Distinct())
             db.BarberBranchAssignments.Add(new BarberBranchAssignment { Id = Guid.NewGuid(), BarberId = barber.Id, BranchId = br });
 
-        AddCompensation(barber, input.Compensation, now);
+        AddCompensation(barber, input.Compensation, now, await clock.TodayAsync(user.OrganizationId, ct));
 
         db.AuditLogs.Add(Audit("barber.updated", nameof(Barber), barber.Id.ToString(), $"name={barber.FullName}", user, now));
         await db.SaveChangesAsync(ct);
     }
 
-    private void AddCompensation(Barber barber, CompensationInput? input, DateTime now)
+    private void AddCompensation(Barber barber, CompensationInput? input, DateTime now, DateOnly today)
     {
         if (input is null) return;
         var existing = barber.CompensationSettings.Where(c => c.Status == EntityStatus.Active).ToList();
@@ -454,7 +458,7 @@ public partial class CatalogService(IAppDbContext db)
             CommissionRate = input.CommissionRate,
             ChairRentAmount = input.ChairRentAmount,
             Notes = input.Notes?.Trim(),
-            EffectiveFrom = input.EffectiveFrom == default ? DateOnly.FromDateTime(DateTime.Today) : input.EffectiveFrom,
+            EffectiveFrom = input.EffectiveFrom == default ? today : input.EffectiveFrom,
             Status = EntityStatus.Active,
             CreatedAt = now
         });

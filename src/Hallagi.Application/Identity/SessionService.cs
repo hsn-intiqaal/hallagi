@@ -60,7 +60,7 @@ public class SessionService(IAppDbContext db, CatalogService catalog, DashboardS
         if (linkedBarber is not null)
         {
             barber = Permissions.Can(user, Permissions.BarberView)
-                ? await catalog.GetBarberAsync(user, linkedBarber.Id, DateTime.Today.AddDays(-30), null, ct)
+                ? await catalog.GetBarberAsync(user, linkedBarber.Id, null, null, ct)
                 // A barber may always read HIS OWN record; other data stays restricted
                 : await catalog.GetOwnBarberAsync(user, linkedBarber.Id, Permissions.Can(user, Permissions.BarberDuesView), ct);
         }

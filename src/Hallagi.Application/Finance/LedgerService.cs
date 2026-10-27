@@ -4,7 +4,7 @@ namespace Hallagi.Application.Finance;
 /// Barber financial ledger + advances + cash handovers.
 /// All amounts are precise decimals; entries are append-only with reversals for corrections.
 /// </summary>
-public class LedgerService(IAppDbContext db)
+public class LedgerService(IAppDbContext db, OrgClock clock)
 {
     // ============ Ledger ============
 
@@ -15,8 +15,9 @@ public class LedgerService(IAppDbContext db)
 
         await EnsureBarberVisibleAsync(user, barberId, ct);
 
-        var fromDate = DateOnly.FromDateTime((from ?? DateTime.Today.AddDays(-30)).Date);
-        var toDate = DateOnly.FromDateTime((to ?? DateTime.Today).Date);
+        var range = await clock.RangeAsync(user.OrganizationId, from, to, 30, ct);
+        var fromDate = range.From;
+        var toDate = range.To;
 
         var entries = await db.BarberFinancialTransactions.AsNoTracking()
             .Where(t => t.BarberId == barberId && t.TxDate >= fromDate && t.TxDate <= toDate)
@@ -92,7 +93,7 @@ public class LedgerService(IAppDbContext db)
             Type = req.Type,
             Direction = req.Direction,
             Amount = req.Amount,
-            TxDate = req.TxDate == default ? DateOnly.FromDateTime(DateTime.Today) : req.TxDate,
+            TxDate = req.TxDate == default ? await clock.TodayAsync(user.OrganizationId, ct) : req.TxDate,
             Description = req.Description?.Trim(),
             SourceType = "Manual",
             SourceRef = req.SourceRef?.Trim(),
@@ -146,7 +147,7 @@ public class LedgerService(IAppDbContext db)
             Type = BarberTxType.Reversal,
             Direction = entry.Direction == BarberTxDirection.Credit ? BarberTxDirection.Debit : BarberTxDirection.Credit,
             Amount = entry.Amount,
-            TxDate = DateOnly.FromDateTime(DateTime.Today),
+            TxDate = await clock.TodayAsync(user.OrganizationId, ct),
             Description = $"تصحيح: {entry.Description ?? TypeText(entry.Type)}",
             SourceType = "Reversal",
             SourceId = entry.Id,
@@ -220,7 +221,7 @@ public class LedgerService(IAppDbContext db)
             BranchId = req.BranchId,
             OriginalAmount = req.Amount,
             RepaidAmount = 0m,
-            AdvanceDate = req.AdvanceDate == default ? DateOnly.FromDateTime(DateTime.Today) : req.AdvanceDate,
+            AdvanceDate = req.AdvanceDate == default ? await clock.TodayAsync(user.OrganizationId, ct) : req.AdvanceDate,
             Reason = req.Reason?.Trim(),
             Status = "Approved",
             CreatedBy = user.ProfileId,
@@ -291,7 +292,7 @@ public class LedgerService(IAppDbContext db)
             Type = BarberTxType.AdvanceRepaid,
             Direction = BarberTxDirection.Credit,
             Amount = amount,
-            TxDate = DateOnly.FromDateTime(DateTime.Today),
+            TxDate = await clock.TodayAsync(user.OrganizationId, ct),
             Description = "سداد سلفة",
             SourceType = nameof(BarberAdvance),
             SourceId = advance.Id,
@@ -365,7 +366,7 @@ public class LedgerService(IAppDbContext db)
             BarberId = req.BarberId,
             ShiftId = req.ShiftId,
             Amount = req.Amount,
-            HandoverDate = req.HandoverDate == default ? DateOnly.FromDateTime(DateTime.Today) : req.HandoverDate,
+            HandoverDate = req.HandoverDate == default ? await clock.TodayAsync(user.OrganizationId, ct) : req.HandoverDate,
             Note = req.Note?.Trim(),
             Status = "Confirmed",
             ConfirmedBy = user.ProfileId,

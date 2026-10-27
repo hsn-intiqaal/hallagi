@@ -8,7 +8,7 @@ public class CommerceSalesTests : IDisposable
     public CommerceSalesTests()
     {
         _db = new TestDb();
-        _sales = new SalesService(_db.Db);
+        _sales = new SalesService(_db.Db, _db.Clock);
     }
 
     public void Dispose() => _db.Dispose();

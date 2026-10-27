@@ -74,7 +74,7 @@ public class AppointmentTests : IDisposable
 
         await _svc.SetStatusAsync(_db.AsCashier(), id, new AppointmentStatusInput(AppointmentStatus.InService, null, _db.BarberId));
 
-        var sales = new SalesService(_db.Db);
+        var sales = new SalesService(_db.Db, _db.Clock);
         await sales.CreateAsync(_db.AsCashier(), new CreateSaleRequest(_db.BranchA, _db.BarberId, null, PaymentMethod.Card,
             new() { new(_db.SaleServiceId, 1) }, "walk-1", AppointmentId: id));
 

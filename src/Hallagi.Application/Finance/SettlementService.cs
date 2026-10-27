@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace Hallagi.Application.Finance;
 
-public class SettlementService(IAppDbContext db)
+public class SettlementService(IAppDbContext db, OrgClock clock)
 {
     /// <summary>Creates a payroll period (e.g. "أكتوبر 2026").</summary>
     public async Task<Guid> CreatePeriodAsync(CurrentUser user, string name, DateOnly start, DateOnly end, CancellationToken ct = default)
@@ -71,8 +71,10 @@ public class SettlementService(IAppDbContext db)
         if (period.Status != "Open")
             throw AppException.Conflict("period_closed", "الفترة المالية مغلقة");
 
-        var from = period.StartDate.ToDateTime(TimeOnly.MinValue);
-        var to = period.EndDate.ToDateTime(TimeOnly.MaxValue);
+        // the period's local calendar days → exact UTC window of sales that belong to it
+        var window = DateRange.Create(period.StartDate, period.EndDate, await clock.ZoneAsync(user.OrganizationId, ct));
+        var from = window.FromUtc;
+        var to = window.ToUtc.AddTicks(-1);
 
         var allBarbers = await db.Barbers.AsNoTracking()
             .Where(b => b.OrganizationId == user.OrganizationId && b.Status == EntityStatus.Active)
@@ -90,7 +92,7 @@ public class SettlementService(IAppDbContext db)
                 if (!assigned.Any(b => user.BranchIds.Contains(b))) continue;
             }
 
-            var calc = await CalculateAsync(user.OrganizationId, barber.Id, from, to, ct);
+            var calc = await CalculateAsync(user.OrganizationId, barber.Id, from, to, period.EndDate, ct);
             var settlement = await UpsertDraftAsync(user, period, barber, calc, ct);
             await db.SaveChangesAsync(ct); // persist draft before projecting
             results.Add(await ProjectAsync(settlement.Id, ct));
@@ -219,7 +221,7 @@ public class SettlementService(IAppDbContext db)
             Id = Guid.NewGuid(),
             SettlementId = settlement.Id,
             Amount = amount,
-            PaymentDate = paymentDate ?? DateOnly.FromDateTime(DateTime.Today),
+            PaymentDate = paymentDate ?? await clock.TodayAsync(user.OrganizationId, ct),
             Method = string.IsNullOrWhiteSpace(method) ? "Cash" : method.Trim(),
             Note = note?.Trim(),
             CreatedBy = user.ProfileId,
@@ -269,10 +271,10 @@ public class SettlementService(IAppDbContext db)
 
     // ============ calculation ============
 
-    private async Task<SettlementCalc> CalculateAsync(Guid orgId, Guid barberId, DateTime from, DateTime to, CancellationToken ct)
+    private async Task<SettlementCalc> CalculateAsync(Guid orgId, Guid barberId, DateTime from, DateTime to, DateOnly periodEnd, CancellationToken ct)
     {
         var comp = await db.BarberCompensations.AsNoTracking()
-            .Where(c => c.BarberId == barberId && c.Status == EntityStatus.Active && c.EffectiveFrom <= DateOnly.FromDateTime(to))
+            .Where(c => c.BarberId == barberId && c.Status == EntityStatus.Active && c.EffectiveFrom <= periodEnd)
             .OrderByDescending(c => c.EffectiveFrom).FirstOrDefaultAsync(ct);
 
         // eligible completed sales in the period
@@ -445,7 +447,7 @@ public class SettlementService(IAppDbContext db)
                 Type = type,
                 Direction = BarberTxDirection.Credit,
                 Amount = amount,
-                TxDate = DateOnly.FromDateTime(DateTime.Today),
+                TxDate = await clock.TodayAsync(user.OrganizationId, ct),
                 Description = label,
                 SourceType = nameof(BarberSettlement),
                 SourceId = s.Id,

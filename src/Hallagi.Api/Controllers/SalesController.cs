@@ -57,10 +57,7 @@ public class SalesController(SalesService sales) : BaseApiController
     public async Task<IActionResult> ExportCsv([FromServices] ReportsService reports,
         [FromQuery] Guid? branchId, [FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken ct = default)
     {
-        if (!Permissions.Can(CurrentUser, Permissions.ReportView))
-            throw AppException.Forbidden("ليس لديك صلاحية لتصدير التقارير");
-        var csv = await reports.SalesCsvAsync(CurrentUser, branchId,
-            from ?? DateTime.Today.AddDays(-30), to ?? DateTime.Today.AddDays(1), ct);
+        var csv = await reports.SalesCsvAsync(CurrentUser, branchId, from, to, ct);
         return File(System.Text.Encoding.UTF8.GetPreamble().Concat(System.Text.Encoding.UTF8.GetBytes(csv)).ToArray(),
             "text/csv; charset=utf-8", "sales.csv");
     }

@@ -86,12 +86,12 @@ public class TenantIsolationTests : IDisposable
         Ref.Id(aItems[0]!, "Id").ShouldNotBe(default); // and tenant A's sale stays with tenant A
     }
 
-    private SalesService newSalesServiceIsolated() => new(_db);
+    private SalesService newSalesServiceIsolated() => new(_db, new OrgClock(_db, TimeProvider.System));
 
     [Fact]
     public async Task Tenant_A_Cannot_Sell_Using_Tenant_B_Service()
     {
-        var sales = new SalesService(_db);
+        var sales = new SalesService(_db, new OrgClock(_db, TimeProvider.System));
         var a = OwnerOf(_orgA, _memberA, _userA);
         var bService = await _db.Services.FirstAsync(s => s.OrganizationId == _orgB);
 
@@ -104,7 +104,7 @@ public class TenantIsolationTests : IDisposable
     [Fact]
     public async Task Tenant_A_Cannot_Read_Another_Tenant_Customer()
     {
-        var catalog = new CatalogService(_db);
+        var catalog = new CatalogService(_db, new OrgClock(_db, TimeProvider.System));
         var bCustomer = await _db.Customers.FirstAsync(c => c.OrganizationId == _orgB);
         var ex = await Assert.ThrowsAsync<AppException>(() => catalog.GetCustomerAsync(OwnerOf(_orgA, _memberA, _userA), bCustomer.Id));
         ex.Status.ShouldBe(404);
@@ -205,7 +205,7 @@ public class SettlementCalculationTests
             c.MonthlySalary = 4000m;
         }, salesTotal: 1000m);
 
-        var svc = new SettlementService(seed.Db);
+        var svc = new SettlementService(seed.Db, new OrgClock(seed.Db, TimeProvider.System));
         var periodId = await seed.PeriodAsync(svc);
         var preview = await svc.PreviewAsync(seed.Owner(), periodId, null, default);
         var s = ((System.Collections.IEnumerable)Ref.Val(preview, "settlements")!).Cast<object?>().First()!;
@@ -225,7 +225,7 @@ public class SettlementCalculationTests
             c.CommissionRate = 0.30m;
         }, salesTotal: 1000m);
 
-        var svc = new SettlementService(seed.Db);
+        var svc = new SettlementService(seed.Db, new OrgClock(seed.Db, TimeProvider.System));
         var periodId = await seed.PeriodAsync(svc);
         var preview = await svc.PreviewAsync(seed.Owner(), periodId, null, default);
         var s = ((System.Collections.IEnumerable)Ref.Val(preview, "settlements")!).Cast<object?>().First()!;
@@ -245,7 +245,7 @@ public class SettlementCalculationTests
             c.CommissionRate = 0.15m;
         }, salesTotal: 1000m);
 
-        var svc = new SettlementService(seed.Db);
+        var svc = new SettlementService(seed.Db, new OrgClock(seed.Db, TimeProvider.System));
         var periodId = await seed.PeriodAsync(svc);
         var preview = await svc.PreviewAsync(seed.Owner(), periodId, null, default);
         var s = ((System.Collections.IEnumerable)Ref.Val(preview, "settlements")!).Cast<object?>().First()!;
@@ -265,7 +265,7 @@ public class SettlementCalculationTests
             c.ChairRentAmount = 1200m;
         }, salesTotal: 1000m);
 
-        var svc = new SettlementService(seed.Db);
+        var svc = new SettlementService(seed.Db, new OrgClock(seed.Db, TimeProvider.System));
         var periodId = await seed.PeriodAsync(svc);
         var preview = await svc.PreviewAsync(seed.Owner(), periodId, null, default);
         var s = ((System.Collections.IEnumerable)Ref.Val(preview, "settlements")!).Cast<object?>().First()!;
@@ -285,11 +285,11 @@ public class SettlementCalculationTests
             c.MonthlySalary = 3000m;
         }, 0m);
 
-        var ledger = new LedgerService(seed.Db);
+        var ledger = new LedgerService(seed.Db, new OrgClock(seed.Db, TimeProvider.System));
         await ledger.CreateAdvanceAsync(seed.Owner(), new CreateAdvanceRequest(barberId, seed.BranchId, 800m,
             DateOnly.FromDateTime(DateTime.Today), "سلفة"), default);
 
-        var svc = new SettlementService(seed.Db);
+        var svc = new SettlementService(seed.Db, new OrgClock(seed.Db, TimeProvider.System));
         var periodId = await seed.PeriodAsync(svc);
         var preview = await svc.PreviewAsync(seed.Owner(), periodId, null, default);
         var s = ((System.Collections.IEnumerable)Ref.Val(preview, "settlements")!).Cast<object?>().First()!;
@@ -308,7 +308,7 @@ public class SettlementCalculationTests
             c.CommissionRate = 0.30m;
         }, salesTotal: 1000m);
 
-        var svc = new SettlementService(seed.Db);
+        var svc = new SettlementService(seed.Db, new OrgClock(seed.Db, TimeProvider.System));
         var periodId = await seed.PeriodAsync(svc);
         var preview = await svc.PreviewAsync(seed.Owner(), periodId, null, default);
         var s = ((System.Collections.IEnumerable)Ref.Val(preview, "settlements")!).Cast<object?>().First()!;
@@ -338,7 +338,7 @@ public class SettlementCalculationTests
             c.MonthlySalary = 1000m;
         }, 0m);
 
-        var svc = new SettlementService(seed.Db);
+        var svc = new SettlementService(seed.Db, new OrgClock(seed.Db, TimeProvider.System));
         var periodId = await seed.PeriodAsync(svc);
         var preview = await svc.PreviewAsync(seed.Owner(), periodId, null, default);
         var s = ((System.Collections.IEnumerable)Ref.Val(preview, "settlements")!).Cast<object?>().First()!;
@@ -371,7 +371,7 @@ public class LedgerTests : IDisposable
     public async Task Advance_Repayment_Partial_Balance()
     {
         var barberId = _seed.AddBarberWithAgreement("حلاق", c => c.Type = CompensationType.Commission, 0m);
-        var ledger = new LedgerService(_seed.Db);
+        var ledger = new LedgerService(_seed.Db, new OrgClock(_seed.Db, TimeProvider.System));
         var advanceId = await ledger.CreateAdvanceAsync(_seed.Owner(), new CreateAdvanceRequest(barberId, _seed.BranchId, 500m,
             DateOnly.FromDateTime(DateTime.Today), "سلفة"), default);
 
@@ -391,7 +391,7 @@ public class LedgerTests : IDisposable
     public async Task Duplicate_Ledger_Entry_Is_Rejected()
     {
         var barberId = _seed.AddBarberWithAgreement("حلاق", c => c.Type = CompensationType.Commission, 0m);
-        var ledger = new LedgerService(_seed.Db);
+        var ledger = new LedgerService(_seed.Db, new OrgClock(_seed.Db, TimeProvider.System));
         await ledger.AddEntryAsync(_seed.Owner(), new LedgerEntryRequest(barberId, _seed.BranchId,
             BarberTxType.ReimbursementDue, BarberTxDirection.Credit, 100m,
             DateOnly.FromDateTime(DateTime.Today), "مسترد", "ref-1", null), default);
@@ -407,7 +407,7 @@ public class LedgerTests : IDisposable
     public async Task Reversal_Creates_Offsetting_Entry()
     {
         var barberId = _seed.AddBarberWithAgreement("حلاق", c => c.Type = CompensationType.Commission, 0m);
-        var ledger = new LedgerService(_seed.Db);
+        var ledger = new LedgerService(_seed.Db, new OrgClock(_seed.Db, TimeProvider.System));
         var entryId = await ledger.AddEntryAsync(_seed.Owner(), new LedgerEntryRequest(barberId, _seed.BranchId,
             BarberTxType.Bonus, BarberTxDirection.Credit, 200m,
             DateOnly.FromDateTime(DateTime.Today), "مكافأة", "bonus-1", null), default);
@@ -423,7 +423,7 @@ public class LedgerTests : IDisposable
     [Fact]
     public async Task Handover_Rejects_Same_User()
     {
-        var ledger = new LedgerService(_seed.Db);
+        var ledger = new LedgerService(_seed.Db, new OrgClock(_seed.Db, TimeProvider.System));
         var ex = await Assert.ThrowsAsync<AppException>(() => ledger.CreateHandoverAsync(_seed.Owner(),
             new CreateHandoverRequest(_seed.BranchId, _seed.OwnerProfile, _seed.OwnerProfile, null, null, 100m,
                 DateOnly.FromDateTime(DateTime.Today), null), default));
@@ -442,7 +442,7 @@ public class BarberPosTests : IDisposable
     [Fact]
     public async Task Barber_Can_Sell_For_Himself()
     {
-        var sales = new SalesService(_db.Db);
+        var sales = new SalesService(_db.Db, _db.Clock);
         var result = await sales.CreateAsync(_db.AsBarber(), new CreateSaleRequest(
             _db.BranchA, _db.BarberId, null, PaymentMethod.Cash,
             new List<CreateSaleItem> { new(_db.SaleServiceId, 1) }, "barber-self-sale"));
@@ -453,7 +453,7 @@ public class BarberPosTests : IDisposable
     [Fact]
     public async Task Barber_Cannot_Sell_For_Another_Barber()
     {
-        var sales = new SalesService(_db.Db);
+        var sales = new SalesService(_db.Db, _db.Clock);
         var otherBarberId = Guid.NewGuid();
         _db.Db.Barbers.Add(new Barber { Id = otherBarberId, OrganizationId = _db.OrgId, FullName = "حلاق آخر", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow });
         _db.Db.BarberBranchAssignments.Add(new BarberBranchAssignment { Id = Guid.NewGuid(), BarberId = otherBarberId, BranchId = _db.BranchA });
@@ -468,7 +468,7 @@ public class BarberPosTests : IDisposable
     [Fact]
     public async Task Cashier_Sale_Keeps_Cashier_And_Barber_Distinct()
     {
-        var sales = new SalesService(_db.Db);
+        var sales = new SalesService(_db.Db, _db.Clock);
         var result = await sales.CreateAsync(_db.AsCashier(), new CreateSaleRequest(
             _db.BranchA, _db.BarberId, null, PaymentMethod.Card,
             new List<CreateSaleItem> { new(_db.SaleServiceId, 2) }, "cashier-sale"));
@@ -481,7 +481,7 @@ public class BarberPosTests : IDisposable
     [Fact]
     public async Task Barber_Cannot_Open_Another_Barber_Ledger()
     {
-        var ledger = new LedgerService(_db.Db);
+        var ledger = new LedgerService(_db.Db, _db.Clock);
         var otherBarberId = Guid.NewGuid();
         _db.Db.Barbers.Add(new Barber { Id = otherBarberId, OrganizationId = _db.OrgId, FullName = "حلاق آخر", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow });
         _db.Db.SaveChanges();
@@ -527,5 +527,32 @@ public class PlanLimitTests : IDisposable
 
         var ex = await Assert.ThrowsAsync<AppException>(() => svc.EnsureBranchLimitAsync(_seed.OrgId, default));
         ex.Status.ShouldBe(403);
+    }
+}
+
+public class SettlementPeriodBoundaryTests
+{
+    [Fact] // a sale at 02:00 Riyadh on Nov 1 (23:00Z Oct 31) belongs to November, not October
+    public async Task Commission_UsesTheLocalCalendarMonth()
+    {
+        using var seed = new AgreementSettlementSeed();
+        var barberId = seed.AddBarberWithAgreement("عمولة", c => { c.Type = CompensationType.Commission; c.CommissionRate = 0.5m; }, salesTotal: 0m);
+        void SaleAt(DateTime utc, decimal amount) => seed.Db.Sales.Add(new Sale
+        {
+            Id = Guid.NewGuid(), OrganizationId = seed.OrgId, BranchId = seed.BranchId, BarberId = barberId, CreatedBy = seed.OwnerProfile,
+            ReceiptNo = 2000 + seed.Db.Sales.Local.Count, PaymentMethod = PaymentMethod.Card,
+            TotalAmount = amount, GrossAmount = amount, SubtotalAmount = amount, CommissionBase = amount, CreatedAt = utc, UpdatedAt = utc
+        });
+        SaleAt(new DateTime(2026, 10, 1, 0, 30, 0, DateTimeKind.Utc), 100m);   // 03:30 Oct 1 Riyadh → October
+        SaleAt(new DateTime(2026, 10, 31, 23, 0, 0, DateTimeKind.Utc), 400m);  // 02:00 Nov 1 Riyadh → November
+        SaleAt(new DateTime(2026, 9, 30, 22, 0, 0, DateTimeKind.Utc), 800m);   // 01:00 Oct 1 Riyadh → October
+        seed.Db.SaveChanges();
+
+        var svc = new SettlementService(seed.Db, new OrgClock(seed.Db, TimeProvider.System));
+        var periodId = await svc.CreatePeriodAsync(seed.Owner(), "أكتوبر", new DateOnly(2026, 10, 1), new DateOnly(2026, 10, 31), default);
+        var preview = await svc.PreviewAsync(seed.Owner(), periodId, null, default);
+        var s = ((System.Collections.IEnumerable)Ref.Val(preview, "settlements")!).Cast<object?>().First()!;
+
+        Ref.Dec(s, "commissionEarned").ShouldBe(450m); // (100 + 800) × 50%
     }
 }

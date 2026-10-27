@@ -3,7 +3,7 @@ using Hallagi.Application.Commerce;
 
 namespace Hallagi.Application.Sales;
 
-public class SalesService(IAppDbContext db)
+public class SalesService(IAppDbContext db, OrgClock clock)
 {
     public async Task<object> CreateAsync(CurrentUser user, CreateSaleRequest req, CancellationToken ct = default)
     {
@@ -148,6 +148,7 @@ public class SalesService(IAppDbContext db)
                     ProductId = p.Id,
                     ServiceName = p.Name,
                     UnitPrice = p.Price,
+                    UnitCost = p.Cost,
                     Quantity = productQty[p.Id],
                     LineTotal = p.Price * productQty[p.Id]
                 });
@@ -518,8 +519,12 @@ public class SalesService(IAppDbContext db)
                 throw AppException.Forbidden("لا تملك صلاحية على هذا الفرع");
             query = query.Where(x => x.BranchId == branchId.Value);
         }
-        if (from.HasValue) query = query.Where(x => x.CreatedAt >= from.Value);
-        if (to.HasValue) query = query.Where(x => x.CreatedAt <= to.Value);
+        if (from.HasValue || to.HasValue)
+        {
+            // whole local calendar days, both ends inclusive
+            var range = await clock.RangeAsync(user.OrganizationId, from, to, DateRange.MaxDays, ct);
+            query = query.Where(x => x.CreatedAt >= range.FromUtc && x.CreatedAt < range.ToUtc);
+        }
 
         if (!string.IsNullOrWhiteSpace(search))
         {

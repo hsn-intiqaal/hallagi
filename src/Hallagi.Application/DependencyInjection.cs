@@ -17,6 +17,10 @@ public static class DependencyInjection
     /// <summary>Registers every use-case service (one scoped instance per request).</summary>
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
+        // Time: UTC storage, organization-local calendar decisions
+        services.AddSingleton(TimeProvider.System);
+        services.AddScoped<Common.Time.OrgClock>();
+
         // Identity & organization
         services.AddScoped<AuthService>();
         services.AddScoped<SessionService>();

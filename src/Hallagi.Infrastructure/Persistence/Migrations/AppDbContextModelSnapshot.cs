@@ -94,7 +94,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
                     b.HasIndex("OrganizationId", "Reference")
                         .IsUnique();
 
-                    b.ToTable("Appointments", (string)null);
+                    b.ToTable("Appointments");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.AppointmentItem", b =>
@@ -123,7 +123,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("AppointmentId");
 
-                    b.ToTable("AppointmentItems", (string)null);
+                    b.ToTable("AppointmentItems");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.AuditLog", b =>
@@ -160,7 +160,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("OrganizationId", "CreatedAt");
 
-                    b.ToTable("AuditLogs", (string)null);
+                    b.ToTable("AuditLogs");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.Barber", b =>
@@ -199,7 +199,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("OrganizationId");
 
-                    b.ToTable("Barbers", (string)null);
+                    b.ToTable("Barbers");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.BarberAdvance", b =>
@@ -250,7 +250,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("BarberId", "Status");
 
-                    b.ToTable("BarberAdvances", (string)null);
+                    b.ToTable("BarberAdvances");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.BarberBranchAssignment", b =>
@@ -270,7 +270,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
                     b.HasIndex("BarberId", "BranchId")
                         .IsUnique();
 
-                    b.ToTable("BarberBranchAssignments", (string)null);
+                    b.ToTable("BarberBranchAssignments");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.BarberCompensation", b =>
@@ -310,7 +310,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("BarberId");
 
-                    b.ToTable("BarberCompensations", (string)null);
+                    b.ToTable("BarberCompensations");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.BarberFinancialTransaction", b =>
@@ -379,7 +379,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("BarberId", "TxDate");
 
-                    b.ToTable("BarberFinancialTransactions", (string)null);
+                    b.ToTable("BarberFinancialTransactions");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.BarberSettlement", b =>
@@ -469,7 +469,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
                     b.HasIndex("OrganizationId", "PayrollPeriodId", "BarberId")
                         .IsUnique();
 
-                    b.ToTable("BarberSettlements", (string)null);
+                    b.ToTable("BarberSettlements");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.Branch", b =>
@@ -516,7 +516,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("OrganizationId", "Name");
 
-                    b.ToTable("Branches", (string)null);
+                    b.ToTable("Branches");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.BranchServicePrice", b =>
@@ -539,7 +539,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
                     b.HasIndex("ServiceId", "BranchId")
                         .IsUnique();
 
-                    b.ToTable("BranchServicePrices", (string)null);
+                    b.ToTable("BranchServicePrices");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.CashDrawer", b =>
@@ -562,7 +562,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
                     b.HasIndex("BranchId")
                         .IsUnique();
 
-                    b.ToTable("CashDrawers", (string)null);
+                    b.ToTable("CashDrawers");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.CashHandover", b =>
@@ -619,7 +619,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("BranchId", "HandoverDate");
 
-                    b.ToTable("CashHandovers", (string)null);
+                    b.ToTable("CashHandovers");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.CashMovement", b =>
@@ -662,7 +662,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("ShiftId");
 
-                    b.ToTable("CashMovements", (string)null);
+                    b.ToTable("CashMovements");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.Coupon", b =>
@@ -720,7 +720,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
                     b.HasIndex("OrganizationId", "Code")
                         .IsUnique();
 
-                    b.ToTable("Coupons", (string)null);
+                    b.ToTable("Coupons");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.Customer", b =>
@@ -758,7 +758,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("OrganizationId", "Phone");
 
-                    b.ToTable("Customers", (string)null);
+                    b.ToTable("Customers");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.Device", b =>
@@ -797,7 +797,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("OrganizationId", "BranchId");
 
-                    b.ToTable("Devices", (string)null);
+                    b.ToTable("Devices");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.Expense", b =>
@@ -850,7 +850,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("BranchId", "ExpenseDate");
 
-                    b.ToTable("Expenses", (string)null);
+                    b.ToTable("Expenses");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.LoyaltyTransaction", b =>
@@ -891,7 +891,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("CustomerId", "CreatedAt");
 
-                    b.ToTable("LoyaltyTransactions", (string)null);
+                    b.ToTable("LoyaltyTransactions");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.MemberBranchAccess", b =>
@@ -911,7 +911,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
                     b.HasIndex("MemberId", "BranchId")
                         .IsUnique();
 
-                    b.ToTable("MemberBranchAccess", (string)null);
+                    b.ToTable("MemberBranchAccess");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.Organization", b =>
@@ -965,7 +965,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasFilter("[Slug] IS NOT NULL");
 
-                    b.ToTable("Organizations", (string)null);
+                    b.ToTable("Organizations");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.OrganizationMember", b =>
@@ -1002,7 +1002,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
                     b.HasIndex("OrganizationId", "ProfileId")
                         .IsUnique();
 
-                    b.ToTable("OrganizationMembers", (string)null);
+                    b.ToTable("OrganizationMembers");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.OrganizationSettings", b =>
@@ -1072,7 +1072,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
 
                     b.HasKey("OrganizationId");
 
-                    b.ToTable("OrganizationSettings", (string)null);
+                    b.ToTable("OrganizationSettings");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.PayrollPeriod", b =>
@@ -1111,7 +1111,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
                     b.HasIndex("OrganizationId", "StartDate", "EndDate")
                         .IsUnique();
 
-                    b.ToTable("PayrollPeriods", (string)null);
+                    b.ToTable("PayrollPeriods");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.Product", b =>
@@ -1157,7 +1157,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("OrganizationId", "Name");
 
-                    b.ToTable("Products", (string)null);
+                    b.ToTable("Products");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.ProductStock", b =>
@@ -1183,7 +1183,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
                     b.HasIndex("ProductId", "BranchId")
                         .IsUnique();
 
-                    b.ToTable("ProductStocks", (string)null);
+                    b.ToTable("ProductStocks");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.Profile", b =>
@@ -1229,7 +1229,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("Profiles", (string)null);
+                    b.ToTable("Profiles");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.RefreshToken", b =>
@@ -1269,7 +1269,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
                     b.HasIndex("TokenHash")
                         .IsUnique();
 
-                    b.ToTable("RefreshTokens", (string)null);
+                    b.ToTable("RefreshTokens");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.Sale", b =>
@@ -1378,7 +1378,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
                     b.HasIndex("OrganizationId", "ReceiptNo")
                         .IsUnique();
 
-                    b.ToTable("Sales", (string)null);
+                    b.ToTable("Sales");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.SaleItem", b =>
@@ -1409,6 +1409,9 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<decimal?>("UnitCost")
+                        .HasColumnType("decimal(10,2)");
+
                     b.Property<decimal>("UnitPrice")
                         .HasColumnType("decimal(10,2)");
 
@@ -1416,7 +1419,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("SaleId");
 
-                    b.ToTable("SaleItems", (string)null);
+                    b.ToTable("SaleItems");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.Service", b =>
@@ -1455,7 +1458,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("OrganizationId", "Name");
 
-                    b.ToTable("Services", (string)null);
+                    b.ToTable("Services");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.SettlementItem", b =>
@@ -1485,7 +1488,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("SettlementId");
 
-                    b.ToTable("SettlementItems", (string)null);
+                    b.ToTable("SettlementItems");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.SettlementPayment", b =>
@@ -1520,7 +1523,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("SettlementId");
 
-                    b.ToTable("SettlementPayments", (string)null);
+                    b.ToTable("SettlementPayments");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.Shift", b =>
@@ -1578,7 +1581,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("BranchId", "Status");
 
-                    b.ToTable("Shifts", (string)null);
+                    b.ToTable("Shifts");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.StockMovement", b =>
@@ -1625,7 +1628,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("ProductId", "BranchId", "CreatedAt");
 
-                    b.ToTable("StockMovements", (string)null);
+                    b.ToTable("StockMovements");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.Subscription", b =>
@@ -1667,7 +1670,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("PlanId");
 
-                    b.ToTable("Subscriptions", (string)null);
+                    b.ToTable("Subscriptions");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.SubscriptionPlan", b =>
@@ -1712,7 +1715,7 @@ namespace Hallagi.Infrastructure.Persistence.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("SubscriptionPlans", (string)null);
+                    b.ToTable("SubscriptionPlans");
                 });
 
             modelBuilder.Entity("Hallagi.Domain.Entities.AppointmentItem", b =>

@@ -2,44 +2,51 @@ using Hallagi.Application.Treasury;
 
 namespace Hallagi.Application.Reports;
 
-public class DashboardService(IAppDbContext db, ShiftService shifts)
+/// <summary>Home screen figures. Uses the same sale projection and definitions as <see cref="ReportsService"/>.</summary>
+public class DashboardService(IAppDbContext db, ShiftService shifts, ReportsService reports, OrgClock clock)
 {
-    public async Task<object> GetAsync(CurrentUser user, Guid? branchId, string period, CancellationToken ct = default)
+    public async Task<object> GetAsync(CurrentUser user, Guid? branchId, string? period, CancellationToken ct = default)
     {
-        var allowedBranchIds = await ResolveBranchIdsAsync(user, branchId, ct);
+        var branchIds = await ResolveBranchIdsAsync(user, branchId, ct);
+        var zone = await clock.ZoneAsync(user.OrganizationId, ct);
+        var today = await clock.TodayAsync(user.OrganizationId, ct);
+        var nowUtc = clock.UtcNow;
 
-        var now = DateTime.UtcNow;
-        var (from, to) = ResolvePeriod(period, now);
-        var prevTo = from;
-        var prevFrom = from.AddSeconds(-(to - from).TotalSeconds); // previous window of same length
+        var range = ResolvePeriod(period, today, zone);
+        // compare like with like: the previous period up to the same elapsed point in time
+        var elapsed = nowUtc - range.FromUtc;
+        var previousRange = range.Previous();
+        var previousCutoff = previousRange.FromUtc + elapsed;
 
-        var current = await TotalsAsync(user.OrganizationId, allowedBranchIds, from, to, ct);
-        var previous = await TotalsAsync(user.OrganizationId, allowedBranchIds, prevFrom, prevTo, ct);
+        var sales = await reports.LoadSalesAsync(user.OrganizationId, branchIds, range, ct);
+        var items = await reports.LoadItemsAsync(user.OrganizationId, branchIds, range, ct);
+        var expenses = await reports.ExpensesTotalAsync(user.OrganizationId, branchIds, range, ct);
+        var summary = ReportsService.Summarize(sales, items, expenses);
+        var previousNet = (await reports.LoadSalesAsync(user.OrganizationId, branchIds, previousRange, ct))
+            .Where(s => s.CreatedAt < previousCutoff).Sum(s => s.Net);
 
-        // Branch list for the selector
-        var branches = await db.Branches.AsNoTracking()
-            .Where(b => b.OrganizationId == user.OrganizationId && b.Status == EntityStatus.Active)
-            .Select(b => new { b.Id, b.Name, b.City }).ToListAsync(ct);
+        var week = DateRange.Create(today.AddDays(-6), today, zone);
+        var weekSales = range.From <= week.From ? sales.Where(s => s.CreatedAt >= week.FromUtc).ToList()
+            : await reports.LoadSalesAsync(user.OrganizationId, branchIds, week, ct);
 
-        // Open shift / drawer expected cash for the selected scope
+        // Drawer of the selected branch
         object? drawer = null;
-        Guid? openShiftBranch = branchId;
-        if (openShiftBranch.HasValue)
+        if (branchId.HasValue)
         {
             var openShift = await db.Shifts.AsNoTracking()
-                .Where(s => s.BranchId == openShiftBranch.Value && s.Status == ShiftStatus.Open)
+                .Where(s => s.BranchId == branchId.Value && s.Status == ShiftStatus.Open)
                 .OrderByDescending(s => s.OpenedAt).FirstOrDefaultAsync(ct);
             if (openShift is not null)
             {
-                var summary = await shifts.SummarizeAsync(openShift, ct);
-                drawer = new { openShift.Id, openShift.OpeningCash, summary.ExpectedCash };
+                var shiftSummary = await shifts.SummarizeAsync(openShift, ct);
+                drawer = new { openShift.Id, openShift.OpeningCash, shiftSummary.ExpectedCash };
             }
         }
 
+        var lastSaleIds = sales.OrderByDescending(s => s.CreatedAt).Take(6).Select(s => s.Id).ToList();
         var lastSales = await db.Sales.AsNoTracking()
-            .Where(x => x.OrganizationId == user.OrganizationId && allowedBranchIds.Contains(x.BranchId)
-                        && x.CreatedAt >= from && x.CreatedAt <= to && x.Status == SaleStatus.Completed)
-            .OrderByDescending(x => x.CreatedAt).Take(5)
+            .Where(x => lastSaleIds.Contains(x.Id))
+            .OrderByDescending(x => x.CreatedAt)
             .Select(x => new
             {
                 x.Id,
@@ -54,68 +61,78 @@ public class DashboardService(IAppDbContext db, ShiftService shifts)
                     : "عميل نقدي"
             }).ToListAsync(ct);
 
-        var topServices = await db.SaleItems.AsNoTracking()
-            .Where(i => db.Sales.Any(s => s.Id == i.SaleId
-                       && s.OrganizationId == user.OrganizationId
-                       && allowedBranchIds.Contains(s.BranchId)
-                       && s.Status == SaleStatus.Completed
-                       && s.CreatedAt >= from && s.CreatedAt <= to))
-            .GroupBy(i => i.ServiceName)
-            .Select(g => new { ServiceName = g.Key, Quantity = g.Sum(x => x.Quantity), Total = g.Sum(x => x.LineTotal) })
-            .OrderByDescending(x => x.Quantity).Take(5).ToListAsync(ct);
-
-        // 7-day simple chart (completed sales only)
-        var weekStart = DateTime.Today.AddDays(-6);
-        var chart = await db.Sales.AsNoTracking()
-            .Where(x => x.OrganizationId == user.OrganizationId && allowedBranchIds.Contains(x.BranchId)
-                        && x.Status == SaleStatus.Completed && x.CreatedAt >= weekStart)
-            .GroupBy(x => x.CreatedAt.Date)
-            .Select(g => new { Day = g.Key, Total = g.Sum(x => x.TotalAmount), Count = g.Count() })
-            .OrderBy(x => x.Day).ToListAsync(ct);
-
-        // A previous shift left open overnight → alert
-        var staleBefore = DateTime.UtcNow.AddHours(-14);
+        // Operational signals
+        var staleBefore = nowUtc.AddHours(-14);
         var stale = await db.Shifts.AsNoTracking()
             .AnyAsync(s => s.OrganizationId == user.OrganizationId && s.Status == ShiftStatus.Open
-                           && allowedBranchIds.Contains(s.BranchId) && s.OpenedAt < staleBefore, ct);
+                           && branchIds.Contains(s.BranchId) && s.OpenedAt < staleBefore, ct);
+        var todayRange = DateRange.Create(today, today, zone);
+        var appointments = await db.Appointments.AsNoTracking()
+            .Where(a => a.OrganizationId == user.OrganizationId && branchIds.Contains(a.BranchId)
+                        && a.StartAt >= todayRange.FromUtc && a.StartAt < todayRange.ToUtc
+                        && a.Status != AppointmentStatus.Cancelled && a.Status != AppointmentStatus.NoShow)
+            .Select(a => new { a.Status, a.StartAt }).ToListAsync(ct);
+        var lowStock = await db.ProductStocks.AsNoTracking()
+            .CountAsync(s => branchIds.Contains(s.BranchId) && s.Quantity <= s.LowStockThreshold
+                             && s.Product.Status == EntityStatus.Active && s.Product.OrganizationId == user.OrganizationId, ct);
+
+        var branches = await db.Branches.AsNoTracking()
+            .Where(b => b.OrganizationId == user.OrganizationId && b.Status == EntityStatus.Active)
+            .Select(b => new { b.Id, b.Name, b.City }).ToListAsync(ct);
 
         return new
         {
-            period,
-            from,
-            to,
+            period = period ?? "today",
+            from = range.From,
+            to = range.To,
+            today,
             branches,
             drawer,
             staleOpenShift = stale,
             metrics = new
             {
-                totalSales = current.TotalSales,
-                servicesCount = current.ServicesCount,
-                expensesTotal = current.ExpensesTotal,
-                netOperatingEstimate = current.TotalSales - current.ExpensesTotal,
-                netOperatingHint = "صافي التشغيل التقديري من السجلات المسجلة (لا يشمل كل الالتزامات)",
-                cashSales = current.CashSales,
-                cardSales = current.CardSales,
-                salesCount = current.SalesCount
+                totalSales = summary.Collected,
+                netSales = summary.NetSales,
+                vat = summary.Vat,
+                discounts = summary.Discounts,
+                servicesCount = summary.ServicesCount,
+                salesCount = summary.SalesCount,
+                averageTicket = summary.AverageTicket,
+                expensesTotal = summary.Expenses,
+                productCost = summary.ProductCost,
+                netOperatingEstimate = summary.OperatingResult,
+                netOperatingHint = "صافي المبيعات بدون الضريبة − تكلفة المنتجات − المصروفات",
+                cashSales = summary.CashCollected,
+                cardSales = summary.CardCollected
             },
             comparison = new
             {
-                previousTotalSales = previous.TotalSales,
-                changePercent = previous.TotalSales > 0
-                    ? Math.Round((current.TotalSales - previous.TotalSales) / previous.TotalSales * 100, 1)
-                    : (decimal?)null,
-                changeText = ChangeText(previous.TotalSales, current.TotalSales)
+                previousNetSales = previousNet,
+                changePercent = previousNet > 0 ? Math.Round((summary.NetSales - previousNet) / previousNet * 100, 1) : (decimal?)null,
+                changeText = ChangeText(previousNet, summary.NetSales, period)
+            },
+            signals = new
+            {
+                appointmentsToday = appointments.Count,
+                appointmentsRemaining = appointments.Count(a => a.StartAt > nowUtc
+                    && a.Status is AppointmentStatus.Pending or AppointmentStatus.Confirmed),
+                waiting = appointments.Count(a => a.Status == AppointmentStatus.Waiting),
+                lowStockProducts = lowStock
             },
             lastSales,
-            topServices,
+            topServices = items.Where(i => i.Type == SaleItemType.Service)
+                .GroupBy(i => i.Name)
+                .Select(g => new { serviceName = g.Key, quantity = g.Sum(x => x.Quantity), total = g.Sum(x => x.LineTotal) })
+                .OrderByDescending(x => x.quantity).ThenByDescending(x => x.total).Take(5),
             chart = new
             {
-                items = chart.Select(c => new
+                items = week.EachDay().Select(day => new
                 {
-                    day = c.Day.ToString("yyyy-MM-dd"),
-                    label = WeekdayAr(c.Day),
-                    total = c.Total,
-                    count = c.Count
+                    day = day.ToString("yyyy-MM-dd"),
+                    label = ReportsService.WeekdayAr(day.DayOfWeek),
+                    isToday = day == today,
+                    total = weekSales.Where(s => week.LocalDay(s.CreatedAt) == day).Sum(s => s.Total),
+                    count = weekSales.Count(s => week.LocalDay(s.CreatedAt) == day)
                 })
             }
         };
@@ -143,65 +160,27 @@ public class DashboardService(IAppDbContext db, ShiftService shifts)
         return ids;
     }
 
-    private async Task<(decimal TotalSales, decimal CashSales, decimal CardSales, int ServicesCount, decimal ExpensesTotal, int SalesCount)>
-        TotalsAsync(Guid orgId, List<Guid> branchIds, DateTime from, DateTime to, CancellationToken ct)
+    /// <summary>today | week (last 7 days) | month (calendar month to date) — in the organization's local calendar.</summary>
+    public static DateRange ResolvePeriod(string? period, DateOnly today, TimeZoneInfo zone) => period?.ToLowerInvariant() switch
     {
-        var sales = db.Sales.AsNoTracking().Where(x =>
-            x.OrganizationId == orgId && branchIds.Contains(x.BranchId)
-            && x.Status == SaleStatus.Completed && x.CreatedAt >= from && x.CreatedAt <= to);
-
-        var total = await sales.SumAsync(x => (decimal?)x.TotalAmount, ct) ?? 0m;
-        var cash = await sales.Where(x => x.PaymentMethod == PaymentMethod.Cash).SumAsync(x => (decimal?)x.TotalAmount, ct) ?? 0m;
-        var card = await sales.Where(x => x.PaymentMethod == PaymentMethod.Card).SumAsync(x => (decimal?)x.TotalAmount, ct) ?? 0m;
-        var count = await sales.CountAsync(ct);
-
-        var servicesCount = await db.SaleItems.AsNoTracking()
-            .Where(i => db.Sales.Any(s => s.Id == i.SaleId && s.OrganizationId == orgId
-                       && branchIds.Contains(s.BranchId) && s.Status == SaleStatus.Completed
-                       && s.CreatedAt >= from && s.CreatedAt <= to))
-            .SumAsync(i => (int?)i.Quantity, ct) ?? 0;
-
-        var expenses = await db.Expenses.AsNoTracking()
-            .Where(x => x.OrganizationId == orgId && branchIds.Contains(x.BranchId)
-                        && x.Status == ExpenseStatus.Active
-                        && x.ExpenseDate >= DateOnly.FromDateTime(from.Date)
-                        && x.ExpenseDate <= DateOnly.FromDateTime(to.Date))
-            .SumAsync(x => (decimal?)x.Amount, ct) ?? 0m;
-
-        return (total, cash, card, servicesCount, expenses, count);
-    }
-
-    public static (DateTime From, DateTime To) ResolvePeriod(string? period, DateTime nowUtc)
-    {
-        var localToday = DateTime.Today;
-        var todayStart = localToday.Date;
-        var todayEnd = todayStart.AddDays(1).AddTicks(-1);
-        return (period?.ToLowerInvariant()) switch
-        {
-            "week" => (todayStart.AddDays(-6), todayEnd),
-            "month" => (new DateTime(localToday.Year, localToday.Month, 1), todayEnd),
-            _ => (todayStart, todayEnd)
-        };
-    }
-
-    private static string ChangeText(decimal previous, decimal current)
-    {
-        if (previous == 0 && current == 0) return "لا توجد مبيعات في الفترتين";
-        if (previous == 0) return "زيادة عن الفترة السابقة";
-        var change = (current - previous) / previous * 100;
-        if (change > 0) return $"أعلى بنسبة {Math.Round(change, 1):0.0}% من الفترة السابقة";
-        if (change < 0) return $"أقل بنسبة {Math.Abs(Math.Round(change, 1)):0.0}% من الفترة السابقة";
-        return "مطابق للفترة السابقة";
-    }
-
-    private static string WeekdayAr(DateTime day) => day.DayOfWeek switch
-    {
-        DayOfWeek.Sunday => "الأحد",
-        DayOfWeek.Monday => "الاثنين",
-        DayOfWeek.Tuesday => "الثلاثاء",
-        DayOfWeek.Wednesday => "الأربعاء",
-        DayOfWeek.Thursday => "الخميس",
-        DayOfWeek.Friday => "الجمعة",
-        _ => "السبت"
+        "week" => DateRange.Create(today.AddDays(-6), today, zone),
+        "month" => DateRange.Create(new DateOnly(today.Year, today.Month, 1), today, zone),
+        _ => DateRange.Create(today, today, zone)
     };
+
+    private static string ChangeText(decimal previous, decimal current, string? period)
+    {
+        var against = period?.ToLowerInvariant() switch
+        {
+            "week" => "الأسبوع السابق",
+            "month" => "الشهر السابق",
+            _ => "أمس في نفس الوقت"
+        };
+        if (previous == 0 && current == 0) return "لا توجد مبيعات في الفترتين";
+        if (previous == 0) return $"لا توجد مبيعات {against} للمقارنة";
+        var change = (current - previous) / previous * 100;
+        if (change > 0) return $"أعلى بنسبة {Math.Round(change, 1):0.0}% من {against}";
+        if (change < 0) return $"أقل بنسبة {Math.Abs(Math.Round(change, 1)):0.0}% من {against}";
+        return $"مطابق لـ{against}";
+    }
 }
