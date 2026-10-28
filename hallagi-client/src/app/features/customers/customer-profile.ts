@@ -47,7 +47,7 @@ export class CustomerProfile implements OnInit {
         this.loading.set(false);
         this.loyaltyApi.history(id).subscribe({ next: l => this.loyalty.set(l), error: () => this.loyalty.set(null) });
       },
-      error: (e: any) => { this.toast.error(e?.message ?? 'تعذّر تحميل ملف العميل'); this.loading.set(false); }
+      error: (e: ApiFailure) => { this.toast.error(e?.message ?? 'تعذّر تحميل ملف العميل'); this.loading.set(false); }
     });
   }
 
@@ -60,7 +60,7 @@ export class CustomerProfile implements OnInit {
       notes: this.form.notes.trim() || null
     }).subscribe({
       next: () => { this.toast.success('تم تحديث بيانات العميل'); this.editing.set(false); this.load(); },
-      error: (e: any) => this.toast.error(e?.message ?? 'تعذّر حفظ بيانات العميل')
+      error: (e: ApiFailure) => this.toast.error(e?.message ?? 'تعذّر حفظ بيانات العميل')
     });
   }
 

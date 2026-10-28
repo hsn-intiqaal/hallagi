@@ -2,7 +2,7 @@ import { HttpBackend, HttpClient, HttpErrorResponse, HttpEvent, HttpHandlerFn, H
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, finalize, map, Observable, shareReplay, switchMap, throwError } from 'rxjs';
-import { environment } from '@env/environment';
+import { APP_CONFIG } from '@core/config/app-config';
 import { tokenStorage } from './token-storage';
 
 /** Endpoints that must never carry (or try to renew) a session. */
@@ -18,6 +18,7 @@ let refreshInFlight$: Observable<string> | null = null;
  */
 export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, next: HttpHandlerFn): Observable<HttpEvent<unknown>> => {
   const router = inject(Router);
+  const apiUrl = inject(APP_CONFIG).apiUrl;
   // HttpBackend skips interceptors, so the refresh call cannot recurse into this function
   const rawHttp = new HttpClient(inject(HttpBackend));
 
@@ -34,7 +35,7 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, ne
       if (!refreshToken) return expire(router, e);
 
       refreshInFlight$ ??= rawHttp
-        .post<{ token: string; refreshToken: string }>(`${environment.apiUrl}/auth/refresh`, { refreshToken })
+        .post<{ token: string; refreshToken: string }>(`${apiUrl}/auth/refresh`, { refreshToken })
         .pipe(
           map(res => { tokenStorage.save(res.token, res.refreshToken); return res.token; }),
           finalize(() => (refreshInFlight$ = null)),

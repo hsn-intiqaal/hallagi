@@ -2,7 +2,9 @@ import { inject, Injectable } from '@angular/core';
 import { ApiService } from '@core/http/api.service';
 import { BarberDuesReport, BranchesReport, CustomersReport, ExpensesReport, SalesReport, TaxReport } from '@core/models';
 
-export interface ReportQuery { from: string; to: string; branchId: string | null; }
+// a type alias (not an interface) so it is assignable to the API's index-signature QueryParams
+// eslint-disable-next-line @typescript-eslint/consistent-type-definitions
+export type ReportQuery = { from: string; to: string; branchId: string | null };
 
 @Injectable({ providedIn: 'root' })
 export class ReportsApi {

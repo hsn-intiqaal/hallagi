@@ -54,16 +54,16 @@
 
     <div class="card mb-16" *ngIf="editing()">
       <div class="field">
-        <label>اسم العميل</label>
-        <input class="input" [(ngModel)]="form.fullName">
+        <label for="customer-profile-f1">اسم العميل</label>
+        <input id="customer-profile-f1" class="input" [(ngModel)]="form.fullName">
       </div>
       <div class="field">
-        <label>رقم الجوال</label>
-        <input class="input" [(ngModel)]="form.phone" dir="ltr">
+        <label for="customer-profile-f2">رقم الجوال</label>
+        <input id="customer-profile-f2" class="input" [(ngModel)]="form.phone" dir="ltr">
       </div>
       <div class="field">
-        <label>ملاحظات</label>
-        <input class="input" [(ngModel)]="form.notes">
+        <label for="customer-profile-f3">ملاحظات</label>
+        <input id="customer-profile-f3" class="input" [(ngModel)]="form.notes">
       </div>
       <button class="btn btn-primary" (click)="save()">حفظ التغييرات</button>
     </div>

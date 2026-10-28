@@ -1,13 +1,13 @@
 import { NgIf, NgFor } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { ApiService } from '@core/http/api.service';
+import { ApiService, ApiFailure } from '@core/http/api.service';
 import { BranchContext } from '@core/state/branch-context';
 import { AuthService } from '@core/auth/auth.service';
 import { ToastService } from '@core/state/toast.service';
 import { BarberRow } from '@features/barbers/models-barbers';
 import { Icon } from '@shared/ui/icon';
-import { SarPipe, PctPipe } from '@shared/pipes/format.pipes';
+import { SarPipe } from '@shared/pipes/format.pipes';
 import { EmptyState, LoadingRow } from '@shared/ui/ui';
 
 @Component({
@@ -38,7 +38,7 @@ export class BarbersList implements OnInit {
         this.canManage.set(this.auth.can('barber.manage'));
         this.loading.set(false);
       },
-      error: (e: any) => { this.toast.error(e?.message ?? 'تعذّر تحميل الحلاقين'); this.loading.set(false); }
+      error: (e: ApiFailure) => { this.toast.error(e?.message ?? 'تعذّر تحميل الحلاقين'); this.loading.set(false); }
     });
   }
 

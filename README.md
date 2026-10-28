@@ -8,6 +8,8 @@
 - **الواجهة:** عربية بالكامل مع RTL حقيقي، متجاوبة مع الجوال
 - **العملة:** الريال السعودي (`35.00 ر.س`)
 - **التقنيات:** ASP.NET Core 10 (Clean Architecture) · Angular 20 · EF Core · SQL Server (أو SQLite للعرض)
+- **المنصات:** متصفح · PWA قابل للتثبيت ويعمل بدون إنترنت · تطبيق Android/iOS (Capacitor)
+- **قابل لإعادة الاستخدام:** الاسم والشعار والألوان وعنوان الخادم تُضبط وقت النشر بدون إعادة بناء ([White-label](docs/WHITE-LABEL.md))
 
 ---
 
@@ -23,6 +25,7 @@
 | **الولاء والعروض** | نقاط لكل ريال، قيمة نقطة وحد أدنى للاستبدال، عكس النقاط عند الإلغاء، أكواد خصم (نسبة/مبلغ، حد أدنى، سقف، عدد استخدامات، صلاحية) |
 | **المالية** | خزينة وورديات لكل فرع، مصروفات، سجل مالي للحلاقين، سلف، تسليمات نقدية، تسويات بأربع طرق تعويض — **العمولة تُحسب على إيراد الخدمات بدون الضريبة والمنتجات** |
 | **SaaS** | خطط اشتراك بحدود، مالك منصة ينشئ المنشآت، هوية بصرية لكل منشأة، أجهزة POS |
+| **الجوال والتثبيت** | PWA (أيقونات، ملء الشاشة، عمل بدون إنترنت، إشعار بالإصدار الجديد)، تطبيق أصلي عبر Capacitor، الحواف الآمنة، زر الرجوع في Android |
 | **الأمان** | JWT قصير العمر + Refresh Token دوّار مع كشف إعادة الاستخدام، صلاحيات دقيقة قابلة للتخصيص، عزل كامل بين المنشآت والفروع، حد لمحاولات الدخول، ترويسات أمان، إبطال الجلسات عند تغيير كلمة المرور |
 
 ---
@@ -44,12 +47,18 @@ Hallagi/
 │   ├── Hallagi.UnitTests/       # قواعد العمل على SQLite (حسب المجال)
 │   └── Hallagi.IntegrationTests/# خط HTTP الكامل عبر WebApplicationFactory
 ├── hallagi-client/              # Angular 20
-│   └── src/app/
-│       ├── core/                #   auth, http, state, models, api (عملاء API مطبوعة), pricing
-│       ├── shared/              #   ui (مكونات مشتركة، QR), pipes
-│       └── features/            #   كل شاشات المنتج
-├── docker-compose.yml           # SQL Server + API + Web (nginx)
-└── .github/workflows/ci.yml     # بناء + اختبارات + E2E
+│   ├── src/app/
+│   │   ├── core/                #   config (إعداد وقت التشغيل), platform (PWA/جوال), auth, http, state, models, api
+│   │   ├── shared/              #   ui (مكونات مشتركة، QR), pipes
+│   │   └── features/            #   كل شاشات المنتج
+│   ├── public/                  #   config.json, manifest.webmanifest, icons/
+│   ├── android/ ios/            #   مشروعا Capacitor الأصليان
+│   ├── docker/                  #   سكربت كتابة config.json من متغيرات البيئة + CSP
+│   └── e2e/                     #   Playwright
+├── deploy/                      # Caddyfile (HTTPS)، النسخ الاحتياطي والاستعادة
+├── docs/                        # النشر، الجوال، White-label
+├── docker-compose.yml           # SQL Server + API + Web (nginx) [+ Caddy]
+└── .github/workflows/           # ci.yml (بناء، lint، اختبارات، E2E، APK) · release.yml (صور GHCR + APK/AAB)
 ```
 
 اتجاه الاعتماد: `Api → Infrastructure → Application → Domain`. منطق الأعمال لا يعرف شيئًا عن HTTP أو JWT أو BCrypt.
@@ -84,10 +93,11 @@ cd hallagi-client && npm ci && npm start                   # http://localhost:42
 ### ج) الإنتاج عبر Docker
 
 ```bash
-cp .env.example .env        # ضع كلمات مرور وأسرارًا حقيقية
-docker compose up -d --build
-# http://localhost:8080
+cp .env.example .env                        # ضع كلمات مرور وأسرارًا حقيقية والهوية التجارية
+docker compose --profile https up -d --build # HTTPS تلقائي على $DOMAIN
 ```
+
+التفاصيل: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) · الجوال: [docs/MOBILE.md](docs/MOBILE.md) · عدة عملاء: [docs/WHITE-LABEL.md](docs/WHITE-LABEL.md)
 
 في الإنتاج: تُطبَّق الهجرات وتُنشأ خطط الاشتراك وحساب مالك المنصة من `ADMIN_EMAIL/ADMIN_PASSWORD` فقط — **لا توجد أي حسابات عرض**.
 الخادم يرفض التشغيل بمفتاح JWT ضعيف أو افتراضي، ويكتب سجلات JSON منظّمة، ويوفّر `/health/live` و`/health/ready`.
@@ -114,14 +124,17 @@ docker compose up -d --build
 dotnet test Hallagi.slnx                         # 99 اختبار وحدة + 9 اختبارات تكامل HTTP
 
 cd hallagi-client
-npx playwright test                              # يتطلب تشغيل الخادم (5095) والواجهة (4300)
+npm run lint                                     # ESLint + فحوص الوصول (a11y) للقوالب
+npm run test:ci                                  # 20 اختبار وحدة للواجهة (Karma, ChromeHeadless)
+npx playwright test                              # 25 اختبار E2E — يتطلب الخادم (5095) والواجهة (4300)
 ```
 
 | المجموعة | تغطي |
 |---|---|
 | Unit | صحة التقارير عند منتصف الليل بتوقيت الرياض (أرقام محسوبة يدويًا)، فترات الرواتب، التسعير والضريبة، QR الهيئة (متجه رسمي)، المخزون، الكوبونات، الخصم اليدوي، الولاء، المواعيد والتعارض والأوقات، الحجز العام، Refresh tokens، المالية والتسويات وعزل المستأجرين |
 | Integration | التواريخ تُرسل بتوقيت UTC صريح، الصحة، ترويسات الأمان، 401/403، دورة الدخول والتجديد والخروج، بيع بفاتورة ضريبية عبر HTTP، الحجز العام |
-| E2E | 26 صفحة بلا أخطاء، تبديل الفرع يحدّث البيانات، أرقام التقارير تطابق الخادم، رحلات البيع والفاتورة، حجز العميل وظهوره للمحل، الحضور المباشر حتى التحصيل، التجديد التلقائي للجلسة |
+| Frontend unit | التسعير والضريبة، تواريخ تقويم المحل، دمج config.json، الألوان، تجديد الجلسة في الـ interceptor |
+| E2E | 26 صفحة بلا أخطاء أو معرّفات مكررة، لا تمرير أفقي على الجوال لكل الشاشات، الهوية من config.json، PWA وانقطاع الاتصال، تبديل الفرع، أرقام التقارير تطابق الخادم، رحلات البيع والفاتورة، الحجز العام، الحضور المباشر، تجديد الجلسة |
 
 ---
 
@@ -130,6 +143,6 @@ npx playwright test                              # يتطلب تشغيل الخ�
 1. **الفوترة الإلكترونية — المرحلة الثانية (الربط):** النظام يغطي المرحلة الأولى (الإصدار + QR). منشآت المرحلة الثانية تحتاج
    تكاملًا مع منصة «فاتورة» (XML UBL، توقيع رقمي، شهادة CSID) — المحرك الحالي مهيأ لذلك عبر لقطة بيانات البائع لكل فاتورة.
 2. **الأسرار:** `JWT_KEY` و`DB_PASSWORD` و`ADMIN_PASSWORD` من مخزن أسرار، لا في المستودع.
-3. **HTTPS:** ضع موزع حمل/Ingress بشهادة TLS أمام `web` (الخادم يحترم `X-Forwarded-*`).
-4. **النسخ الاحتياطي:** جدولة نسخ احتياطي لقاعدة البيانات (`sqldata`).
+3. **HTTPS:** ‏`docker compose --profile https` (Caddy + Let's Encrypt) أو موزع حمل بشهادة TLS أمام `web`.
+4. **النسخ الاحتياطي:** ‏`deploy/backup.sh` مجدول يوميًا مع نسخ المجلد خارج الخادم.
 5. **التذكيرات الآلية:** التذكير الحالي عبر رابط واتساب يدوي؛ للإرسال الآلي اربط مزود SMS/WhatsApp Business API.

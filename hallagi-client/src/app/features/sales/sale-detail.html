@@ -17,7 +17,7 @@
 
     <div class="r-head">
       <img *ngIf="s.invoice?.logoUrl" class="logo" [src]="s.invoice!.logoUrl" alt="شعار المنشأة">
-      <div class="brand">{{ s.invoice?.sellerName ?? 'حلاقي' }}</div>
+      <div class="brand">{{ s.invoice?.sellerName ?? brand.name }}</div>
       <div class="sub" *ngIf="s.invoice?.address">{{ s.invoice!.address }}</div>
       <div class="sub" *ngIf="s.invoice?.phone" dir="ltr">{{ s.invoice!.phone }}</div>
       <div class="doc-title">{{ s.invoice?.title ?? 'إيصال' }}</div>

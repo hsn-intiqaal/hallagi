@@ -1,5 +1,5 @@
 import { DecimalPipe, NgIf, NgFor } from '@angular/common';
-import { Component, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
+import { Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { DateArPipe, SarPipe } from '@shared/pipes/format.pipes';
 import { ApiService } from '@core/http/api.service';
@@ -17,7 +17,7 @@ import { StatCard, EmptyState, LoadingRow } from '@shared/ui/ui';
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss'
 })
-export class Dashboard implements OnInit {
+export class Dashboard {
   private api = inject(ApiService);
   private branches = inject(BranchContext);
   private toast = inject(ToastService);
@@ -42,8 +42,6 @@ export class Dashboard implements OnInit {
       untracked(() => this.load());
     });
   }
-
-  ngOnInit(): void {}
 
   changeTone(): 'up' | 'down' | 'flat' {
     const p = this.data()?.comparison.changePercent;

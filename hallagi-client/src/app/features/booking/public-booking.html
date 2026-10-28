@@ -92,16 +92,16 @@
         </div>
 
         <div class="field">
-          <label>الاسم</label>
-          <input class="input" [(ngModel)]="name" autocomplete="name" placeholder="اسمك الكريم">
+          <label for="public-booking-f1">الاسم</label>
+          <input id="public-booking-f1" class="input" [(ngModel)]="name" autocomplete="name" placeholder="اسمك الكريم">
         </div>
         <div class="field">
-          <label>رقم الجوال</label>
-          <input class="input" [(ngModel)]="phone" dir="ltr" inputmode="tel" autocomplete="tel" placeholder="05XXXXXXXX">
+          <label for="public-booking-f2">رقم الجوال</label>
+          <input id="public-booking-f2" class="input" [(ngModel)]="phone" dir="ltr" inputmode="tel" autocomplete="tel" placeholder="05XXXXXXXX">
         </div>
         <div class="field">
-          <label>ملاحظة (اختياري)</label>
-          <input class="input" [(ngModel)]="notes" maxlength="300">
+          <label for="public-booking-f3">ملاحظة (اختياري)</label>
+          <input id="public-booking-f3" class="input" [(ngModel)]="notes" maxlength="300">
         </div>
         <p class="text-2 text-sm">الدفع في المحل بعد الخدمة.</p>
       </section>
@@ -152,6 +152,6 @@
       </button>
     </footer>
 
-    <div class="powered">مدعوم بواسطة <b>حلاقي</b></div>
+    <div class="powered">مدعوم بواسطة <b>{{ platform.name }}</b></div>
   </ng-container>
 </div>

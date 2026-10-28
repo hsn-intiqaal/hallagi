@@ -2,11 +2,11 @@ import { NgIf, NgFor } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { ApiService } from '@core/http/api.service';
+import { ApiService, ApiFailure } from '@core/http/api.service';
 import { BranchContext } from '@core/state/branch-context';
 import { AuthService } from '@core/auth/auth.service';
 import { ToastService } from '@core/state/toast.service';
-import { Sale } from '@core/models';
+import { Sale, Paged } from '@core/models';
 import { Icon } from '@shared/ui/icon';
 import { DateTimeArPipe, SarPipe } from '@shared/pipes/format.pipes';
 import { EmptyState, LoadingRow } from '@shared/ui/ui';
@@ -42,12 +42,12 @@ export class SalesList implements OnInit {
   load(): void {
     this.loading.set(true);
     const branchId = this.branches.scopeId();
-    this.api.get<any>('/sales', {
+    this.api.get<Paged<Sale>>('/sales', {
       branchId, search: this.search, from: this.from || undefined, to: this.to || undefined,
       page: this.page, pageSize: this.pageSize
     }).subscribe({
-      next: (res: any) => { this.sales.set(res.items); this.totalCount.set(res.totalCount); this.loading.set(false); },
-      error: (e: any) => { this.toast.error(e?.message ?? 'تعذّر تحميل المبيعات'); this.loading.set(false); }
+      next: res => { this.sales.set(res.items); this.totalCount.set(res.totalCount); this.loading.set(false); },
+      error: (e: ApiFailure) => { this.toast.error(e?.message ?? 'تعذّر تحميل المبيعات'); this.loading.set(false); }
     });
   }
 
@@ -86,7 +86,7 @@ export class SalesList implements OnInit {
         this.cancelling = null;
         this.load();
       },
-      error: (e: any) => this.toast.error(e?.message ?? 'تعذّر إلغاء العملية')
+      error: (e: ApiFailure) => this.toast.error(e?.message ?? 'تعذّر إلغاء العملية')
     });
   }
 }

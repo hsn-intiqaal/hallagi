@@ -15,10 +15,10 @@ async function signIn(page: Page, creds = OWNER): Promise<void> {
   }, [body.token, body.refreshToken]);
 }
 
+/** A day on the salon's calendar (Riyadh), not the test machine's — they differ late in the UTC evening. */
 const daysFromNow = (days: number): string => {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Riyadh' }).format(new Date());
+  return new Date(Date.parse(today + 'T00:00:00Z') + days * 86_400_000).toISOString().slice(0, 10);
 };
 
 test('بيع خدمة + منتج مع كود خصم يُصدر فاتورة ضريبية ويخصم المخزون', async ({ page }) => {

@@ -42,31 +42,31 @@
 </div>
 
 <!-- دعوة مستخدم -->
-<app-modal *ngIf="showInvite()" title="دعوة مستخدم جديد" (close)="showInvite.set(false)">
+<app-modal *ngIf="showInvite()" title="دعوة مستخدم جديد" (dismiss)="showInvite.set(false)">
   <div class="field">
-    <label>الاسم الكامل</label>
-    <input class="input" [(ngModel)]="inviteForm.fullName" placeholder="مثال: سالم الغامدي">
+    <label for="users-f1">الاسم الكامل</label>
+    <input id="users-f1" class="input" [(ngModel)]="inviteForm.fullName" placeholder="مثال: سالم الغامدي">
   </div>
   <div class="field">
-    <label>البريد الإلكتروني</label>
-    <input class="input" type="email" [(ngModel)]="inviteForm.email" placeholder="name@example.com" dir="ltr">
+    <label for="users-f2">البريد الإلكتروني</label>
+    <input id="users-f2" class="input" type="email" [(ngModel)]="inviteForm.email" placeholder="name@example.com" dir="ltr">
   </div>
   <div class="field">
-    <label>رقم الجوال (اختياري)</label>
-    <input class="input" [(ngModel)]="inviteForm.phone" dir="ltr" placeholder="05xxxxxxxx">
+    <label for="users-f3">رقم الجوال (اختياري)</label>
+    <input id="users-f3" class="input" [(ngModel)]="inviteForm.phone" dir="ltr" placeholder="05xxxxxxxx">
   </div>
   <div class="field">
-    <label>كلمة مرور مؤقتة (٦ أحرف على الأقل)</label>
-    <input class="input" [(ngModel)]="inviteForm.password" dir="ltr" placeholder="••••••">
+    <label for="users-f4">كلمة مرور مؤقتة (٦ أحرف على الأقل)</label>
+    <input id="users-f4" class="input" [(ngModel)]="inviteForm.password" dir="ltr" placeholder="••••••">
   </div>
   <div class="field">
-    <label>الدور</label>
-    <select class="select" [(ngModel)]="inviteForm.role">
+    <label for="users-f5">الدور</label>
+    <select id="users-f5" class="select" [(ngModel)]="inviteForm.role">
       <option *ngFor="let r of roles" [value]="r.value">{{ r.label }}</option>
     </select>
   </div>
   <div class="field">
-    <label>الفروع المسموح بها</label>
+    <span class="field-label">الفروع المسموح بها</span>
     <div class="branch-chips">
       <button *ngFor="let b of branchesList()" class="branch-chip"
               [class.selected]="inviteForm.branchIds.includes(b.id)"
@@ -83,26 +83,26 @@
 </app-modal>
 
 <!-- تعديل مستخدم -->
-<app-modal *ngIf="editing()" title="تعديل المستخدم والصلاحيات" (close)="editing.set(null)">
+<app-modal *ngIf="editing()" title="تعديل المستخدم والصلاحيات" (dismiss)="editing.set(null)">
   <div class="field">
-    <label>الاسم</label>
-    <input class="input" [(ngModel)]="editForm.fullName">
+    <label for="users-f6">الاسم</label>
+    <input id="users-f6" class="input" [(ngModel)]="editForm.fullName">
   </div>
   <div class="field">
-    <label>الدور</label>
-    <select class="select" [(ngModel)]="editForm.role">
+    <label for="users-f7">الدور</label>
+    <select id="users-f7" class="select" [(ngModel)]="editForm.role">
       <option *ngFor="let r of roles" [value]="r.value">{{ r.label }}</option>
     </select>
   </div>
   <div class="field">
-    <label>الحالة</label>
-    <select class="select" [(ngModel)]="editForm.status">
+    <label for="users-f8">الحالة</label>
+    <select id="users-f8" class="select" [(ngModel)]="editForm.status">
       <option value="Active">مفعّل</option>
       <option value="Disabled">معطّل</option>
     </select>
   </div>
   <div class="field">
-    <label>الفروع</label>
+    <span class="field-label">الفروع</span>
     <div class="branch-chips">
       <button *ngFor="let b of branchesList()" class="branch-chip"
               [class.selected]="editForm.branchIds.includes(b.id)"
@@ -113,7 +113,7 @@
   </div>
 
   <div class="field">
-    <label>الصلاحيات الدقيقة (افتراضي = إعداد الدور)</label>
+    <span class="field-label">الصلاحيات الدقيقة (افتراضي = إعداد الدور)</span>
     <div class="perm-grid">
       <div class="perm-row" *ngFor="let key of objectKeys(permissionLabels)">
         <span class="lbl">{{ permissionLabels[key] }}</span>
@@ -134,11 +134,11 @@
 </app-modal>
 
 <!-- إعادة تعيين كلمة المرور -->
-<app-modal *ngIf="resetTarget" title="إعادة تعيين كلمة المرور" (close)="resetTarget = null">
+<app-modal *ngIf="resetTarget" title="إعادة تعيين كلمة المرور" (dismiss)="resetTarget = null">
   <p class="mb-16">سيتم تعيين كلمة مرور جديدة للمستخدم <b>{{ resetTarget.fullName }}</b>. شاركها معه بخصوصية واطلب تغييرها بعد الدخول.</p>
   <div class="field">
-    <label>كلمة المرور الجديدة</label>
-    <input class="input" [(ngModel)]="resetPassword" dir="ltr" placeholder="••••••">
+    <label for="users-f9">كلمة المرور الجديدة</label>
+    <input id="users-f9" class="input" [(ngModel)]="resetPassword" dir="ltr" placeholder="••••••">
   </div>
   <div footer class="flex gap-8">
     <button class="btn btn-primary" (click)="confirmResetPassword()">تعيين كلمة المرور</button>

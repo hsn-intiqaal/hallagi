@@ -9,7 +9,7 @@ import { AuthService } from '@core/auth/auth.service';
 import { BranchContext } from '@core/state/branch-context';
 import { ToastService } from '@core/state/toast.service';
 import { calculatePrice } from '@core/pricing/pricing';
-import { Appointment, PaymentMethod, PosBarber, PosCustomer, PosData, PosProduct, PosService, Sale } from '@core/models';
+import { Appointment, PaymentMethod, PosBarber, PosCustomer, PosData, PosProduct, PosService, Sale, MeSummary } from '@core/models';
 import { Icon } from '@shared/ui/icon';
 import { SarPipe, DateTimeArPipe } from '@shared/pipes/format.pipes';
 import { LoadingRow } from '@shared/ui/ui';
@@ -90,8 +90,8 @@ export class Pos implements OnInit {
     // Barber-operated POS: identify the barber from the authenticated session
     if (this.auth.role() === 'Barber') {
       this.selfBarberMode.set(true);
-      this.api.get<any>('/me/summary').subscribe({
-        next: (s: any) => {
+      this.api.get<MeSummary>('/me/summary').subscribe({
+        next: s => {
           this.linkedBarberId.set(s?.barber?.barber?.id ?? null);
           this.barberId.set(s?.barber?.barber?.id ?? '');
           const branchId = s?.branchIds?.[0] ?? this.branches.scopeId();

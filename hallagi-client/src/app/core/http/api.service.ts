@@ -2,17 +2,20 @@ import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http'
 import { inject, Injectable } from '@angular/core';
 import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
-import { environment } from '@env/environment';
+import { APP_CONFIG } from '@core/config/app-config';
 
 /** Normalized error every API call fails with — components only ever show `message`. */
 export interface ApiFailure { status: number; code?: string; message: string; }
 
+/** Query-string values; empty / null / undefined ones are left out. */
+export type QueryParams = Record<string, string | number | boolean | readonly string[] | null | undefined>;
+
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private http = inject(HttpClient);
-  private base = environment.apiUrl;
+  private base = inject(APP_CONFIG).apiUrl;
 
-  get<T>(path: string, params?: Record<string, any>): Observable<T> {
+  get<T>(path: string, params?: QueryParams): Observable<T> {
     return this.http.get<T>(`${this.base}${path}`, { params: this.toParams(params) }).pipe(catchError(e => this.toFriendly(e)));
   }
 
@@ -20,7 +23,7 @@ export class ApiService {
    * Downloads a file through the normal HTTP pipeline (auth header + silent session renewal)
    * and saves it with the given name.
    */
-  download(path: string, params: Record<string, any>, fileName: string): Observable<void> {
+  download(path: string, params: QueryParams, fileName: string): Observable<void> {
     return this.http.get(`${this.base}${path}`, { params: this.toParams(params), responseType: 'blob' }).pipe(
       map(blob => {
         const url = URL.createObjectURL(blob);
@@ -34,7 +37,7 @@ export class ApiService {
     );
   }
 
-  private toParams(params?: Record<string, any>): HttpParams {
+  private toParams(params?: QueryParams): HttpParams {
     let p = new HttpParams();
     for (const [k, v] of Object.entries(params ?? {})) {
       if (v === undefined || v === null || v === '') continue;
@@ -45,11 +48,11 @@ export class ApiService {
     return p;
   }
 
-  post<T>(path: string, body: any): Observable<T> {
+  post<T>(path: string, body: unknown): Observable<T> {
     return this.http.post<T>(`${this.base}${path}`, body).pipe(catchError(e => this.toFriendly(e)));
   }
 
-  put<T>(path: string, body: any): Observable<T> {
+  put<T>(path: string, body: unknown): Observable<T> {
     return this.http.put<T>(`${this.base}${path}`, body).pipe(catchError(e => this.toFriendly(e)));
   }
 

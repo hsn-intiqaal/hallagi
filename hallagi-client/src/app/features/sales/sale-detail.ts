@@ -9,6 +9,7 @@ import { Icon } from '@shared/ui/icon';
 import { DateTimeArPipe, SarPipe } from '@shared/pipes/format.pipes';
 import { LoadingRow } from '@shared/ui/ui';
 import { QrCode } from '@shared/ui/qr-code';
+import { APP_CONFIG } from '@core/config/app-config';
 
 @Component({
   selector: 'app-sale-detail',
@@ -19,6 +20,7 @@ import { QrCode } from '@shared/ui/qr-code';
 })
 export class SaleDetail implements OnInit {
   private salesApi = inject(SalesApi);
+  readonly brand = inject(APP_CONFIG).brand;
   private route = inject(ActivatedRoute);
   private toast = inject(ToastService);
   readonly router = inject(Router);

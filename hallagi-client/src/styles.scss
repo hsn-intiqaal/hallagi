@@ -51,7 +51,13 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-body { min-height: 100vh; }
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+  /* app-like feel in the installed PWA and the native shells */
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
 
 h1, h2, h3, h4 { margin: 0; font-weight: 700; color: var(--text); }
 h1 { font-size: 1.45rem; }
@@ -116,7 +122,7 @@ input, select, textarea {
 
 /* ===== Forms ===== */
 .field { display: block; margin-bottom: 14px; }
-.field > label {
+.field > label, .field > .field-label {
   display: block;
   margin-bottom: 6px;
   font-weight: 600;

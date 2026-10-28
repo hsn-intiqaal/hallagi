@@ -37,17 +37,17 @@
   </div>
 </div>
 
-<app-modal *ngIf="form() as f" [title]="f.id ? 'تعديل الكود' : 'كود خصم جديد'" (close)="form.set(null)">
+<app-modal *ngIf="form() as f" [title]="f.id ? 'تعديل الكود' : 'كود خصم جديد'" (dismiss)="form.set(null)">
   <div class="field">
-    <label>الكود</label>
-    <input class="input code-input" dir="ltr" [(ngModel)]="f.code" placeholder="WELCOME10" maxlength="40">
+    <label for="coupons-f1">الكود</label>
+    <input id="coupons-f1" class="input code-input" dir="ltr" [(ngModel)]="f.code" placeholder="WELCOME10" maxlength="40">
   </div>
   <div class="field">
-    <label>الوصف (اختياري)</label>
-    <input class="input" [(ngModel)]="f.description" placeholder="خصم للعملاء الجدد">
+    <label for="coupons-f2">الوصف (اختياري)</label>
+    <input id="coupons-f2" class="input" [(ngModel)]="f.description" placeholder="خصم للعملاء الجدد">
   </div>
   <div class="field">
-    <label>نوع الخصم</label>
+    <span class="field-label">نوع الخصم</span>
     <div class="seg">
       <button [class.active]="f.type === 'Percent'" (click)="setType('Percent')">نسبة %</button>
       <button [class.active]="f.type === 'Fixed'" (click)="setType('Fixed')">مبلغ ثابت</button>
@@ -55,28 +55,28 @@
   </div>
   <div class="grid-2">
     <div class="field">
-      <label>{{ f.type === 'Percent' ? 'النسبة (%)' : 'المبلغ (ر.س)' }}</label>
-      <input class="input money" type="number" min="0" [max]="f.type === 'Percent' ? 100 : 100000" [(ngModel)]="f.value">
+      <label for="coupons-f3">{{ f.type === 'Percent' ? 'النسبة (%)' : 'المبلغ (ر.س)' }}</label>
+      <input id="coupons-f3" class="input money" type="number" min="0" [max]="f.type === 'Percent' ? 100 : 100000" [(ngModel)]="f.value">
     </div>
     <div class="field" *ngIf="f.type === 'Percent'">
-      <label>أقصى خصم (ر.س) — اختياري</label>
-      <input class="input money" type="number" min="0" [(ngModel)]="f.maxDiscount">
+      <label for="coupons-f4">أقصى خصم (ر.س) — اختياري</label>
+      <input id="coupons-f4" class="input money" type="number" min="0" [(ngModel)]="f.maxDiscount">
     </div>
     <div class="field">
-      <label>حد أدنى للفاتورة — اختياري</label>
-      <input class="input money" type="number" min="0" [(ngModel)]="f.minSubtotal">
+      <label for="coupons-f5">حد أدنى للفاتورة — اختياري</label>
+      <input id="coupons-f5" class="input money" type="number" min="0" [(ngModel)]="f.minSubtotal">
     </div>
     <div class="field">
-      <label>عدد مرات الاستخدام — اختياري</label>
-      <input class="input" type="number" min="1" [(ngModel)]="f.maxUses">
+      <label for="coupons-f6">عدد مرات الاستخدام — اختياري</label>
+      <input id="coupons-f6" class="input" type="number" min="1" [(ngModel)]="f.maxUses">
     </div>
     <div class="field">
-      <label>يبدأ من</label>
-      <input class="input" type="date" [(ngModel)]="f.validFrom">
+      <label for="coupons-f7">يبدأ من</label>
+      <input id="coupons-f7" class="input" type="date" [(ngModel)]="f.validFrom">
     </div>
     <div class="field">
-      <label>ينتهي في</label>
-      <input class="input" type="date" [(ngModel)]="f.validTo">
+      <label for="coupons-f8">ينتهي في</label>
+      <input id="coupons-f8" class="input" type="date" [(ngModel)]="f.validTo">
     </div>
   </div>
   <label class="switch-row"><input type="checkbox" [(ngModel)]="f.active"> الكود مفعّل</label>

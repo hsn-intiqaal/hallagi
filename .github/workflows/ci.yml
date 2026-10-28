@@ -41,7 +41,48 @@ jobs:
           cache: npm
           cache-dependency-path: hallagi-client/package-lock.json
       - run: npm ci
+      - run: npm run lint
+      - name: Unit tests
+        run: npm run test:ci
       - run: npx ng build --configuration production
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: hallagi-client/dist/hallagi-client/browser
+          retention-days: 7
+
+  android:
+    name: Android — debug APK
+    runs-on: ubuntu-latest
+    needs: [frontend]
+    defaults:
+      run:
+        working-directory: hallagi-client
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: hallagi-client/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: hallagi-client/dist/hallagi-client/browser
+      - run: npx cap sync android
+      - name: Assemble debug APK
+        working-directory: hallagi-client/android
+        run: ./gradlew assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hallagi-debug-apk
+          path: hallagi-client/android/app/build/outputs/apk/debug/*.apk
 
   e2e:
     name: End-to-end (Playwright, SQLite demo)

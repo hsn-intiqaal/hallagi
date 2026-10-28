@@ -407,14 +407,18 @@ public class LedgerTests : IDisposable
     public async Task Reversal_Creates_Offsetting_Entry()
     {
         var barberId = _seed.AddBarberWithAgreement("حلاق", c => c.Type = CompensationType.Commission, 0m);
-        var ledger = new LedgerService(_seed.Db, new OrgClock(_seed.Db, TimeProvider.System));
+        var clock = new OrgClock(_seed.Db, TimeProvider.System);
+        var ledger = new LedgerService(_seed.Db, clock);
+        // the reversal is dated on the salon's calendar, which differs from the UTC date late in the evening
+        var today = await clock.TodayAsync(_seed.OrgId, default);
         var entryId = await ledger.AddEntryAsync(_seed.Owner(), new LedgerEntryRequest(barberId, _seed.BranchId,
             BarberTxType.Bonus, BarberTxDirection.Credit, 200m,
-            DateOnly.FromDateTime(DateTime.Today), "مكافأة", "bonus-1", null), default);
+            today, "مكافأة", "bonus-1", null), default);
 
         await ledger.ReverseAsync(_seed.Owner(), entryId, "قيد بالخطأ", default);
 
-        var list = await ledger.ListLedgerAsync(_seed.Owner(), barberId, DateTime.Today.AddDays(-1), DateTime.Today, default);
+        var day = today.ToDateTime(TimeOnly.MinValue);
+        var list = await ledger.ListLedgerAsync(_seed.Owner(), barberId, day.AddDays(-1), day, default);
         var entries = ((System.Collections.IEnumerable)Ref.Val(list, "entries")!).Cast<object?>().ToList();
         entries.Count.ShouldBe(2); // original (reversed, shown for audit) + correction entry
         Ref.Dec(list, "balance").ShouldBe(0m); // the reversal fully offsets the original

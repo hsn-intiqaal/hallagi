@@ -2,22 +2,19 @@
 
 ```bash
 npm ci
-npx ng serve --port 4300         # يتصل بالخادم على http://localhost:5095 (environment.development.ts)
-npx ng build                     # بناء الإنتاج → dist/hallagi-client/browser
-npx playwright test              # E2E (الخادم والواجهة يعملان) — PW_CHROMIUM_PATH لاستخدام Chromium مثبت مسبقًا
+npx ng serve --port 4300   # يتصل بالخادم على http://localhost:5095 (environment.development.ts)
+npm run lint               # ESLint (TypeScript + قوالب + a11y)
+npm run test:ci            # اختبارات الوحدة (CHROME_BIN لمسار Chromium إن لزم)
+npx playwright test        # E2E (الخادم والواجهة يعملان)
+npm run build:mobile       # بناء + مزامنة android/ و ios/
+npm run icons              # توليد الأيقونات وشاشات البداية من الشعار
 ```
 
-## التنظيم
-
-| المجلد | المحتوى |
+| الملف | الغرض |
 |---|---|
-| `src/app/core/auth` | الجلسة، تخزين التوكنات، interceptor التجديد التلقائي، الحمايات |
-| `src/app/core/http` | `ApiService` وتوحيد رسائل الأخطاء العربية (`ApiFailure`) |
-| `src/app/core/api` | عملاء API مطبوعة لكل مجال (sales, appointments, booking, inventory) |
-| `src/app/core/models` | عقود البيانات مقسمة حسب المجال |
-| `src/app/core/state` | الفرع الحالي، الثيم، الإشعارات |
-| `src/app/core/pricing` | مرآة لقواعد التسعير والضريبة للعرض الفوري |
-| `src/app/shared` | مكونات وأنابيب مشتركة (Modal, StatCard, QR…) |
-| `src/app/features` | الشاشات — كل شاشة مستقلة وتُحمّل عند الطلب |
+| `public/config.json` | إعداد وقت التشغيل: عنوان الخادم والهوية — يُكتب من متغيرات البيئة في حاوية الإنتاج |
+| `ngsw-config.json` | سياسة الـ Service Worker (التخزين المؤقت والتحديثات) |
+| `capacitor.config.ts` | إعداد التطبيق الأصلي |
+| `docker/40-runtime-config.sh` | يكتب `config.json` و manifest و CSP عند بدء الحاوية |
 
-الاستيراد عبر الأسماء المستعارة: `@core/*`, `@shared/*`, `@features/*`, `@env/*`.
+الوثائق: [النشر](../docs/DEPLOYMENT.md) · [الجوال](../docs/MOBILE.md) · [White-label](../docs/WHITE-LABEL.md)

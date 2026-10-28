@@ -1,0 +1,9 @@
+node_modules
+dist
+android
+ios
+e2e
+test-results
+playwright-report
+.angular
+*.log

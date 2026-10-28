@@ -13,16 +13,16 @@
 
   <div class="card filters">
     <div class="field">
-      <label>بحث (رقم العملية / اسم العميل / الجوال)</label>
-      <input class="input" [(ngModel)]="search" (keyup.enter)="searchNow()" placeholder="اكتب ثم اضغط Enter">
+      <label for="sales-list-f1">بحث (رقم العملية / اسم العميل / الجوال)</label>
+      <input id="sales-list-f1" class="input" [(ngModel)]="search" (keyup.enter)="searchNow()" placeholder="اكتب ثم اضغط Enter">
     </div>
     <div class="field">
-      <label>من تاريخ</label>
-      <input class="input" type="date" [(ngModel)]="from">
+      <label for="sales-list-f2">من تاريخ</label>
+      <input id="sales-list-f2" class="input" type="date" [(ngModel)]="from">
     </div>
     <div class="field">
-      <label>إلى تاريخ</label>
-      <input class="input" type="date" [(ngModel)]="to">
+      <label for="sales-list-f3">إلى تاريخ</label>
+      <input id="sales-list-f3" class="input" type="date" [(ngModel)]="to">
     </div>
     <button class="btn btn-navy" (click)="searchNow()">
       <app-icon name="search" [size]="17"></app-icon> عرض
@@ -64,8 +64,9 @@
 </div>
 
 <!-- نافذة إلغاء العملية -->
-<div class="modal-backdrop" *ngIf="cancelling" (click)="cancelling = null">
-  <div class="modal" (click)="$event.stopPropagation()">
+<div class="modal-backdrop" *ngIf="cancelling" tabindex="-1"
+     (click)="$event.target === $event.currentTarget && (cancelling = null)" (keydown.escape)="cancelling = null">
+  <div class="modal" role="dialog" aria-modal="true">
     <div class="modal-head">
       <h2>إلغاء العملية #{{ cancelling.receiptNo }}</h2>
       <button class="icon-btn" style="color: var(--text-2)" (click)="cancelling = null"><app-icon name="x"></app-icon></button>
@@ -73,8 +74,8 @@
     <div class="modal-body">
       <p class="mb-16">لن تُحذف العملية الأصلية. سيتم حفظ سبب الإلغاء وحركة تصحيح في سجل التدقيق، وتُعكس الحركة النقدية إن كانت مدفوعة نقدًا.</p>
       <div class="field">
-        <label>سبب الإلغاء</label>
-        <input class="input" [(ngModel)]="cancelReason" placeholder="مثال: خطأ في اختيار الخدمة">
+        <label for="sales-list-f4">سبب الإلغاء</label>
+        <input id="sales-list-f4" class="input" [(ngModel)]="cancelReason" placeholder="مثال: خطأ في اختيار الخدمة">
         <div class="field-error" *ngIf="!cancelReason.trim()">اكتب سبب الإلغاء</div>
       </div>
     </div>

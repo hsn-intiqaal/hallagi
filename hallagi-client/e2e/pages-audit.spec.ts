@@ -78,6 +78,16 @@ test('كل الصفحات تُفتح بدون أخطاء', async ({ page }) => {
 
       const bodyText = await page.evaluate(() => document.body.innerText || '');
       const found = bodyText.includes(route.expect);
+      // label[for] associations rely on unique ids
+      const duplicateIds = await page.evaluate(() => {
+        const seen = new Map<string, number>();
+        document.querySelectorAll('[id]').forEach(el => seen.set(el.id, (seen.get(el.id) ?? 0) + 1));
+        return [...seen].filter(([, n]) => n > 1).map(([id]) => id);
+      });
+      if (duplicateIds.length) errors.push(`DUPLICATE IDS: ${duplicateIds.join(', ')}`);
+      // nothing may overflow the viewport horizontally (tablets / phones at the counter)
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      if (overflow > 1) errors.push(`HORIZONTAL OVERFLOW: ${overflow}px`);
       const url = await page.evaluate(() => location.pathname);
       report.push(
         `${found && errors.length === 0 ? 'PASS' : 'FAIL'} | ${route.path} (${route.role})` +

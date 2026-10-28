@@ -6,6 +6,7 @@ import { tokenStorage } from './token-storage';
 import { LoginResult, Me, Profile, UserRole } from '@core/models';
 import { ThemeService } from '@core/state/theme.service';
 import { IsoDate, todayIn } from '@core/time/local-date';
+import { APP_CONFIG } from '@core/config/app-config';
 
 const BRANCH_KEY = 'hallagi.branch';
 
@@ -14,6 +15,7 @@ export class AuthService {
   private api = inject(ApiService);
   private router = inject(Router);
   private theme = inject(ThemeService);
+  private config = inject(APP_CONFIG);
 
   readonly token = signal<string | null>(tokenStorage.access());
   readonly me = signal<Me | null>(null);
@@ -56,7 +58,7 @@ export class AuthService {
 
   /** The organization's time zone (all calendar dates are expressed in it). */
   timeZone(): string {
-    return this.me()?.organization?.timeZone || 'Asia/Riyadh';
+    return this.me()?.organization?.timeZone || this.config.defaultTimeZone;
   }
 
   /** Today in the organization's calendar. */

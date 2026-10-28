@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <!-- app_name / title_activity_main come from build.gradle (APP_NAME) -->
+    <string name="package_name">sa.hallagi.app</string>
+    <string name="custom_url_scheme">sa.hallagi.app</string>
+</resources>

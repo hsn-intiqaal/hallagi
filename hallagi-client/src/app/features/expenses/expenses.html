@@ -38,30 +38,30 @@
   </div>
 </div>
 
-<app-modal *ngIf="showForm()" title="تسجيل مصروف" (close)="showForm.set(false)">
+<app-modal *ngIf="showForm()" title="تسجيل مصروف" (dismiss)="showForm.set(false)">
   <div class="field">
-    <label>الفئة</label>
-    <select class="select" [(ngModel)]="form.category">
+    <label for="expenses-f1">الفئة</label>
+    <select id="expenses-f1" class="select" [(ngModel)]="form.category">
       <option *ngFor="let c of categories" [value]="c.value">{{ c.label }}</option>
     </select>
   </div>
   <div class="field">
-    <label>المبلغ (ريال)</label>
-    <input class="input" type="number" min="0" step="0.5" [(ngModel)]="form.amount" placeholder="50">
+    <label for="expenses-f2">المبلغ (ريال)</label>
+    <input id="expenses-f2" class="input" type="number" min="0" step="0.5" [(ngModel)]="form.amount" placeholder="50">
   </div>
   <div class="field">
-    <label>التاريخ</label>
-    <input class="input" type="date" [(ngModel)]="form.expenseDate">
+    <label for="expenses-f3">التاريخ</label>
+    <input id="expenses-f3" class="input" type="date" [(ngModel)]="form.expenseDate">
   </div>
   <div class="field">
-    <label>مصدر الدفع</label>
-    <select class="select" [(ngModel)]="form.source">
+    <label for="expenses-f4">مصدر الدفع</label>
+    <select id="expenses-f4" class="select" [(ngModel)]="form.source">
       <option *ngFor="let s of sources" [value]="s.value">{{ s.label }}</option>
     </select>
   </div>
   <div class="field">
-    <label>الوصف</label>
-    <input class="input" [(ngModel)]="form.description" placeholder="مثال: شراء مستلزمات">
+    <label for="expenses-f5">الوصف</label>
+    <input id="expenses-f5" class="input" [(ngModel)]="form.description" placeholder="مثال: شراء مستلزمات">
   </div>
   <div class="field-error" *ngIf="formError">{{ formError }}</div>
   <div footer class="flex gap-8">
@@ -70,14 +70,15 @@
   </div>
 </app-modal>
 
-<div class="modal-backdrop" *ngIf="voidTarget" (click)="voidTarget = null">
-  <div class="modal" (click)="$event.stopPropagation()">
+<div class="modal-backdrop" *ngIf="voidTarget" tabindex="-1"
+     (click)="$event.target === $event.currentTarget && (voidTarget = null)" (keydown.escape)="voidTarget = null">
+  <div class="modal" role="dialog" aria-modal="true">
     <div class="modal-head"><h2>إلغاء مصروف موثق</h2></div>
     <div class="modal-body">
       <p class="mb-16">لن يُحذف المصروف الأصلي. سيُسجَّل تصحيح مقابل في سجل التدقيق، وتُعاد قيمة المصروف إلى الدرج إن كان مدفوعًا نقدًا.</p>
       <div class="field">
-        <label>سبب الإلغاء</label>
-        <input class="input" [(ngModel)]="voidReason" placeholder="مثال: سُجل بالخطأ">
+        <label for="expenses-f6">سبب الإلغاء</label>
+        <input id="expenses-f6" class="input" [(ngModel)]="voidReason" placeholder="مثال: سُجل بالخطأ">
       </div>
     </div>
     <div class="modal-foot">

@@ -28,20 +28,20 @@
   </div>
 </div>
 
-<app-modal *ngIf="showForm()" title="إضافة جهاز" (close)="showForm.set(false)">
+<app-modal *ngIf="showForm()" title="إضافة جهاز" (dismiss)="showForm.set(false)">
   <div class="field">
-    <label>الفرع</label>
-    <select class="select" [(ngModel)]="form.branchId">
+    <label for="devices-f1">الفرع</label>
+    <select id="devices-f1" class="select" [(ngModel)]="form.branchId">
       <option *ngFor="let b of branchesList()" [value]="b.id">{{ b.name }}</option>
     </select>
   </div>
   <div class="field">
-    <label>اسم الجهاز</label>
-    <input class="input" [(ngModel)]="form.name" placeholder="مثال: كاشير 2">
+    <label for="devices-f2">اسم الجهاز</label>
+    <input id="devices-f2" class="input" [(ngModel)]="form.name" placeholder="مثال: كاشير 2">
   </div>
   <div class="field">
-    <label>رمز الجهاز (اختياري)</label>
-    <input class="input" [(ngModel)]="form.deviceCode" placeholder="POS-002" dir="ltr">
+    <label for="devices-f3">رمز الجهاز (اختياري)</label>
+    <input id="devices-f3" class="input" [(ngModel)]="form.deviceCode" placeholder="POS-002" dir="ltr">
   </div>
   <div footer class="flex gap-8">
     <button class="btn btn-primary" (click)="save()">إضافة</button>

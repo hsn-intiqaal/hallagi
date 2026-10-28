@@ -1,11 +1,11 @@
 import { NgIf, NgFor } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService } from '@core/http/api.service';
+import { ApiService, ApiFailure } from '@core/http/api.service';
 import { BranchContext } from '@core/state/branch-context';
 import { AuthService } from '@core/auth/auth.service';
 import { ToastService } from '@core/state/toast.service';
-import { ExpenseCategory, ExpenseRow, ExpenseSource, ExpenseCategoryLabel, ExpenseSourceLabel } from '@core/models';
+import { ExpenseCategory, ExpenseRow, ExpenseSource, ExpenseCategoryLabel, ExpenseSourceLabel, Paged, ApiMessage } from '@core/models';
 import { Icon } from '@shared/ui/icon';
 import { DateShortPipe, SarPipe } from '@shared/pipes/format.pipes';
 import { EmptyState, LoadingRow, Modal } from '@shared/ui/ui';
@@ -51,9 +51,9 @@ export class Expenses implements OnInit {
 
   load(): void {
     this.loading.set(true);
-    this.api.get<any>('/expenses', { branchId: this.branches.scopeId(), page: this.page, pageSize: this.pageSize }).subscribe({
-      next: (res: any) => { this.expenses.set(res.items); this.total.set(res.totalCount); this.loading.set(false); },
-      error: (e: any) => { this.toast.error(e?.message ?? 'تعذّر تحميل المصروفات'); this.loading.set(false); }
+    this.api.get<Paged<ExpenseRow>>('/expenses', { branchId: this.branches.scopeId(), page: this.page, pageSize: this.pageSize }).subscribe({
+      next: res => { this.expenses.set(res.items); this.total.set(res.totalCount); this.loading.set(false); },
+      error: (e: ApiFailure) => { this.toast.error(e?.message ?? 'تعذّر تحميل المصروفات'); this.loading.set(false); }
     });
   }
 
@@ -66,7 +66,7 @@ export class Expenses implements OnInit {
   save(): void {
     if (!this.form.amount || this.form.amount <= 0) { this.formError = 'أدخل مبلغًا أكبر من صفر'; return; }
     if (!this.form.expenseDate) { this.formError = 'اختر تاريخ المصروف'; return; }
-    this.api.post<any>('/expenses', {
+    this.api.post<ApiMessage>('/expenses', {
       branchId: this.branches.scopeId(),
       category: this.form.category,
       amount: this.form.amount,
@@ -75,7 +75,7 @@ export class Expenses implements OnInit {
       source: this.form.source
     }).subscribe({
       next: () => { this.toast.success('تم تسجيل المصروف بنجاح'); this.showForm.set(false); this.load(); },
-      error: (e: any) => this.toast.error(e?.message ?? 'تعذّر تسجيل المصروف')
+      error: (e: ApiFailure) => this.toast.error(e?.message ?? 'تعذّر تسجيل المصروف')
     });
   }
 
@@ -86,7 +86,7 @@ export class Expenses implements OnInit {
     if (!this.voidReason.trim()) { this.toast.error('اكتب سبب الإلغاء'); return; }
     this.api.post(`/expenses/${this.voidTarget.id}/void`, { reason: this.voidReason.trim() }).subscribe({
       next: () => { this.toast.success('تم إلغاء المصروف وحفظ التصحيح في سجل التدقيق'); this.voidTarget = null; this.load(); },
-      error: (e: any) => this.toast.error(e?.message ?? 'تعذّر إلغاء المصروف')
+      error: (e: ApiFailure) => this.toast.error(e?.message ?? 'تعذّر إلغاء المصروف')
     });
   }
 

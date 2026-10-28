@@ -44,18 +44,18 @@
   </div>
 </div>
 
-<app-modal *ngIf="showAdd()" title="إضافة عميل" (close)="showAdd.set(false)">
+<app-modal *ngIf="showAdd()" title="إضافة عميل" (dismiss)="showAdd.set(false)">
   <div class="field">
-    <label>اسم العميل</label>
-    <input class="input" [(ngModel)]="form.fullName" placeholder="مثال: عبدالله الدوسري">
+    <label for="customers-list-f1">اسم العميل</label>
+    <input id="customers-list-f1" class="input" [(ngModel)]="form.fullName" placeholder="مثال: عبدالله الدوسري">
   </div>
   <div class="field">
-    <label>رقم الجوال (اختياري)</label>
-    <input class="input" [(ngModel)]="form.phone" placeholder="05xxxxxxxx" dir="ltr">
+    <label for="customers-list-f2">رقم الجوال (اختياري)</label>
+    <input id="customers-list-f2" class="input" [(ngModel)]="form.phone" placeholder="05xxxxxxxx" dir="ltr">
   </div>
   <div class="field">
-    <label>ملاحظات (اختياري)</label>
-    <input class="input" [(ngModel)]="form.notes" placeholder="مثال: يفضل حلاقة قصيرة">
+    <label for="customers-list-f3">ملاحظات (اختياري)</label>
+    <input id="customers-list-f3" class="input" [(ngModel)]="form.notes" placeholder="مثال: يفضل حلاقة قصيرة">
   </div>
   <div footer class="flex gap-8">
     <button class="btn btn-primary" (click)="save()">حفظ</button>

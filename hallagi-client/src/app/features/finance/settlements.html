@@ -14,8 +14,8 @@
   </div>
 
   <div class="field" *ngIf="periods().length > 0" style="max-width: 320px">
-    <label>الفترة المالية</label>
-    <select class="select" [ngModel]="selectedPeriod()?.id" (ngModelChange)="selectPeriodById($event)">
+    <label for="settlements-f1">الفترة المالية</label>
+    <select id="settlements-f1" class="select" [ngModel]="selectedPeriod()?.id" (ngModelChange)="selectPeriodById($event)">
       <option *ngFor="let p of periods()" [value]="p.id">{{ p.name }} ({{ p.startDate | dateShort }} — {{ p.endDate | dateShort }})</option>
     </select>
   </div>
@@ -78,18 +78,18 @@
   </div>
 </div>
 
-<app-modal *ngIf="showNewPeriod()" title="فترة مالية جديدة" (close)="showNewPeriod.set(false)">
+<app-modal *ngIf="showNewPeriod()" title="فترة مالية جديدة" (dismiss)="showNewPeriod.set(false)">
   <div class="field">
-    <label>اسم الفترة</label>
-    <input class="input" [(ngModel)]="newPeriod.name" placeholder="مثال: أكتوبر 2026">
+    <label for="settlements-f2">اسم الفترة</label>
+    <input id="settlements-f2" class="input" [(ngModel)]="newPeriod.name" placeholder="مثال: أكتوبر 2026">
   </div>
   <div class="field">
-    <label>من تاريخ</label>
-    <input class="input" type="date" [(ngModel)]="newPeriod.startDate">
+    <label for="settlements-f3">من تاريخ</label>
+    <input id="settlements-f3" class="input" type="date" [(ngModel)]="newPeriod.startDate">
   </div>
   <div class="field">
-    <label>إلى تاريخ</label>
-    <input class="input" type="date" [(ngModel)]="newPeriod.endDate">
+    <label for="settlements-f4">إلى تاريخ</label>
+    <input id="settlements-f4" class="input" type="date" [(ngModel)]="newPeriod.endDate">
   </div>
   <div footer class="flex gap-8">
     <button class="btn btn-primary" (click)="createPeriod()">إنشاء</button>
@@ -97,15 +97,15 @@
   </div>
 </app-modal>
 
-<app-modal *ngIf="payTarget()" title="تسجيل دفعة — {{ payTarget()?.barberName }}" (close)="payTarget.set(null)">
+<app-modal *ngIf="payTarget()" title="تسجيل دفعة — {{ payTarget()?.barberName }}" (dismiss)="payTarget.set(null)">
   <p class="mb-16">المتبقي على التسوية: <b class="money">{{ payTarget()?.remaining | sar }}</b></p>
   <div class="field">
-    <label>المبلغ المدفوع</label>
-    <input class="input" type="number" min="0" [(ngModel)]="payAmount">
+    <label for="settlements-f5">المبلغ المدفوع</label>
+    <input id="settlements-f5" class="input" type="number" min="0" [(ngModel)]="payAmount">
   </div>
   <div class="field">
-    <label>طريقة الدفع</label>
-    <select class="select" [(ngModel)]="payMethod">
+    <label for="settlements-f6">طريقة الدفع</label>
+    <select id="settlements-f6" class="select" [(ngModel)]="payMethod">
       <option value="Cash">نقدي</option>
       <option value="Bank">تحويل بنكي</option>
     </select>
@@ -116,11 +116,11 @@
   </div>
 </app-modal>
 
-<app-modal *ngIf="cancelTarget()" title="إلغاء تسوية" (close)="cancelTarget.set(null)">
+<app-modal *ngIf="cancelTarget()" title="إلغاء تسوية" (dismiss)="cancelTarget.set(null)">
   <p class="mb-16">إلغاء التسوية لا يمس الدفعات المسجّلة سابقًا — يتم بتصحيح موثق.</p>
   <div class="field">
-    <label>سبب الإلغاء</label>
-    <input class="input" [(ngModel)]="cancelReason">
+    <label for="settlements-f7">سبب الإلغاء</label>
+    <input id="settlements-f7" class="input" [(ngModel)]="cancelReason">
   </div>
   <div footer class="flex gap-8">
     <button class="btn btn-danger" (click)="confirmCancel()">تأكيد الإلغاء</button>

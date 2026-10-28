@@ -1,11 +1,11 @@
 import { NgIf, NgFor } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService } from '@core/http/api.service';
+import { ApiService, ApiFailure } from '@core/http/api.service';
 import { AuthService } from '@core/auth/auth.service';
 import { ToastService } from '@core/state/toast.service';
 import { ThemeService } from '@core/state/theme.service';
-import { BookingSettings, LoyaltySettings, Settings as SettingsModel, TaxSettings } from '@core/models';
+import { BookingSettings, LoyaltySettings, Settings as SettingsModel, TaxSettings, CurrentSubscription, SubscriptionPlan } from '@core/models';
 import { Icon } from '@shared/ui/icon';
 import { SarPipe } from '@shared/pipes/format.pipes';
 import { LoadingRow } from '@shared/ui/ui';
@@ -31,8 +31,8 @@ export class Settings implements OnInit {
 
   readonly loading = signal(true);
   readonly canManage = signal(false);
-  readonly subscription = signal<any>(null);
-  readonly plans = signal<any[]>([]);
+  readonly subscription = signal<CurrentSubscription | null>(null);
+  readonly plans = signal<SubscriptionPlan[]>([]);
   readonly savingPlan = signal(false);
   readonly logoUrl = signal<string | null>(null);
   readonly coverUrl = signal<string | null>(null);
@@ -66,12 +66,12 @@ export class Settings implements OnInit {
 
   ngOnInit(): void {
     this.canManage.set(this.auth.can('settings.manage'));
-    this.api.get<any>('/subscription').subscribe({
+    this.api.get<CurrentSubscription>('/subscription').subscribe({
       next: s => this.subscription.set(s),
       error: () => this.subscription.set(null)
     });
-    this.api.get<any>('/subscription/plans').subscribe({
-      next: (res: any) => this.plans.set(res),
+    this.api.get<SubscriptionPlan[]>('/subscription/plans').subscribe({
+      next: res => this.plans.set(res),
       error: () => this.plans.set([])
     });
     this.api.get<SettingsModel>('/settings').subscribe({
@@ -95,7 +95,7 @@ export class Settings implements OnInit {
         this.coverUrl.set(s.organization?.coverImageUrl ?? null);
         this.loading.set(false);
       },
-      error: (e: any) => { this.toast.error(e?.message ?? 'تعذّر تحميل الإعدادات'); this.loading.set(false); }
+      error: (e: ApiFailure) => { this.toast.error(e?.message ?? 'تعذّر تحميل الإعدادات'); this.loading.set(false); }
     });
   }
 
@@ -187,7 +187,7 @@ export class Settings implements OnInit {
         // the server may have generated a booking slug
         this.api.get<SettingsModel>('/settings').subscribe({ next: s => (this.booking = { ...s.booking }) });
       },
-      error: (e: any) => this.toast.error(e?.message ?? 'تعذّر حفظ الإعدادات')
+      error: (e: ApiFailure) => this.toast.error(e?.message ?? 'تعذّر حفظ الإعدادات')
     });
   }
 
@@ -195,7 +195,7 @@ export class Settings implements OnInit {
     if (this.password.next.length < 6) { this.toast.error('كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل'); return; }
     this.api.post('/auth/change-password', { currentPassword: this.password.current, newPassword: this.password.next }).subscribe({
       next: () => { this.toast.success('تم تغيير كلمة المرور بنجاح'); this.password = { current: '', next: '' }; },
-      error: (e: any) => this.toast.error(e?.message ?? 'تعذّر تغيير كلمة المرور')
+      error: (e: ApiFailure) => this.toast.error(e?.message ?? 'تعذّر تغيير كلمة المرور')
     });
   }
 
@@ -205,9 +205,9 @@ export class Settings implements OnInit {
       next: () => {
         this.savingPlan.set(false);
         this.toast.success('تم تغيير الخطة بنجاح');
-        this.api.get<any>('/subscription').subscribe({ next: s => this.subscription.set(s) });
+        this.api.get<CurrentSubscription>('/subscription').subscribe({ next: s => this.subscription.set(s) });
       },
-      error: (e: any) => { this.savingPlan.set(false); this.toast.error(e?.message ?? 'تعذّر تغيير الخطة'); }
+      error: (e: ApiFailure) => { this.savingPlan.set(false); this.toast.error(e?.message ?? 'تعذّر تغيير الخطة'); }
     });
   }
 }

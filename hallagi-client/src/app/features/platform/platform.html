@@ -1,7 +1,7 @@
 <div class="page">
   <div class="page-title">
     <div>
-      <h1>لوحة منصة حلاقي</h1>
+      <h1>لوحة منصة {{ brand.name }}</h1>
       <p class="text-2 text-sm">إدارة كل المنشآت والاشتركات والفروع — مرحبًا {{ auth.profile()?.fullName }}</p>
     </div>
     <div class="flex gap-8">
@@ -88,14 +88,14 @@
   </div>
 </div>
 
-<app-modal *ngIf="branchTarget()" title="إضافة فرع — {{ branchTarget()?.name }}" (close)="branchTarget.set(null)">
+<app-modal *ngIf="branchTarget()" title="إضافة فرع — {{ branchTarget()?.name }}" (dismiss)="branchTarget.set(null)">
   <div class="field">
-    <label>اسم الفرع</label>
-    <input class="input" [(ngModel)]="branchForm.name" placeholder="مثال: فرع الياسمين">
+    <label for="platform-f1">اسم الفرع</label>
+    <input id="platform-f1" class="input" [(ngModel)]="branchForm.name" placeholder="مثال: فرع الياسمين">
   </div>
   <div class="field">
-    <label>المدينة</label>
-    <input class="input" [(ngModel)]="branchForm.city">
+    <label for="platform-f2">المدينة</label>
+    <input id="platform-f2" class="input" [(ngModel)]="branchForm.city">
   </div>
   <div footer class="flex gap-8">
     <button class="btn btn-primary" (click)="confirmAddBranch()">إضافة</button>
@@ -103,7 +103,7 @@
   </div>
 </app-modal>
 
-<app-modal *ngIf="planTarget()" title="تغيير خطة {{ planTarget()?.name }}" (close)="planTarget.set(null)">
+<app-modal *ngIf="planTarget()" title="تغيير خطة {{ planTarget()?.name }}" (dismiss)="planTarget.set(null)">
   <div class="flex-col gap-8">
     <button *ngFor="let p of plans()" class="org-row" style="text-align: start"
             [class.badge-green]="p.id === planTarget()?.planId"

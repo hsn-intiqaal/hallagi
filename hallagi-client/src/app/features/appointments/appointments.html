@@ -126,7 +126,7 @@
 </div>
 
 <!-- تفاصيل الموعد -->
-<app-modal *ngIf="selected() as a" [title]="'موعد ' + a.customerName" [showFooter]="false" (close)="selected.set(null)">
+<app-modal *ngIf="selected() as a" [title]="'موعد ' + a.customerName" [showFooter]="false" (dismiss)="selected.set(null)">
   <div class="detail">
     <div class="row"><span>الحالة</span><span class="badge" [class]="'badge ' + statusClass(a.status)">{{ a.statusText }}</span></div>
     <div class="row"><span>الوقت</span><b>{{ a.date }} · {{ a.startTime }}–{{ a.endTime }}</b></div>
@@ -167,10 +167,10 @@
 </app-modal>
 
 <!-- نموذج الحجز -->
-<app-modal *ngIf="form() as f" [title]="f.id ? 'تعديل الموعد' : f.walkIn ? 'إضافة عميل للانتظار' : 'حجز موعد جديد'" (close)="form.set(null)">
+<app-modal *ngIf="form() as f" [title]="f.id ? 'تعديل الموعد' : f.walkIn ? 'إضافة عميل للانتظار' : 'حجز موعد جديد'" (dismiss)="form.set(null)">
   <div class="field customer-field">
-    <label>العميل</label>
-    <input class="input" [ngModel]="f.customerName" (ngModelChange)="searchCustomers($event)"
+    <label for="appointments-f1">العميل</label>
+    <input id="appointments-f1" class="input" [ngModel]="f.customerName" (ngModelChange)="searchCustomers($event)"
            placeholder="ابحث باسم عميل مسجل أو اكتب اسمًا جديدًا" [disabled]="!!f.id && !!f.customerId">
     <div class="suggestions" *ngIf="customerResults().length">
       <button *ngFor="let c of customerResults()" (click)="pickCustomer(c)">
@@ -180,12 +180,12 @@
     <div class="text-2 text-sm mt-8" *ngIf="f.customerId">عميل مسجل ✓</div>
   </div>
   <div class="field" *ngIf="!f.customerId">
-    <label>الجوال (اختياري — يُنشئ ملف عميل)</label>
-    <input class="input" dir="ltr" [ngModel]="f.customerPhone" (ngModelChange)="patchForm({ customerPhone: $event })" placeholder="05XXXXXXXX">
+    <label for="appointments-f2">الجوال (اختياري — يُنشئ ملف عميل)</label>
+    <input id="appointments-f2" class="input" dir="ltr" [ngModel]="f.customerPhone" (ngModelChange)="patchForm({ customerPhone: $event })" placeholder="05XXXXXXXX">
   </div>
 
   <div class="field">
-    <label>الخدمات</label>
+    <span class="field-label">الخدمات</span>
     <div class="chips">
       <button *ngFor="let s of services()" class="chip" [class.selected]="f.serviceIds.includes(s.id)" (click)="toggleService(s.id)">
         {{ s.name }} · {{ s.price | sar }}
@@ -196,20 +196,20 @@
 
   <div class="grid-2">
     <div class="field">
-      <label>الحلاق</label>
-      <select class="input" [ngModel]="f.barberId" (ngModelChange)="patchForm({ barberId: $event })">
+      <label for="appointments-f3">الحلاق</label>
+      <select id="appointments-f3" class="input" [ngModel]="f.barberId" (ngModelChange)="patchForm({ barberId: $event })">
         <option [ngValue]="null">أي حلاق متاح</option>
         <option *ngFor="let b of day()?.barbers" [ngValue]="b.id">{{ b.fullName }}</option>
       </select>
     </div>
     <div class="field" *ngIf="!f.walkIn">
-      <label>التاريخ</label>
-      <input class="input" type="date" [ngModel]="f.date" (ngModelChange)="patchForm({ date: $event })">
+      <label for="appointments-f4">التاريخ</label>
+      <input id="appointments-f4" class="input" type="date" [ngModel]="f.date" (ngModelChange)="patchForm({ date: $event })">
     </div>
   </div>
 
   <div class="field" *ngIf="!f.walkIn">
-    <label>الوقت المتاح</label>
+    <span class="field-label">الوقت المتاح</span>
     <div *ngIf="slotsLoading()" class="text-2 text-sm">جارٍ البحث عن الأوقات المتاحة…</div>
     <div class="text-2 text-sm" *ngIf="!slotsLoading() && !f.serviceIds.length">اختر الخدمات أولًا لعرض الأوقات.</div>
     <div class="text-2 text-sm" *ngIf="!slotsLoading() && f.serviceIds.length && !slots().length">لا توجد أوقات متاحة في هذا اليوم.</div>
@@ -219,8 +219,8 @@
   </div>
 
   <div class="field">
-    <label>ملاحظات</label>
-    <input class="input" [ngModel]="f.notes" (ngModelChange)="patchForm({ notes: $event })" placeholder="اختياري">
+    <label for="appointments-f5">ملاحظات</label>
+    <input id="appointments-f5" class="input" [ngModel]="f.notes" (ngModelChange)="patchForm({ notes: $event })" placeholder="اختياري">
   </div>
 
   <div footer class="flex gap-8">
@@ -232,7 +232,7 @@
 </app-modal>
 
 <!-- اختيار الحلاق لبدء خدمة عميل منتظر -->
-<app-modal *ngIf="starting() as a" title="بدء خدمة العميل" (close)="starting.set(null)">
+<app-modal *ngIf="starting() as a" title="بدء خدمة العميل" (dismiss)="starting.set(null)">
   <p class="mb-16">اختر الحلاق الذي سيخدم <b>{{ a.customerName }}</b>:</p>
   <div class="chips">
     <button *ngFor="let b of day()?.barbers" class="chip" [class.selected]="startBarberId === b.id" (click)="startBarberId = b.id">{{ b.fullName }}</button>
@@ -244,11 +244,11 @@
 </app-modal>
 
 <!-- إلغاء موعد -->
-<app-modal *ngIf="cancelling() as a" title="إلغاء الموعد" (close)="cancelling.set(null)">
+<app-modal *ngIf="cancelling() as a" title="إلغاء الموعد" (dismiss)="cancelling.set(null)">
   <p class="mb-16">سيتم إلغاء موعد <b>{{ a.customerName }}</b> ({{ a.startTime }}).</p>
   <div class="field">
-    <label>سبب الإلغاء (اختياري)</label>
-    <input class="input" [(ngModel)]="cancelReason" placeholder="مثال: طلب العميل">
+    <label for="appointments-f6">سبب الإلغاء (اختياري)</label>
+    <input id="appointments-f6" class="input" [(ngModel)]="cancelReason" placeholder="مثال: طلب العميل">
   </div>
   <div footer class="flex gap-8">
     <button class="btn btn-danger" (click)="confirmCancel()">تأكيد الإلغاء</button>

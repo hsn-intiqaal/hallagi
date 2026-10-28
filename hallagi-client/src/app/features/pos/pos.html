@@ -108,7 +108,7 @@
         <h2 class="mb-8">تفاصيل البيع</h2>
 
         <div class="field">
-          <label>الحلاق <span class="text-red">*</span></label>
+          <span class="field-label">الحلاق <span class="text-red">*</span></span>
 
           <!-- وضع الحلاق: نفسه تلقائيًا -->
           <div class="self-barber" *ngIf="selfBarberMode()">
@@ -130,8 +130,8 @@
         </div>
 
         <div class="field customer-picker">
-          <label>العميل (اختياري)</label>
-          <input *ngIf="!selectedCustomer()" class="input" [(ngModel)]="customerSearch"
+          <label for="pos-f1">العميل (اختياري)</label>
+          <input id="pos-f1" *ngIf="!selectedCustomer()" class="input" [(ngModel)]="customerSearch"
                  placeholder="ابحث بالاسم أو رقم الجوال…">
           <div class="selected-customer" *ngIf="selectedCustomer() as c">
             <app-icon name="user" [size]="16"></app-icon>
@@ -152,7 +152,7 @@
         </div>
 
         <div class="field">
-          <label>طريقة الدفع</label>
+          <span class="field-label">طريقة الدفع</span>
           <div class="pay-row">
             <button class="pay-btn" [class.selected]="payment() === 'Cash'"
                     [disabled]="!d.payment.cashEnabled" (click)="payment.set('Cash')">
@@ -198,7 +198,7 @@
 
         <div class="discounts" *ngIf="showDiscounts() && cart().length">
           <div class="field">
-            <label>كود الخصم</label>
+            <span class="field-label">كود الخصم</span>
             <div class="flex gap-8">
               <input class="input grow" dir="ltr" [(ngModel)]="couponInput" [disabled]="!!couponCode()"
                      placeholder="WELCOME10" (keydown.enter)="applyCoupon()">
@@ -209,8 +209,8 @@
           </div>
 
           <div class="field" *ngIf="d.pricing.canDiscount">
-            <label>خصم يدوي (حتى {{ maxManualDiscount() | sar }})</label>
-            <input class="input money" type="number" min="0" step="0.5"
+            <label for="pos-f2">خصم يدوي (حتى {{ maxManualDiscount() | sar }})</label>
+            <input id="pos-f2" class="input money" type="number" min="0" step="0.5"
                    [ngModel]="manualDiscount() || null" (ngModelChange)="setManualDiscount($event)" placeholder="0.00">
           </div>
 

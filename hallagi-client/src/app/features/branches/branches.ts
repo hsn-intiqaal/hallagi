@@ -1,7 +1,7 @@
 import { NgIf, NgFor } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService } from '@core/http/api.service';
+import { ApiService, ApiFailure } from '@core/http/api.service';
 import { BranchContext } from '@core/state/branch-context';
 import { ToastService } from '@core/state/toast.service';
 import { Branch } from '@core/models';
@@ -33,7 +33,7 @@ export class Branches implements OnInit {
     this.loading.set(true);
     this.api.get<{ items: Branch[] }>('/branches').subscribe({
       next: res => { this.items.set(res.items); this.loading.set(false); },
-      error: (e: any) => { this.toast.error(e?.message ?? 'تعذّر تحميل الفروع'); this.loading.set(false); }
+      error: (e: ApiFailure) => { this.toast.error(e?.message ?? 'تعذّر تحميل الفروع'); this.loading.set(false); }
     });
   }
 
@@ -70,7 +70,7 @@ export class Branches implements OnInit {
         this.load();
         this.branches.init();
       },
-      error: (e: any) => this.toast.error(e?.message ?? 'تعذّر حفظ الفرع')
+      error: (e: ApiFailure) => this.toast.error(e?.message ?? 'تعذّر حفظ الفرع')
     });
   }
 

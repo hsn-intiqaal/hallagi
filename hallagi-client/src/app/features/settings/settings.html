@@ -7,17 +7,17 @@
     <div class="card mb-16">
       <h2 class="mb-16">بيانات المنشأة</h2>
       <div class="field">
-        <label>اسم المنشأة</label>
-        <input class="input" [(ngModel)]="form.organizationName" [disabled]="!canManage()">
+        <label for="settings-f1">اسم المنشأة</label>
+        <input id="settings-f1" class="input" [(ngModel)]="form.organizationName" [disabled]="!canManage()">
       </div>
       <div class="flex gap-16 wrap">
         <div class="field grow">
-          <label>العملة</label>
-          <input class="input" [(ngModel)]="form.currency" [disabled]="!canManage()" dir="ltr">
+          <label for="settings-f2">العملة</label>
+          <input id="settings-f2" class="input" [(ngModel)]="form.currency" [disabled]="!canManage()" dir="ltr">
         </div>
         <div class="field grow">
-          <label>المنطقة الزمنية</label>
-          <input class="input" [(ngModel)]="form.timeZone" [disabled]="!canManage()" dir="ltr">
+          <label for="settings-f3">المنطقة الزمنية</label>
+          <input id="settings-f3" class="input" [(ngModel)]="form.timeZone" [disabled]="!canManage()" dir="ltr">
         </div>
       </div>
       <div class="alert" *ngIf="!canManage()">
@@ -47,7 +47,7 @@
         </div>
 
         <div class="branding-main">
-          <label class="picker-label">صورة الغلاف</label>
+          <span class="field-label" class="picker-label">صورة الغلاف</span>
           <div class="cover-picker" [class.has-image]="coverUrl()"
                [style.background-image]="coverUrl() ? 'url(' + coverUrl() + ')' : coverGradient()">
             <div class="cover-overlay">
@@ -64,14 +64,14 @@
 
           <div class="colors-row">
             <div class="color-field">
-              <label class="picker-label">اللون الأساسي</label>
+              <span class="field-label" class="picker-label">اللون الأساسي</span>
               <div class="color-inputs">
                 <input type="color" class="color-swatch" [(ngModel)]="form.primaryColor" aria-label="اللون الأساسي">
                 <input class="input hex-input" [(ngModel)]="form.primaryColor" dir="ltr" maxlength="7" spellcheck="false">
               </div>
             </div>
             <div class="color-field">
-              <label class="picker-label">اللون الثانوي</label>
+              <span class="field-label" class="picker-label">اللون الثانوي</span>
               <div class="color-inputs">
                 <input type="color" class="color-swatch" [(ngModel)]="form.secondaryColor" aria-label="اللون الثانوي">
                 <input class="input hex-input" [(ngModel)]="form.secondaryColor" dir="ltr" maxlength="7" spellcheck="false">
@@ -79,7 +79,7 @@
             </div>
           </div>
 
-          <label class="picker-label mt-16">لوحات ألوان جاهزة</label>
+          <span class="field-label" class="picker-label mt-16">لوحات ألوان جاهزة</span>
           <div class="palettes">
             <button *ngFor="let p of palettes" class="palette" type="button" (click)="applyPreset(p)">
               <span class="palette-dots">
@@ -116,7 +116,7 @@
       </div>
 
       <div class="field mt-16" *ngIf="canManage() && plans().length > 0">
-        <label>تغيير الخطة</label>
+        <span class="field-label">تغيير الخطة</span>
         <div class="flex gap-8 wrap">
           <button *ngFor="let p of plans()" class="btn btn-sm"
                   [class]="p.id === subscription()?.plan?.id ? 'btn-success' : 'btn-outline'"
@@ -147,29 +147,29 @@
       <ng-container *ngIf="tax.vatEnabled">
         <div class="grid-2">
           <div class="field">
-            <label>الرقم الضريبي</label>
-            <input class="input" dir="ltr" maxlength="15" [(ngModel)]="tax.vatNumber" placeholder="3XXXXXXXXXXXXX3"
+            <label for="settings-f4">الرقم الضريبي</label>
+            <input id="settings-f4" class="input" dir="ltr" maxlength="15" [(ngModel)]="tax.vatNumber" placeholder="3XXXXXXXXXXXXX3"
                    [class.invalid]="tax.vatNumber && !vatNumberValid()">
             <div class="field-error" *ngIf="tax.vatNumber && !vatNumberValid()">15 رقمًا يبدأ وينتهي بالرقم 3</div>
           </div>
           <div class="field">
-            <label>السجل التجاري</label>
-            <input class="input" dir="ltr" maxlength="20" [(ngModel)]="tax.commercialRegistration">
+            <label for="settings-f5">السجل التجاري</label>
+            <input id="settings-f5" class="input" dir="ltr" maxlength="20" [(ngModel)]="tax.commercialRegistration">
           </div>
           <div class="field">
-            <label>الاسم القانوني للمنشأة (يظهر في الفاتورة)</label>
-            <input class="input" [(ngModel)]="tax.legalName" [placeholder]="form.organizationName">
+            <label for="settings-f6">الاسم القانوني للمنشأة (يظهر في الفاتورة)</label>
+            <input id="settings-f6" class="input" [(ngModel)]="tax.legalName" [placeholder]="form.organizationName">
           </div>
           <div class="field">
-            <label>نسبة الضريبة</label>
-            <select class="input" [(ngModel)]="tax.vatRate">
+            <label for="settings-f7">نسبة الضريبة</label>
+            <select id="settings-f7" class="input" [(ngModel)]="tax.vatRate">
               <option [ngValue]="0.15">15%</option>
             </select>
           </div>
         </div>
         <div class="field">
-          <label>العنوان الوطني / عنوان الفاتورة</label>
-          <input class="input" [(ngModel)]="tax.taxAddress">
+          <label for="settings-f8">العنوان الوطني / عنوان الفاتورة</label>
+          <input id="settings-f8" class="input" [(ngModel)]="tax.taxAddress">
         </div>
         <label class="switch-row"><input type="checkbox" [(ngModel)]="tax.pricesIncludeVat"> أسعار الخدمات والمنتجات شاملة الضريبة</label>
         <p class="text-2 text-sm mt-8">{{ tax.pricesIncludeVat ? 'مثال: خدمة بسعر 25 ر.س → يدفع العميل 25 منها 3.26 ضريبة.' : 'مثال: خدمة بسعر 25 ر.س → يدفع العميل 28.75 شاملة الضريبة.' }}</p>
@@ -182,19 +182,19 @@
       <label class="switch-row mb-16"><input type="checkbox" [(ngModel)]="loyalty.enabled"> تفعيل برنامج الولاء</label>
       <div class="grid-2" *ngIf="loyalty.enabled">
         <div class="field">
-          <label>نقاط لكل 1 ر.س مدفوع</label>
-          <input class="input" type="number" min="0" step="0.5" [(ngModel)]="loyalty.pointsPerSar">
+          <label for="settings-f9">نقاط لكل 1 ر.س مدفوع</label>
+          <input id="settings-f9" class="input" type="number" min="0" step="0.5" [(ngModel)]="loyalty.pointsPerSar">
         </div>
         <div class="field">
-          <label>قيمة النقطة (ر.س)</label>
-          <input class="input" type="number" min="0" step="0.01" [(ngModel)]="loyalty.pointValue">
+          <label for="settings-f10">قيمة النقطة (ر.س)</label>
+          <input id="settings-f10" class="input" type="number" min="0" step="0.01" [(ngModel)]="loyalty.pointValue">
         </div>
         <div class="field">
-          <label>أقل عدد نقاط للاستبدال</label>
-          <input class="input" type="number" min="0" step="10" [(ngModel)]="loyalty.minRedeem">
+          <label for="settings-f11">أقل عدد نقاط للاستبدال</label>
+          <input id="settings-f11" class="input" type="number" min="0" step="10" [(ngModel)]="loyalty.minRedeem">
         </div>
         <div class="field">
-          <label>العائد للعميل</label>
+          <span class="field-label">العائد للعميل</span>
           <div class="readout">{{ loyaltyReturnPercent() }}% من قيمة مشترياته</div>
         </div>
       </div>
@@ -206,7 +206,7 @@
       <label class="switch-row mb-16"><input type="checkbox" [(ngModel)]="booking.enabled"> تفعيل الحجز الإلكتروني</label>
       <ng-container *ngIf="booking.enabled">
         <div class="field">
-          <label>رابط الصفحة</label>
+          <span class="field-label">رابط الصفحة</span>
           <div class="slug-row" dir="ltr">
             <span class="prefix">/book/</span>
             <input class="input" [(ngModel)]="booking.slug" placeholder="my-salon" maxlength="40">
@@ -220,8 +220,8 @@
         </div>
         <div class="grid-2 mt-16">
           <div class="field">
-            <label>دقة الأوقات المعروضة</label>
-            <select class="input" [(ngModel)]="booking.slotMinutes">
+            <label for="settings-f12">دقة الأوقات المعروضة</label>
+            <select id="settings-f12" class="input" [(ngModel)]="booking.slotMinutes">
               <option [ngValue]="10">كل 10 دقائق</option>
               <option [ngValue]="15">كل 15 دقيقة</option>
               <option [ngValue]="20">كل 20 دقيقة</option>
@@ -229,8 +229,8 @@
             </select>
           </div>
           <div class="field">
-            <label>الحجز مسبقًا حتى</label>
-            <select class="input" [(ngModel)]="booking.maxDaysAhead">
+            <label for="settings-f13">الحجز مسبقًا حتى</label>
+            <select id="settings-f13" class="input" [(ngModel)]="booking.maxDaysAhead">
               <option [ngValue]="7">أسبوع</option>
               <option [ngValue]="14">أسبوعين</option>
               <option [ngValue]="30">شهر</option>
@@ -244,8 +244,8 @@
     <div class="card mb-16" *ngIf="canManage()">
       <h2 class="mb-16">الخصومات</h2>
       <div class="field" style="max-width: 320px">
-        <label>الحد الأعلى للخصم اليدوي (% من الفاتورة)</label>
-        <input class="input" type="number" min="0" max="100" [(ngModel)]="maxManualDiscountPercent">
+        <label for="settings-f14">الحد الأعلى للخصم اليدوي (% من الفاتورة)</label>
+        <input id="settings-f14" class="input" type="number" min="0" max="100" [(ngModel)]="maxManualDiscountPercent">
         <div class="text-2 text-sm mt-8">ينطبق على المدير والكاشير المصرّح لهم — المالك بلا حد.</div>
       </div>
     </div>
@@ -253,12 +253,12 @@
     <div class="card mb-16" *ngIf="canManage()">
       <h2 class="mb-16">إعدادات الإيصال</h2>
       <div class="field">
-        <label>هاتف المحل (يظهر في الإيصال)</label>
-        <input class="input" [(ngModel)]="form.receiptPhone" dir="ltr" placeholder="0112345678">
+        <label for="settings-f15">هاتف المحل (يظهر في الإيصال)</label>
+        <input id="settings-f15" class="input" [(ngModel)]="form.receiptPhone" dir="ltr" placeholder="0112345678">
       </div>
       <div class="field">
-        <label>عبارة أسفل الإيصال</label>
-        <input class="input" [(ngModel)]="form.receiptFooter" placeholder="شكرًا لزيارتكم">
+        <label for="settings-f16">عبارة أسفل الإيصال</label>
+        <input id="settings-f16" class="input" [(ngModel)]="form.receiptFooter" placeholder="شكرًا لزيارتكم">
       </div>
       <p class="text-2 text-sm" *ngIf="!tax.vatEnabled">بدون تفعيل الضريبة يُطبع «إيصال داخلي» — فعّلها أعلاه لإصدار فواتير ضريبية مبسطة.</p>
     </div>
@@ -267,12 +267,12 @@
       <h2 class="mb-16">حسابي</h2>
       <div class="flex gap-16 wrap" style="align-items: flex-end">
         <div class="field grow">
-          <label>كلمة المرور الحالية</label>
-          <input class="input" type="password" [(ngModel)]="password.current" dir="ltr">
+          <label for="settings-f17">كلمة المرور الحالية</label>
+          <input id="settings-f17" class="input" type="password" [(ngModel)]="password.current" dir="ltr">
         </div>
         <div class="field grow">
-          <label>كلمة المرور الجديدة</label>
-          <input class="input" type="password" [(ngModel)]="password.next" dir="ltr">
+          <label for="settings-f18">كلمة المرور الجديدة</label>
+          <input id="settings-f18" class="input" type="password" [(ngModel)]="password.next" dir="ltr">
         </div>
         <button class="btn btn-primary" (click)="changePassword()">تغيير كلمة المرور</button>
       </div>

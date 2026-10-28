@@ -12,7 +12,7 @@ export interface BarberRow {
   compensation: { type: string; typeText: string; monthlySalary: number | null; commissionRate: number | null; chairRentAmount: number | null; notes: string | null; effectiveFrom: string } | null;
 }
 export interface BarberDetail {
-  barber: { id: string; fullName: string; phone?: string; startDate?: string | null; status: string; statusText: string; branchNames: string[] };
+  barber: { id: string; fullName: string; phone?: string; startDate?: string | null; status: string; statusText: string; branchNames: string[]; branchIds?: string[] };
   compensation: {
     type: string; typeText: string; monthlySalary: number | null; commissionRate: number | null;
     chairRentAmount: number | null; notes: string | null; effectiveFrom: string;
@@ -21,4 +21,11 @@ export interface BarberDetail {
   summary: { total: number; count: number; servicesCount: number };
   from: string; to: string;
   sales: { id: string; receiptNo: number; createdAt: string; totalAmount: number; paymentText: string; servicesText: string; customerName: string; branchName: string; }[];
+}
+
+/** `/me/summary`: who is signed in and, for a barber, his own figures. */
+export interface MeSummary {
+  role: string; roleText: string; branchIds: string[];
+  barber: BarberDetail | null;
+  canViewDues: boolean;
 }

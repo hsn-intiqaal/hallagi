@@ -1,4 +1,5 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
+import { APP_CONFIG } from '@core/config/app-config';
 
 /** Minimal organization branding payload used for theming. */
 export interface OrgTheme {
@@ -14,6 +15,11 @@ export interface OrgTheme {
 @Injectable({ providedIn: 'root' })
 export class ThemeService {
   private readonly root = document.documentElement;
+  private readonly brand = inject(APP_CONFIG).brand;
+
+  constructor() {
+    this.reset();
+  }
 
   /** Apply the organization colors (invalid values keep the current theme). */
   apply(org: OrgTheme | null | undefined): void {
@@ -35,11 +41,12 @@ export class ThemeService {
     }
   }
 
-  /** Restore the default design-system palette (used on sign-out). */
+  /** Restore the deployment's brand palette (used on boot and sign-out). */
   reset(): void {
     for (const prop of ['--blue', '--blue-soft', '--navy', '--navy-2', '--navy-soft', '--primary', '--primary-dark', '--secondary']) {
       this.root.style.removeProperty(prop);
     }
+    this.apply(this.brand);
   }
 
   private isHex(value?: string | null): value is string {

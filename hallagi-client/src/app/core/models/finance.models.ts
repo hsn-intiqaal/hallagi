@@ -36,3 +36,25 @@ export interface ShiftRow {
   openingCash: number; expectedCash: number | null; countedCash: number | null; difference: number | null;
   branchName: string; openedByName: string;
 }
+
+/** Result of opening / closing a shift. */
+export interface ShiftResult {
+  id: string; branchId: string; branchName: string; openingCash: number; openedAt: string; closedAt: string | null;
+  status: 'Open' | 'Closed'; countedCash: number | null; closedExpectedCash: number | null; difference: number | null;
+  note: string | null; autoOpened: boolean; cashSales: number; cardSales: number; cashExpenses: number;
+  movementsIn: number; movementsOut: number; expectedCash: number; differenceText: string;
+}
+
+export interface LedgerEntry {
+  id: string; type: string; typeText: string; direction: 'Credit' | 'Debit'; amount: number; txDate: string;
+  description: string | null; status: string; sourceType: string | null; sourceRef: string | null; createdAt: string;
+}
+export interface LedgerAdvance {
+  id: string; originalAmount: number; outstanding: number; advanceDate: string; reason: string | null; status: string; statusText: string;
+}
+export interface BarberLedger { entries: LedgerEntry[]; balance: number; advances: LedgerAdvance[]; from: string; to: string; }
+
+export interface CashHandover {
+  id: string; branchId: string; branchName: string; fromUserName: string; toUserName: string;
+  amount: number; handoverDate: string; note: string | null; status: string; statusText: string;
+}

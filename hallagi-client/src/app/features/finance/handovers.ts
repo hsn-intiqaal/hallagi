@@ -1,13 +1,14 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { NgIf, NgFor } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService } from '@core/http/api.service';
+import { ApiService, ApiFailure } from '@core/http/api.service';
 import { BranchContext } from '@core/state/branch-context';
 import { AuthService } from '@core/auth/auth.service';
 import { ToastService } from '@core/state/toast.service';
 import { DateArPipe, SarPipe } from '@shared/pipes/format.pipes';
 import { Icon } from '@shared/ui/icon';
 import { EmptyState, LoadingRow, Modal } from '@shared/ui/ui';
+import { CashHandover, ItemsOf } from '@core/models';
 
 @Component({
   selector: 'app-handovers',
@@ -22,7 +23,7 @@ export class Handovers implements OnInit {
   readonly auth = inject(AuthService);
   private toast = inject(ToastService);
 
-  readonly items = signal<any[]>([]);
+  readonly items = signal<CashHandover[]>([]);
   readonly users = signal<{ id: string; fullName: string }[]>([]);
   readonly loading = signal(true);
   readonly showForm = signal(false);
@@ -34,7 +35,7 @@ export class Handovers implements OnInit {
     this.form.branchId = id ?? '';
     this.load();
     this.api.get<{ items: { id: string; profileId: string; fullName: string }[] }>('/users').subscribe({
-      next: (res: any) => this.users.set(res.items.map((u: any) => ({ id: u.profileId, fullName: u.fullName }))),
+      next: res => this.users.set(res.items.map(u => ({ id: u.profileId, fullName: u.fullName }))),
       error: () => this.users.set([])
     });
   }
@@ -42,9 +43,9 @@ export class Handovers implements OnInit {
   load(): void {
     this.loading.set(true);
     const id = this.branches.scopeId();
-    this.api.get<{ items: any[] }>('/ledger/handovers', { branchId: id }).subscribe({
-      next: (res: any) => { this.items.set(res.items); this.loading.set(false); },
-      error: (e: any) => { this.loading.set(false); this.toast.error(e?.message ?? 'تعذّر تحميل التسليمات'); }
+    this.api.get<ItemsOf<CashHandover>>('/ledger/handovers', { branchId: id }).subscribe({
+      next: res => { this.items.set(res.items); this.loading.set(false); },
+      error: (e: ApiFailure) => { this.loading.set(false); this.toast.error(e?.message ?? 'تعذّر تحميل التسليمات'); }
     });
   }
 
@@ -59,7 +60,7 @@ export class Handovers implements OnInit {
       note: this.form.note
     }).subscribe({
       next: () => { this.toast.success('تم تسجيل التسليم النقدي'); this.showForm.set(false); this.load(); },
-      error: (e: any) => this.toast.error(e?.message ?? 'تعذّر تسجيل التسليم')
+      error: (e: ApiFailure) => this.toast.error(e?.message ?? 'تعذّر تسجيل التسليم')
     });
   }
 }

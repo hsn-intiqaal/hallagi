@@ -6,6 +6,8 @@ import { AuthService } from '@core/auth/auth.service';
 import { BranchContext } from '@core/state/branch-context';
 import { ToastService } from '@core/state/toast.service';
 import { Icon } from '@shared/ui/icon';
+import { APP_CONFIG } from '@core/config/app-config';
+import { ApiFailure } from '@core/http/api.service';
 
 @Component({
   selector: 'app-login',
@@ -16,6 +18,7 @@ import { Icon } from '@shared/ui/icon';
 })
 export class Login {
   private auth = inject(AuthService);
+  readonly brand = inject(APP_CONFIG).brand;
   private branches = inject(BranchContext);
   private toast = inject(ToastService);
   private router = inject(Router);
@@ -44,7 +47,7 @@ export class Login {
         error: () => this.toast.error('تعذّر تحميل بيانات الحساب. حاول مرة أخرى')
       });
     };
-    const onError = (e: any) => {
+    const onError = (e: ApiFailure) => {
       this.loading.set(false);
       this.toast.error(e?.message ?? 'تعذّر تسجيل الدخول. تحقق من البيانات وحاول مرة أخرى');
     };

@@ -8,7 +8,7 @@
     </span>
     <span class="brand-text">
       <span class="org-name">{{ auth.me()?.organization?.name }}</span>
-      <span class="brand-sub">حلاقي</span>
+      <span class="brand-sub">{{ brand.name }}</span>
     </span>
   </div>
 
@@ -82,7 +82,7 @@
       </a>
     </ng-container>
     <div class="grow"></div>
-    <div class="side-brand text-2 text-sm">حلاقي — محلك في يدك</div>
+    <div class="side-brand text-2 text-sm">{{ brand.name }} — {{ brand.tagline }}</div>
     <button *ngIf="auth.isLoggedIn()" class="side-link side-logout" (click)="requestLogout()">
       <app-icon class="nav-icon" name="logout" [size]="20"></app-icon>
       <span>تسجيل الخروج</span>
@@ -115,7 +115,7 @@
   </a>
 </nav>
 
-<app-modal *ngIf="logoutConfirmOpen()" title="تأكيد تسجيل الخروج" [showFooter]="true" (close)="cancelLogout()">
+<app-modal *ngIf="logoutConfirmOpen()" title="تأكيد تسجيل الخروج" [showFooter]="true" (dismiss)="cancelLogout()">
   <div class="logout-confirm">
     <div class="logout-icon"><app-icon name="logout" [size]="28"></app-icon></div>
     <p class="logout-title">هل أنت متأكد من رغبتك في تسجيل الخروج؟</p>

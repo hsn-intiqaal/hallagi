@@ -26,6 +26,7 @@
   display: inline-flex; align-items: center; justify-content: center;
   margin-bottom: 12px;
 }
+.brand .logo-img { object-fit: contain; background: #fff; padding: 8px; }
 .brand h1 { font-size: 1.6rem; }
 .brand .tagline { color: var(--text-2); font-weight: 600; margin-top: 2px; }
 .brand .demo {

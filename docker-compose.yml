@@ -1,16 +1,18 @@
-# حلاقي — full stack: SQL Server + API + web (nginx)
-#   cp .env.example .env   # then set real secrets
-#   docker compose up -d --build
-#   open http://localhost:8080
+# حلاقي — full stack: SQL Server + API + web (nginx) [+ Caddy for automatic HTTPS]
+#   cp .env.example .env                      # then set real secrets and the brand
+#   docker compose up -d --build              # http://localhost:8080
+#   docker compose --profile https up -d      # https://$DOMAIN with a Let's Encrypt certificate
+# Prebuilt images (see .github/workflows/release.yml) can replace the build: set API_IMAGE / WEB_IMAGE.
 services:
   db:
     image: mcr.microsoft.com/mssql/server:2022-latest
     environment:
       ACCEPT_EULA: "Y"
       MSSQL_SA_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
-      MSSQL_PID: Express
+      MSSQL_PID: ${MSSQL_PID:-Express}
     volumes:
       - sqldata:/var/opt/mssql
+      - ./backups:/var/opt/mssql/backup
     healthcheck:
       test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q 'SELECT 1' || exit 1"]
       interval: 10s
@@ -19,28 +21,64 @@ services:
     restart: unless-stopped
 
   api:
+    image: ${API_IMAGE:-hallagi-api:local}
     build:
       context: .
       dockerfile: src/Hallagi.Api/Dockerfile
     environment:
-      ConnectionStrings__Default: "Server=db;Database=Hallagi;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=True"
+      ConnectionStrings__Default: "Server=db;Database=${DB_NAME:-Hallagi};User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=True"
       Jwt__Key: ${JWT_KEY:?set JWT_KEY (32+ chars) in .env}
       Seed__OnStartup: ${SEED_DEMO:-false}
       Bootstrap__AdminEmail: ${ADMIN_EMAIL:-}
       Bootstrap__AdminPassword: ${ADMIN_PASSWORD:-}
+      # the web app is same-origin; these are the Android (https://localhost) and iOS (capacitor://localhost) shells
       Cors__AllowedOrigins__0: ${PUBLIC_URL:-http://localhost:8080}
+      Cors__AllowedOrigins__1: "https://localhost"
+      Cors__AllowedOrigins__2: "capacitor://localhost"
     depends_on:
       db:
         condition: service_healthy
     restart: unless-stopped
 
   web:
+    image: ${WEB_IMAGE:-hallagi-web:local}
     build: ./hallagi-client
+    environment:
+      API_URL: ${API_URL:-/api}
+      APP_NAME: ${APP_NAME:-حلاقي}
+      APP_SHORT_NAME: ${APP_SHORT_NAME:-}
+      APP_TAGLINE: ${APP_TAGLINE:-محلك في يدك}
+      APP_PRIMARY_COLOR: ${APP_PRIMARY_COLOR:-#2563EB}
+      APP_SECONDARY_COLOR: ${APP_SECONDARY_COLOR:-#173653}
+      APP_LOGO_URL: ${APP_LOGO_URL:-}
+      APP_SUPPORT_EMAIL: ${APP_SUPPORT_EMAIL:-}
+      APP_WEBSITE: ${APP_WEBSITE:-}
+      DEFAULT_TIME_ZONE: ${DEFAULT_TIME_ZONE:-Asia/Riyadh}
     ports:
       - "${WEB_PORT:-8080}:80"
     depends_on:
       - api
     restart: unless-stopped
 
+  caddy:
+    image: caddy:2.8-alpine
+    profiles: ["https"]
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN for the https profile}
+      ACME_EMAIL: ${ACME_EMAIL:-}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+    restart: unless-stopped
+
 volumes:
   sqldata:
+  caddy_data:
+  caddy_config:

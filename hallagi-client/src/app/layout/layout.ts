@@ -7,6 +7,7 @@ import { ToastService } from '@core/state/toast.service';
 import { UserRoleLabel } from '@core/models';
 import { Icon } from '@shared/ui/icon';
 import { LoadingRow, Modal } from '@shared/ui/ui';
+import { APP_CONFIG } from '@core/config/app-config';
 
 interface NavItem {
   group: NavGroup;
@@ -34,6 +35,7 @@ const NAV_GROUPS: { id: NavGroup; label: string }[] = [
 })
 export class Layout implements OnInit {
   readonly auth = inject(AuthService);
+  readonly brand = inject(APP_CONFIG).brand;
   readonly branches = inject(BranchContext);
   private toast = inject(ToastService);
   private router = inject(Router);

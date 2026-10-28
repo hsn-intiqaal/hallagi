@@ -1,6 +1,6 @@
 .filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-bottom: 14px; }
 .filters .field { margin-bottom: 0; min-width: 170px; flex: 1; }
-.filters .field label { font-size: .82rem; color: var(--text-2); }
+.filters .field label, .filters .field .field-label { font-size: .82rem; color: var(--text-2); }
 
 .rows { display: flex; flex-direction: column; gap: 8px; }
 .row-item {

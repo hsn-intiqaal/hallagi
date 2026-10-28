@@ -84,11 +84,11 @@ export class EmptyState {
   standalone: true,
   imports: [NgIf, Icon],
   template: `
-    <div class="modal-backdrop" (click)="onBackdrop($event)">
-      <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" tabindex="-1" (click)="onBackdrop($event)" (keydown.escape)="dismiss.emit()">
+      <div class="modal" role="dialog" aria-modal="true" [attr.aria-label]="title">
         <div class="modal-head">
           <h2>{{ title }}</h2>
-          <button class="icon-btn" style="color: var(--text-2)" (click)="close.emit()">
+          <button class="icon-btn" style="color: var(--text-2)" aria-label="إغلاق" (click)="dismiss.emit()">
             <app-icon name="x" [size]="20"></app-icon>
           </button>
         </div>
@@ -101,10 +101,11 @@ export class EmptyState {
 export class Modal {
   @Input() title = '';
   @Input() showFooter = true;
-  @Output() close = new EventEmitter<void>();
+  /** Close request: the X button, a click on the backdrop or Escape. */
+  @Output() dismiss = new EventEmitter<void>();
 
   onBackdrop(e: MouseEvent): void {
-    if ((e.target as HTMLElement).classList.contains('modal-backdrop')) this.close.emit();
+    if ((e.target as HTMLElement).classList.contains('modal-backdrop')) this.dismiss.emit();
   }
 }
 

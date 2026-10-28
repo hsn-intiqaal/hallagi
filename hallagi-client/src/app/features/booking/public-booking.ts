@@ -8,6 +8,7 @@ import { PublicBookingInfo, PublicBookingResult } from '@core/models';
 import { SarPipe } from '@shared/pipes/format.pipes';
 import { Icon } from '@shared/ui/icon';
 import { LoadingRow } from '@shared/ui/ui';
+import { APP_CONFIG } from '@core/config/app-config';
 
 type Step = 'services' | 'time' | 'details' | 'done';
 
@@ -24,6 +25,7 @@ const isoDate = (d: Date): string =>
 })
 export class PublicBooking implements OnInit {
   private bookingApi = inject(BookingApi);
+  readonly platform = inject(APP_CONFIG).brand;
   private route = inject(ActivatedRoute);
 
   readonly slug = this.route.snapshot.paramMap.get('slug') ?? '';
