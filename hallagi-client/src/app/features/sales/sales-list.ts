@@ -2,14 +2,14 @@ import { NgIf, NgFor } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { ApiService } from '../../core/api.service';
-import { BranchContext } from '../../core/branch-context';
-import { AuthService } from '../../core/auth.service';
-import { ToastService } from '../../core/toast.service';
-import { Sale } from '../../core/models';
-import { Icon } from '../../shared/icon';
-import { DateTimeArPipe, SarPipe } from '../../core/format.pipes';
-import { EmptyState, LoadingRow } from '../../shared/ui';
+import { ApiService, ApiFailure } from '@core/http/api.service';
+import { BranchContext } from '@core/state/branch-context';
+import { AuthService } from '@core/auth/auth.service';
+import { ToastService } from '@core/state/toast.service';
+import { Sale, Paged } from '@core/models';
+import { Icon } from '@shared/ui/icon';
+import { DateTimeArPipe, SarPipe } from '@shared/pipes/format.pipes';
+import { EmptyState, LoadingRow } from '@shared/ui/ui';
 
 @Component({
   selector: 'app-sales-list',
@@ -42,12 +42,12 @@ export class SalesList implements OnInit {
   load(): void {
     this.loading.set(true);
     const branchId = this.branches.scopeId();
-    this.api.get<any>('/sales', {
+    this.api.get<Paged<Sale>>('/sales', {
       branchId, search: this.search, from: this.from || undefined, to: this.to || undefined,
       page: this.page, pageSize: this.pageSize
     }).subscribe({
-      next: (res: any) => { this.sales.set(res.items); this.totalCount.set(res.totalCount); this.loading.set(false); },
-      error: (e: any) => { this.toast.error(e?.message ?? 'تعذّر تحميل المبيعات'); this.loading.set(false); }
+      next: res => { this.sales.set(res.items); this.totalCount.set(res.totalCount); this.loading.set(false); },
+      error: (e: ApiFailure) => { this.toast.error(e?.message ?? 'تعذّر تحميل المبيعات'); this.loading.set(false); }
     });
   }
 
@@ -65,18 +65,8 @@ export class SalesList implements OnInit {
   }
 
   exportCsv(): void {
-    const branchId = this.branches.scopeId();
-    const url = `${this.api['base']}/sales/export.csv?branchId=${branchId ?? ''}${this.from ? '&from=' + this.from : ''}${this.to ? '&to=' + this.to : ''}`;
-    const token = this.auth.token() ?? '';
-    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.blob())
-      .then(b => {
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(b);
-        a.download = 'sales.csv';
-        a.click();
-      })
-      .catch(() => this.toast.error('تعذّر تصدير الملف'));
+    this.api.download('/sales/export.csv', { branchId: this.branches.scopeId(), from: this.from, to: this.to }, `sales-${this.from || 'all'}.csv`)
+      .subscribe({ error: (e: { message: string }) => this.toast.error(e.message) });
   }
 
   canCancel(): boolean { return this.auth.can('sale.void'); }
@@ -96,7 +86,7 @@ export class SalesList implements OnInit {
         this.cancelling = null;
         this.load();
       },
-      error: (e: any) => this.toast.error(e?.message ?? 'تعذّر إلغاء العملية')
+      error: (e: ApiFailure) => this.toast.error(e?.message ?? 'تعذّر إلغاء العملية')
     });
   }
 }

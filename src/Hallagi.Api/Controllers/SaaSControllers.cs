@@ -1,4 +1,3 @@
-using Hallagi.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Hallagi.Api.Controllers;
@@ -10,7 +9,7 @@ public class SubscriptionController(SubscriptionService subscriptions) : BaseApi
     public async Task<IActionResult> Current(CancellationToken ct)
     {
         if (!Permissions.Can(CurrentUser, Permissions.SubscriptionView))
-            throw ApiException.Forbidden("ليس لديك صلاحية لعرض الاشتراك");
+            throw AppException.Forbidden("ليس لديك صلاحية لعرض الاشتراك");
         return Ok(await subscriptions.GetCurrentAsync(CurrentUser.OrganizationId, ct));
     }
 

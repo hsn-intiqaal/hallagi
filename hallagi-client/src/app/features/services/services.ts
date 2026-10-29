@@ -1,13 +1,13 @@
 import { NgIf, NgFor } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService } from '../../core/api.service';
-import { BranchContext } from '../../core/branch-context';
-import { ToastService } from '../../core/toast.service';
-import { PosService } from '../../core/models';
-import { Icon } from '../../shared/icon';
-import { SarPipe } from '../../core/format.pipes';
-import { EmptyState, LoadingRow, Modal } from '../../shared/ui';
+import { ApiService, ApiFailure } from '@core/http/api.service';
+import { BranchContext } from '@core/state/branch-context';
+import { ToastService } from '@core/state/toast.service';
+import { PosService } from '@core/models';
+import { Icon } from '@shared/ui/icon';
+import { SarPipe } from '@shared/pipes/format.pipes';
+import { EmptyState, LoadingRow, Modal } from '@shared/ui/ui';
 
 @Component({
   selector: 'app-services',
@@ -26,7 +26,7 @@ export class Services implements OnInit {
   readonly editing = signal<PosService | null>(null);
   readonly showForm = signal(false);
 
-  form = { name: '', description: '', basePrice: 0, active: true };
+  form = { name: '', description: '', basePrice: 0, durationMinutes: 30, active: true };
   formError = '';
 
   ngOnInit(): void { this.load(); }
@@ -35,19 +35,19 @@ export class Services implements OnInit {
     this.loading.set(true);
     this.api.get<{ items: PosService[] }>('/services', { branchId: this.branches.scopeId() }).subscribe({
       next: res => { this.services.set(res.items); this.loading.set(false); },
-      error: (e: any) => { this.toast.error(e?.message ?? 'تعذّر تحميل الخدمات'); this.loading.set(false); }
+      error: (e: ApiFailure) => { this.toast.error(e?.message ?? 'تعذّر تحميل الخدمات'); this.loading.set(false); }
     });
   }
 
   openAdd(): void {
-    this.form = { name: '', description: '', basePrice: 0, active: true };
+    this.form = { name: '', description: '', basePrice: 0, durationMinutes: 30, active: true };
     this.formError = '';
     this.editing.set(null);
     this.showForm.set(true);
   }
 
   openEdit(s: PosService): void {
-    this.form = { name: s.name, description: s.description ?? '', basePrice: s.basePrice ?? s.price, active: s.status === 'Active' };
+    this.form = { name: s.name, description: s.description ?? '', basePrice: s.basePrice ?? s.price, durationMinutes: s.durationMinutes ?? 30, active: s.status === 'Active' };
     this.formError = '';
     this.editing.set(s);
     this.showForm.set(true);
@@ -63,6 +63,7 @@ export class Services implements OnInit {
       name: this.form.name.trim(),
       description: this.form.description?.trim() || null,
       basePrice: this.form.basePrice,
+      durationMinutes: Number(this.form.durationMinutes) || 30,
       active: this.form.active
     };
     const editing = this.editing();
@@ -75,7 +76,7 @@ export class Services implements OnInit {
         this.showForm.set(false);
         this.load();
       },
-      error: (e: any) => this.toast.error(e?.message ?? 'تعذّر حفظ الخدمة')
+      error: (e: ApiFailure) => this.toast.error(e?.message ?? 'تعذّر حفظ الخدمة')
     });
   }
 
@@ -86,7 +87,7 @@ export class Services implements OnInit {
         this.toast.success(active ? 'تم تنشيط الخدمة' : 'تم إيقاف الخدمة في عمليات البيع الجديدة');
         this.load();
       },
-      error: (e: any) => this.toast.error(e?.message ?? 'تعذّر تحديث حالة الخدمة')
+      error: (e: ApiFailure) => this.toast.error(e?.message ?? 'تعذّر تحديث حالة الخدمة')
     });
   }
 }

@@ -1,6 +1,12 @@
 import { bootstrapApplication } from '@angular/platform-browser';
-import { appConfig } from './app/app.config';
+import { createAppConfig } from './app/app.config';
 import { App } from './app/app';
+import { loadAppConfig } from './app/core/config/app-config';
 
-bootstrapApplication(App, appConfig)
-  .catch((err) => console.error(err));
+// Deployment config first (API address, brand), then the application.
+loadAppConfig()
+  .then(config => {
+    document.title = `${config.brand.name} — ${config.brand.tagline}`;
+    return bootstrapApplication(App, createAppConfig(config));
+  })
+  .catch(err => console.error(err));

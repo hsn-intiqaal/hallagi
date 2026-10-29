@@ -2,12 +2,13 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { NgIf, NgFor } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { ApiService } from '../../core/api.service';
-import { ToastService } from '../../core/toast.service';
-import { ThemeService } from '../../core/theme.service';
-import { SarPipe } from '../../core/format.pipes';
-import { Icon } from '../../shared/icon';
-import { resizeImageFile } from '../../shared/image-upload';
+import { ApiService, ApiFailure } from '@core/http/api.service';
+import { ToastService } from '@core/state/toast.service';
+import { ThemeService } from '@core/state/theme.service';
+import { SarPipe } from '@shared/pipes/format.pipes';
+import { Icon } from '@shared/ui/icon';
+import { resizeImageFile } from '@shared/ui/image-upload';
+import { ApiMessage } from '@core/models';
 
 interface Palette { name: string; primary: string; secondary: string; }
 interface Plan { id: string; name: string; description: string; maxBranches: number; maxUsers: number; maxBarbers: number; monthlyPrice: number; }
@@ -51,7 +52,7 @@ export class OrgCreate implements OnInit {
 
   ngOnInit(): void {
     this.api.get<Plan[]>('/platform/plans').subscribe({
-      next: (res: any) => {
+      next: res => {
         this.plans.set(res ?? []);
         this.form.planId = res?.[0]?.id ?? '';
       },
@@ -98,7 +99,7 @@ export class OrgCreate implements OnInit {
     if (this.form.ownerPassword.length < 6) { this.toast.error('كلمة مرور المالك يجب أن تكون 6 أحرف على الأقل'); return; }
 
     this.creating.set(true);
-    this.api.post<any>('/platform/organizations', {
+    this.api.post<ApiMessage>('/platform/organizations', {
       name: this.form.name.trim(),
       city: this.form.city.trim(),
       branchName: this.form.branchName.trim() || 'الفرع الرئيسي',
@@ -118,7 +119,7 @@ export class OrgCreate implements OnInit {
         this.toast.success('تم إنشاء المنشأة وحساب مالكها');
         this.router.navigate(['/platform']);
       },
-      error: (e: any) => { this.creating.set(false); this.toast.error(e?.message ?? 'تعذّر إنشاء المنشأة'); }
+      error: (e: ApiFailure) => { this.creating.set(false); this.toast.error(e?.message ?? 'تعذّر إنشاء المنشأة'); }
     });
   }
 

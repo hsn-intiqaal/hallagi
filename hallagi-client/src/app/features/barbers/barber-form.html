@@ -15,16 +15,16 @@
       <div class="card">
         <h2 class="mb-16">بيانات الحلاق</h2>
         <div class="field">
-          <label>الاسم الكامل <span class="text-red">*</span></label>
-          <input class="input" [(ngModel)]="form.fullName" placeholder="مثال: أحمد العتيبي">
+          <label for="barber-form-f1">الاسم الكامل <span class="text-red">*</span></label>
+          <input id="barber-form-f1" class="input" [(ngModel)]="form.fullName" placeholder="مثال: أحمد العتيبي">
         </div>
         <div class="field">
-          <label>رقم الجوال (اختياري)</label>
-          <input class="input" [(ngModel)]="form.phone" placeholder="05xxxxxxxx" dir="ltr">
+          <label for="barber-form-f2">رقم الجوال (اختياري)</label>
+          <input id="barber-form-f2" class="input" [(ngModel)]="form.phone" placeholder="05xxxxxxxx" dir="ltr">
         </div>
         <div class="field">
-          <label>تاريخ بدء العمل (اختياري)</label>
-          <input class="input" type="date" [(ngModel)]="form.startDate">
+          <label for="barber-form-f3">تاريخ بدء العمل (اختياري)</label>
+          <input id="barber-form-f3" class="input" type="date" [(ngModel)]="form.startDate">
         </div>
         <div class="field flex gap-8" style="align-items: center">
           <input type="checkbox" id="bActive" [(ngModel)]="form.active" style="width: 20px; height: 20px">
@@ -57,22 +57,22 @@
 
         <div class="s2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px">
           <div class="field" *ngIf="form.compType === 'FixedSalary' || form.compType === 'FixedPlusCommission'">
-            <label>الراتب الشهري (ريال)</label>
-            <input class="input" type="number" min="0" [(ngModel)]="form.monthlySalary" placeholder="3500">
+            <label for="barber-form-f4">الراتب الشهري (ريال)</label>
+            <input id="barber-form-f4" class="input" type="number" min="0" [(ngModel)]="form.monthlySalary" placeholder="3500">
           </div>
           <div class="field" *ngIf="form.compType === 'Commission' || form.compType === 'FixedPlusCommission'">
-            <label>نسبة العمولة (%)</label>
-            <input class="input" type="number" min="0" max="100" [(ngModel)]="form.commissionRate" placeholder="30">
+            <label for="barber-form-f5">نسبة العمولة (%)</label>
+            <input id="barber-form-f5" class="input" type="number" min="0" max="100" [(ngModel)]="form.commissionRate" placeholder="30">
           </div>
           <div class="field" *ngIf="form.compType === 'ChairRental'">
-            <label>مبلغ إيجار الكرسي الدوري (ريال)</label>
-            <input class="input" type="number" min="0" [(ngModel)]="form.chairRentAmount" placeholder="1200">
+            <label for="barber-form-f6">مبلغ إيجار الكرسي الدوري (ريال)</label>
+            <input id="barber-form-f6" class="input" type="number" min="0" [(ngModel)]="form.chairRentAmount" placeholder="1200">
           </div>
         </div>
 
         <div class="field" *ngIf="form.compType === 'ChairRental'">
-          <label>ملاحظات الاتفاق (اختياري)</label>
-          <input class="input" [(ngModel)]="form.compNotes" placeholder="مثال: إيجار كرسي شهري بموجب اتفاق خاص">
+          <label for="barber-form-f7">ملاحظات الاتفاق (اختياري)</label>
+          <input id="barber-form-f7" class="input" [(ngModel)]="form.compNotes" placeholder="مثال: إيجار كرسي شهري بموجب اتفاق خاص">
         </div>
 
         <div class="explain" *ngIf="form.compType === 'FixedSalary'">

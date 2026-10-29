@@ -11,7 +11,9 @@ export default defineConfig({
     headless: true,
     viewport: { width: 1440, height: 900 },
     actionTimeout: 20000,
-    navigationTimeout: 30000
+    navigationTimeout: 30000,
+    // CI / sandboxes may ship a system Chromium instead of Playwright's own download
+    launchOptions: process.env['PW_CHROMIUM_PATH'] ? { executablePath: process.env['PW_CHROMIUM_PATH'] } : {}
   },
   projects: [
     {

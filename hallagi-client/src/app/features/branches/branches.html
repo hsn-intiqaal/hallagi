@@ -24,6 +24,7 @@
       </div>
       <div class="meta">
         <span *ngIf="b.address">📍 {{ b.address }}</span>
+        <span *ngIf="b.opensAt">🕘 {{ b.opensAt }} – {{ b.closesAt }}</span>
         <span>عدد الحلاقين المسندين: {{ b.barberCount ?? 0 }}</span>
         <span>عدد المستخدمين المرتبطين: {{ b.userCount ?? 0 }}</span>
         <span *ngIf="b.hasOpenShift" class="text-green">● وردية مفتوحة حاليًا</span>
@@ -36,18 +37,32 @@
   </div>
 </div>
 
-<app-modal *ngIf="showForm()" [title]="editing() ? 'تعديل الفرع' : 'إضافة فرع'" (close)="showForm.set(false)">
+<app-modal *ngIf="showForm()" [title]="editing() ? 'تعديل الفرع' : 'إضافة فرع'" (dismiss)="showForm.set(false)">
   <div class="field">
-    <label>اسم الفرع</label>
-    <input class="input" [(ngModel)]="form.name" placeholder="مثال: فرع النرجس">
+    <label for="branches-f1">اسم الفرع</label>
+    <input id="branches-f1" class="input" [(ngModel)]="form.name" placeholder="مثال: فرع النرجس">
   </div>
   <div class="field">
-    <label>المدينة</label>
-    <input class="input" [(ngModel)]="form.city" placeholder="الرياض">
+    <label for="branches-f2">المدينة</label>
+    <input id="branches-f2" class="input" [(ngModel)]="form.city" placeholder="الرياض">
   </div>
   <div class="field">
-    <label>العنوان (اختياري)</label>
-    <input class="input" [(ngModel)]="form.address" placeholder="الحي، الشارع">
+    <label for="branches-f3">العنوان (اختياري)</label>
+    <input id="branches-f3" class="input" [(ngModel)]="form.address" placeholder="الحي، الشارع">
+  </div>
+  <div class="field">
+    <label for="branches-f4">هاتف الفرع (اختياري)</label>
+    <input id="branches-f4" class="input" dir="ltr" [(ngModel)]="form.phone" placeholder="0112345678">
+  </div>
+  <div class="grid-2">
+    <div class="field">
+      <label for="branches-f5">يفتح الساعة</label>
+      <input id="branches-f5" class="input" type="time" [(ngModel)]="form.opensAt">
+    </div>
+    <div class="field">
+      <label for="branches-f6">يغلق الساعة</label>
+      <input id="branches-f6" class="input" type="time" [(ngModel)]="form.closesAt">
+    </div>
   </div>
   <div class="field flex gap-8" style="align-items: center">
     <input type="checkbox" id="bActive" [(ngModel)]="form.active" style="width: 20px; height: 20px">

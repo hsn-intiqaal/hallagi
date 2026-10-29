@@ -11,27 +11,27 @@
       <div class="kpi"><div class="l">قيمة خدماتي</div><div class="v money">{{ s.barber?.summary?.total ?? 0 | sar }}</div></div>
     </div>
 
-    <div class="card mb-16" *ngIf="s.barber?.compensation">
+    <div class="card mb-16" *ngIf="s.barber?.compensation as comp">
       <h2 class="mb-8">مستحقاتي التقديرية</h2>
       <div class="flex gap-16 wrap" style="align-items: flex-end">
         <div>
           <div class="text-2 text-sm">طريقة التعويض</div>
-          <div style="font-weight: 700">{{ s.barber.compensation.typeText }}</div>
+          <div style="font-weight: 700">{{ comp.typeText }}</div>
         </div>
-        <div *ngIf="s.barber.compensation.monthlySalary !== null">
+        <div *ngIf="comp.monthlySalary !== null">
           <div class="text-2 text-sm">الراتب الشهري</div>
-          <div class="money" style="font-size: 1.3rem; font-weight: 800">{{ s.barber.compensation.monthlySalary | sar }}</div>
+          <div class="money" style="font-size: 1.3rem; font-weight: 800">{{ comp.monthlySalary | sar }}</div>
         </div>
-        <div *ngIf="s.barber.compensation.commissionRate !== null">
+        <div *ngIf="comp.commissionRate !== null">
           <div class="text-2 text-sm">نسبة العمولة</div>
-          <div style="font-size: 1.3rem; font-weight: 800">{{ s.barber.compensation.commissionRate | pct }}</div>
+          <div style="font-size: 1.3rem; font-weight: 800">{{ comp.commissionRate | pct }}</div>
         </div>
-        <div *ngIf="s.barber.compensation.estimatedCommission !== null">
+        <div *ngIf="comp.estimatedCommission !== null">
           <div class="text-2 text-sm">العمولة التقديرية</div>
-          <div class="money" style="font-size: 1.3rem; font-weight: 800">{{ s.barber.compensation.estimatedCommission | sar }}</div>
+          <div class="money" style="font-size: 1.3rem; font-weight: 800">{{ comp.estimatedCommission | sar }}</div>
         </div>
       </div>
-      <p class="explain" *ngIf="s.barber.compensation.explanation">{{ s.barber.compensation.explanation }}</p>
+      <p class="explain" *ngIf="comp.explanation">{{ comp.explanation }}</p>
       <p class="text-2 text-sm mt-8" *ngIf="!s.canViewDues">(قد تكون بعض التفاصيل غير معروضة حسب صلاحياتك)</p>
     </div>
 

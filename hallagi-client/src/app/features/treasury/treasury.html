@@ -14,6 +14,9 @@
 
   <div *ngIf="loading()"><app-loading message="جارٍ تحميل الخزينة…" /></div>
 
+  <app-empty *ngIf="!loading() && !branches.scopeId()" icon="building" title="اختر فرعًا"
+    message="لكل فرع درج نقدي ووردية مستقلة — اختر الفرع من الشريط العلوي لإدارة خزينته." />
+
   <ng-container *ngIf="state() as s">
     <!-- الوردية المفتوحة -->
     <div class="shift-card" *ngIf="s.current as c; else noShift">
@@ -96,14 +99,14 @@
 </div>
 
 <!-- فتح وردية -->
-<app-modal *ngIf="showOpen()" title="فتح وردية" (close)="showOpen.set(false)">
+<app-modal *ngIf="showOpen()" title="فتح وردية" (dismiss)="showOpen.set(false)">
   <div class="field">
-    <label>الرصيد النقدي الافتتاحي في الدرج</label>
-    <input class="input" type="number" min="0" [(ngModel)]="openCash" placeholder="200">
+    <label for="treasury-f1">الرصيد النقدي الافتتاحي في الدرج</label>
+    <input id="treasury-f1" class="input" type="number" min="0" [(ngModel)]="openCash" placeholder="200">
   </div>
   <div class="field">
-    <label>المستخدم المسؤول</label>
-    <input class="input" [value]="auth.profile()?.fullName" disabled>
+    <label for="treasury-f2">المستخدم المسؤول</label>
+    <input id="treasury-f2" class="input" [value]="auth.profile()?.fullName" disabled>
   </div>
   <p class="text-2 text-sm">لا يمكن فتح ورديتين على الدرج نفسه. إذا كانت هناك وردية قديمة مفتوحة فأغلقها أولاً.</p>
   <div footer class="flex gap-8">
@@ -113,7 +116,7 @@
 </app-modal>
 
 <!-- إقفال وردية -->
-<app-modal *ngIf="showClose() && state()?.current as c" title="إقفال الوردية" (close)="showClose.set(false)">
+<app-modal *ngIf="showClose() && state()?.current as c" title="إقفال الوردية" (dismiss)="showClose.set(false)">
   <table class="table mb-16">
     <tbody>
       <tr><td>الرصيد الافتتاحي</td><td class="money">{{ c.openingCash | sar }}</td></tr>
@@ -125,8 +128,8 @@
   </table>
 
   <div class="field">
-    <label>النقدية الفعلية التي عدّها الموظف</label>
-    <input class="input" type="number" min="0" [(ngModel)]="countedCash" placeholder="أدخل المبلغ المعدود">
+    <label for="treasury-f3">النقدية الفعلية التي عدّها الموظف</label>
+    <input id="treasury-f3" class="input" type="number" min="0" [(ngModel)]="countedCash" placeholder="أدخل المبلغ المعدود">
   </div>
 
   <div class="diff-box ok" *ngIf="difference() === 0">

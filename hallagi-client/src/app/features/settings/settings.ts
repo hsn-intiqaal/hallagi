@@ -1,15 +1,15 @@
 import { NgIf, NgFor } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService } from '../../core/api.service';
-import { AuthService } from '../../core/auth.service';
-import { ToastService } from '../../core/toast.service';
-import { ThemeService } from '../../core/theme.service';
-import { Settings as SettingsModel } from '../../core/models';
-import { Icon } from '../../shared/icon';
-import { SarPipe } from '../../core/format.pipes';
-import { LoadingRow } from '../../shared/ui';
-import { resizeImageFile } from '../../shared/image-upload';
+import { ApiService, ApiFailure } from '@core/http/api.service';
+import { AuthService } from '@core/auth/auth.service';
+import { ToastService } from '@core/state/toast.service';
+import { ThemeService } from '@core/state/theme.service';
+import { BookingSettings, LoyaltySettings, Settings as SettingsModel, TaxSettings, CurrentSubscription, SubscriptionPlan } from '@core/models';
+import { Icon } from '@shared/ui/icon';
+import { SarPipe } from '@shared/pipes/format.pipes';
+import { LoadingRow } from '@shared/ui/ui';
+import { resizeImageFile } from '@shared/ui/image-upload';
 
 interface Palette { name: string; primary: string; secondary: string; }
 
@@ -31,8 +31,8 @@ export class Settings implements OnInit {
 
   readonly loading = signal(true);
   readonly canManage = signal(false);
-  readonly subscription = signal<any>(null);
-  readonly plans = signal<any[]>([]);
+  readonly subscription = signal<CurrentSubscription | null>(null);
+  readonly plans = signal<SubscriptionPlan[]>([]);
   readonly savingPlan = signal(false);
   readonly logoUrl = signal<string | null>(null);
   readonly coverUrl = signal<string | null>(null);
@@ -46,6 +46,14 @@ export class Settings implements OnInit {
   };
   password = { current: '', next: '' };
 
+  tax: TaxSettings = {
+    vatEnabled: false, vatRate: 0.15, pricesIncludeVat: true,
+    vatNumber: null, commercialRegistration: null, legalName: null, taxAddress: null
+  };
+  loyalty: LoyaltySettings = { enabled: false, pointsPerSar: 1, pointValue: 0.05, minRedeem: 100 };
+  booking: BookingSettings = { enabled: false, slug: null, slotMinutes: 15, maxDaysAhead: 14 };
+  maxManualDiscountPercent = 30;
+
   readonly palettes: Palette[] = [
     { name: 'كحلي كلاسيكي', primary: '#2563EB', secondary: '#173653' },
     { name: 'ذهبي ملكي', primary: '#C79A3B', secondary: '#2A2113' },
@@ -57,15 +65,13 @@ export class Settings implements OnInit {
   ];
 
   ngOnInit(): void {
-    this.api.get<any>('/auth/me').subscribe({
-      next: (m: any) => this.canManage.set(m.permissions?.['settings.manage'] === true)
-    });
-    this.api.get<any>('/subscription').subscribe({
+    this.canManage.set(this.auth.can('settings.manage'));
+    this.api.get<CurrentSubscription>('/subscription').subscribe({
       next: s => this.subscription.set(s),
       error: () => this.subscription.set(null)
     });
-    this.api.get<any>('/subscription/plans').subscribe({
-      next: (res: any) => this.plans.set(res),
+    this.api.get<SubscriptionPlan[]>('/subscription/plans').subscribe({
+      next: res => this.plans.set(res),
       error: () => this.plans.set([])
     });
     this.api.get<SettingsModel>('/settings').subscribe({
@@ -81,11 +87,15 @@ export class Settings implements OnInit {
           primaryColor: s.organization?.primaryColor ?? DEFAULT_PRIMARY,
           secondaryColor: s.organization?.secondaryColor ?? DEFAULT_SECONDARY
         };
+        this.tax = { ...s.tax };
+        this.loyalty = { ...s.loyalty };
+        this.booking = { ...s.booking };
+        this.maxManualDiscountPercent = s.settings.maxManualDiscountPercent;
         this.logoUrl.set(s.organization?.logoUrl ?? null);
         this.coverUrl.set(s.organization?.coverImageUrl ?? null);
         this.loading.set(false);
       },
-      error: (e: any) => { this.toast.error(e?.message ?? 'تعذّر تحميل الإعدادات'); this.loading.set(false); }
+      error: (e: ApiFailure) => { this.toast.error(e?.message ?? 'تعذّر تحميل الإعدادات'); this.loading.set(false); }
     });
   }
 
@@ -119,8 +129,41 @@ export class Settings implements OnInit {
     }
   }
 
+  /** Saudi VAT registration: 15 digits starting and ending with 3. */
+  vatNumberValid(): boolean {
+    return /^3\d{13}3$/.test(this.tax.vatNumber ?? '');
+  }
+
+  /** 100 points × 0.05 = 5 SAR → shown as a percentage of spend returned to the customer. */
+  loyaltyReturnPercent(): number {
+    return Math.round(this.loyalty.pointsPerSar * this.loyalty.pointValue * 1000) / 10;
+  }
+
+  subscriptionStatus(): string {
+    const labels: Record<string, string> = { Active: 'نشط', Trial: 'فترة تجريبية', PastDue: 'متأخر السداد', Cancelled: 'ملغى' };
+    const status = this.subscription()?.status as string | undefined;
+    return status ? labels[status] ?? status : '—';
+  }
+
+  bookingUrl(): string | null {
+    return this.booking.slug ? `${location.origin}/book/${this.booking.slug}` : null;
+  }
+
+  copyBookingUrl(): void {
+    const url = this.bookingUrl();
+    if (!url) return;
+    navigator.clipboard?.writeText(url).then(
+      () => this.toast.success('تم نسخ رابط الحجز'),
+      () => this.toast.info(url)
+    );
+  }
+
   save(): void {
     if (!this.form.organizationName.trim()) { this.toast.error('اسم المنشأة مطلوب'); return; }
+    if (this.tax.vatEnabled && !this.vatNumberValid()) {
+      this.toast.error('الرقم الضريبي يجب أن يكون 15 رقمًا يبدأ وينتهي بالرقم 3');
+      return;
+    }
     this.api.put('/settings', {
       organizationName: this.form.organizationName.trim(),
       currency: this.form.currency,
@@ -132,10 +175,19 @@ export class Settings implements OnInit {
       receiptPhone: this.form.receiptPhone?.trim() || null,
       coverImageUrl: this.coverRemoved() ? '' : this.coverUrl(),
       primaryColor: this.form.primaryColor,
-      secondaryColor: this.form.secondaryColor
+      secondaryColor: this.form.secondaryColor,
+      tax: { ...this.tax, vatRate: Number(this.tax.vatRate) },
+      loyalty: this.loyalty,
+      booking: { ...this.booking, slug: this.booking.slug?.trim().toLowerCase() || null },
+      maxManualDiscountPercent: Number(this.maxManualDiscountPercent)
     }).subscribe({
-      next: () => { this.toast.success('تم حفظ الإعدادات بنجاح'); this.auth.refreshMe(); },
-      error: (e: any) => this.toast.error(e?.message ?? 'تعذّر حفظ الإعدادات')
+      next: () => {
+        this.toast.success('تم حفظ الإعدادات بنجاح');
+        this.auth.refreshMe();
+        // the server may have generated a booking slug
+        this.api.get<SettingsModel>('/settings').subscribe({ next: s => (this.booking = { ...s.booking }) });
+      },
+      error: (e: ApiFailure) => this.toast.error(e?.message ?? 'تعذّر حفظ الإعدادات')
     });
   }
 
@@ -143,7 +195,7 @@ export class Settings implements OnInit {
     if (this.password.next.length < 6) { this.toast.error('كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل'); return; }
     this.api.post('/auth/change-password', { currentPassword: this.password.current, newPassword: this.password.next }).subscribe({
       next: () => { this.toast.success('تم تغيير كلمة المرور بنجاح'); this.password = { current: '', next: '' }; },
-      error: (e: any) => this.toast.error(e?.message ?? 'تعذّر تغيير كلمة المرور')
+      error: (e: ApiFailure) => this.toast.error(e?.message ?? 'تعذّر تغيير كلمة المرور')
     });
   }
 
@@ -153,9 +205,9 @@ export class Settings implements OnInit {
       next: () => {
         this.savingPlan.set(false);
         this.toast.success('تم تغيير الخطة بنجاح');
-        this.api.get<any>('/subscription').subscribe({ next: s => this.subscription.set(s) });
+        this.api.get<CurrentSubscription>('/subscription').subscribe({ next: s => this.subscription.set(s) });
       },
-      error: (e: any) => { this.savingPlan.set(false); this.toast.error(e?.message ?? 'تعذّر تغيير الخطة'); }
+      error: (e: ApiFailure) => { this.savingPlan.set(false); this.toast.error(e?.message ?? 'تعذّر تغيير الخطة'); }
     });
   }
 }

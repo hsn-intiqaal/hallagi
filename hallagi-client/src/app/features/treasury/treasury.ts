@@ -1,25 +1,25 @@
 import { NgIf, NgFor } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService } from '../../core/api.service';
-import { BranchContext } from '../../core/branch-context';
-import { AuthService } from '../../core/auth.service';
-import { ToastService } from '../../core/toast.service';
-import { TreasuryState, ShiftRow } from '../../core/models';
-import { Icon } from '../../shared/icon';
-import { DateTimeArPipe, SarPipe, DateShortPipe } from '../../core/format.pipes';
-import { LoadingRow, Modal } from '../../shared/ui';
+import { ApiService, ApiFailure } from '@core/http/api.service';
+import { BranchContext } from '@core/state/branch-context';
+import { AuthService } from '@core/auth/auth.service';
+import { ToastService } from '@core/state/toast.service';
+import { TreasuryState, ShiftRow, Paged, ShiftResult } from '@core/models';
+import { Icon } from '@shared/ui/icon';
+import { DateTimeArPipe, SarPipe, DateShortPipe } from '@shared/pipes/format.pipes';
+import { EmptyState, LoadingRow, Modal } from '@shared/ui/ui';
 
 @Component({
   selector: 'app-treasury',
   standalone: true,
-  imports: [FormsModule, Icon, DateTimeArPipe, SarPipe, DateShortPipe, LoadingRow, Modal, NgIf, NgFor],
+  imports: [FormsModule, Icon, DateTimeArPipe, SarPipe, DateShortPipe, LoadingRow, Modal, EmptyState, NgIf, NgFor],
   templateUrl: './treasury.html',
   styleUrl: './treasury.scss'
 })
 export class Treasury implements OnInit {
   private api = inject(ApiService);
-  private branches = inject(BranchContext);
+  readonly branches = inject(BranchContext);
   readonly auth = inject(AuthService);
   private toast = inject(ToastService);
 
@@ -43,25 +43,25 @@ export class Treasury implements OnInit {
   });
 
   ngOnInit(): void {
-    this.api.get<any>('/auth/me').subscribe({
-      next: (m: any) => {
-        this.canOpen.set(m.permissions?.['shift.open'] === true);
-        this.canClose.set(m.permissions?.['shift.close'] === true);
-      }
-    });
+    this.canOpen.set(this.auth.can('shift.open'));
+    this.canClose.set(this.auth.can('shift.close'));
     this.load();
   }
 
   load(): void {
     const id = this.branches.scopeId();
-    if (!id) return;
+    if (!id) {
+      // the drawer belongs to one branch: "all branches" has no single treasury
+      this.loading.set(false);
+      return;
+    }
     this.loading.set(true);
     this.api.get<TreasuryState>('/treasury/state', { branchId: id }).subscribe({
       next: s => { this.state.set(s); this.loading.set(false); },
-      error: (e: any) => { this.toast.error(e?.message ?? 'تعذّر تحميل بيانات الخزينة'); this.loading.set(false); }
+      error: (e: ApiFailure) => { this.toast.error(e?.message ?? 'تعذّر تحميل بيانات الخزينة'); this.loading.set(false); }
     });
-    this.api.get<any>('/treasury/shifts', { branchId: id, pageSize: 10 }).subscribe({
-      next: (res: any) => this.history.set(res.items),
+    this.api.get<Paged<ShiftRow>>('/treasury/shifts', { branchId: id, pageSize: 10 }).subscribe({
+      next: res => this.history.set(res.items),
       error: () => { /* history is secondary */ }
     });
   }
@@ -70,9 +70,9 @@ export class Treasury implements OnInit {
 
   confirmOpen(): void {
     if (this.openCash < 0) { this.toast.error('أدخل رصيدًا افتتاحيًا صحيحًا'); return; }
-    this.api.post<any>('/treasury/open', { branchId: this.branches.scopeId(), openingCash: this.openCash }).subscribe({
+    this.api.post<ShiftResult>('/treasury/open', { branchId: this.branches.scopeId(), openingCash: this.openCash }).subscribe({
       next: () => { this.toast.success('تم فتح الوردية بنجاح'); this.showOpen.set(false); this.load(); },
-      error: (e: any) => this.toast.error(e?.message ?? 'تعذّر فتح الوردية')
+      error: (e: ApiFailure) => this.toast.error(e?.message ?? 'تعذّر فتح الوردية')
     });
   }
 
@@ -85,18 +85,18 @@ export class Treasury implements OnInit {
   confirmClose(): void {
     if (this.countedCash === null || this.countedCash < 0) { this.toast.error('أدخل النقدية التي عدّها الموظف'); return; }
     this.closeSaving.set(true);
-    this.api.post<any>('/treasury/close', {
+    this.api.post<ShiftResult>('/treasury/close', {
       branchId: this.branches.scopeId(),
       countedCash: this.countedCash,
       note: this.closeNote?.trim() || null
     }).subscribe({
-      next: (res: any) => {
+      next: res => {
         this.closeSaving.set(false);
         this.showClose.set(false);
         this.toast.success(`تم إقفال الوردية — ${res.differenceText}`);
         this.load();
       },
-      error: (e: any) => { this.closeSaving.set(false); this.toast.error(e?.message ?? 'تعذّر إقفال الوردية'); }
+      error: (e: ApiFailure) => { this.closeSaving.set(false); this.toast.error(e?.message ?? 'تعذّر إقفال الوردية'); }
     });
   }
 }

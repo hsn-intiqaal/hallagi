@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <!-- LINQ-to-entities (Include, AsNoTracking, DbSet) is the query language of the use cases -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Hallagi.Domain\Hallagi.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

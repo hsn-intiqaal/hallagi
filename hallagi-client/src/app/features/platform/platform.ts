@@ -2,12 +2,14 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { NgIf, NgFor } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { ApiService } from '../../core/api.service';
-import { AuthService } from '../../core/auth.service';
-import { ToastService } from '../../core/toast.service';
-import { DateShortPipe, SarPipe } from '../../core/format.pipes';
-import { Icon } from '../../shared/icon';
-import { EmptyState, LoadingRow, StatCard, Modal } from '../../shared/ui';
+import { ApiService, ApiFailure } from '@core/http/api.service';
+import { AuthService } from '@core/auth/auth.service';
+import { ToastService } from '@core/state/toast.service';
+import { DateShortPipe, SarPipe } from '@shared/pipes/format.pipes';
+import { Icon } from '@shared/ui/icon';
+import { EmptyState, LoadingRow, StatCard, Modal } from '@shared/ui/ui';
+import { APP_CONFIG } from '@core/config/app-config';
+import { PlatformStats } from '@core/models';
 
 interface Org {
   id: string; name: string; currency: string; timeZone: string;
@@ -30,11 +32,12 @@ interface Plan { id: string; name: string; description: string; maxBranches: num
 })
 export class Platform implements OnInit {
   private api = inject(ApiService);
+  readonly brand = inject(APP_CONFIG).brand;
   readonly auth = inject(AuthService);
   private toast = inject(ToastService);
   private router = inject(Router);
 
-  readonly stats = signal<any>(null);
+  readonly stats = signal<PlatformStats | null>(null);
   readonly orgs = signal<Org[]>([]);
   readonly plans = signal<Plan[]>([]);
   readonly loading = signal(true);
@@ -47,21 +50,21 @@ export class Platform implements OnInit {
 
   ngOnInit(): void {
     this.load();
-    this.api.get<any>('/platform/plans').subscribe({
-      next: (res: any) => this.plans.set(res),
+    this.api.get<Plan[]>('/platform/plans').subscribe({
+      next: res => this.plans.set(res),
       error: () => this.plans.set([])
     });
   }
 
   load(): void {
     this.loading.set(true);
-    this.api.get<any>('/platform/stats').subscribe({
+    this.api.get<PlatformStats>('/platform/stats').subscribe({
       next: s => this.stats.set(s),
-      error: (e: any) => this.toast.error(e?.message ?? 'تعذّر تحميل الإحصائيات')
+      error: (e: ApiFailure) => this.toast.error(e?.message ?? 'تعذّر تحميل الإحصائيات')
     });
     this.api.get<{ items: Org[] }>('/platform/organizations', { search: this.search }).subscribe({
       next: res => { this.orgs.set(res.items); this.loading.set(false); },
-      error: (e: any) => { this.loading.set(false); this.toast.error(e?.message ?? 'تعذّر تحميل المنشآت'); }
+      error: (e: ApiFailure) => { this.loading.set(false); this.toast.error(e?.message ?? 'تعذّر تحميل المنشآت'); }
     });
   }
 
@@ -78,7 +81,7 @@ export class Platform implements OnInit {
     if (!this.branchForm.name.trim()) { this.toast.error('اسم الفرع مطلوب'); return; }
     this.api.post(`/platform/organizations/${org.id}/branches`, { name: this.branchForm.name.trim(), city: this.branchForm.city.trim() }).subscribe({
       next: () => { this.toast.success('تمت إضافة الفرع'); this.branchTarget.set(null); this.load(); },
-      error: (e: any) => this.toast.error(e?.message ?? 'تعذّر إضافة الفرع')
+      error: (e: ApiFailure) => this.toast.error(e?.message ?? 'تعذّر إضافة الفرع')
     });
   }
 
@@ -89,14 +92,14 @@ export class Platform implements OnInit {
     if (!org) return;
     this.api.post(`/platform/organizations/${org.id}/plan`, { planId }).subscribe({
       next: () => { this.toast.success('تم تغيير الخطة'); this.planTarget.set(null); this.load(); },
-      error: (e: any) => this.toast.error(e?.message ?? 'تعذّر تغيير الخطة')
+      error: (e: ApiFailure) => this.toast.error(e?.message ?? 'تعذّر تغيير الخطة')
     });
   }
 
   setStatus(org: Org, status: string): void {
     this.api.post(`/platform/organizations/${org.id}/subscription-status`, { status }).subscribe({
       next: () => { this.toast.success('تم تحديث حالة الاشتراك'); this.load(); },
-      error: (e: any) => this.toast.error(e?.message ?? 'تعذّر تحديث الحالة')
+      error: (e: ApiFailure) => this.toast.error(e?.message ?? 'تعذّر تحديث الحالة')
     });
   }
 
@@ -108,4 +111,11 @@ export class Platform implements OnInit {
   }
 
   logout(): void { this.auth.logout(); }
+
+  statusText(status: string | null | undefined): string {
+    const labels: Record<string, string> = {
+      Active: 'اشتراك فعّال', Trial: 'فترة تجريبية', PastDue: 'متأخر السداد', Suspended: 'موقوف', Cancelled: 'ملغى'
+    };
+    return status ? labels[status] ?? status : 'بدون اشتراك';
+  }
 }

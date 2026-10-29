@@ -1,12 +1,14 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { NgIf, NgFor } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService } from '../../core/api.service';
-import { AuthService } from '../../core/auth.service';
-import { ToastService } from '../../core/toast.service';
-import { DateShortPipe, SarPipe } from '../../core/format.pipes';
-import { Icon } from '../../shared/icon';
-import { EmptyState, LoadingRow, Modal } from '../../shared/ui';
+import { endOfMonth, startOfMonth } from '@core/time/local-date';
+import { ApiService, ApiFailure } from '@core/http/api.service';
+import { AuthService } from '@core/auth/auth.service';
+import { ToastService } from '@core/state/toast.service';
+import { DateShortPipe, SarPipe } from '@shared/pipes/format.pipes';
+import { Icon } from '@shared/ui/icon';
+import { EmptyState, LoadingRow, Modal } from '@shared/ui/ui';
+import { ApiMessage } from '@core/models';
 
 interface Period { id: string; name: string; startDate: string; endDate: string; status: string; settlementsCount: number; draftCount: number; approvedCount: number; paidCount: number; totalNet: number; }
 interface Settlement {
@@ -59,7 +61,7 @@ export class Settlements implements OnInit {
         if (res.items.length > 0) this.selectPeriod(res.items[0]);
         else { this.selectedPeriod.set(null); this.settlements.set([]); this.loading.set(false); }
       },
-      error: (e: any) => { this.toast.error(e?.message ?? 'تعذّر تحميل الفترات المالية'); this.loading.set(false); }
+      error: (e: ApiFailure) => { this.toast.error(e?.message ?? 'تعذّر تحميل الفترات المالية'); this.loading.set(false); }
     });
   }
 
@@ -77,13 +79,11 @@ export class Settlements implements OnInit {
   }
 
   openNewPeriod(): void {
-    const today = new Date();
-    const first = new Date(today.getFullYear(), today.getMonth(), 1);
-    const last = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    const today = this.auth.today();
     this.newPeriod = {
-      name: today.toLocaleDateString('ar-SA-u-nu-latn', { month: 'long', year: 'numeric' }),
-      startDate: first.toISOString().slice(0, 10),
-      endDate: last.toISOString().slice(0, 10)
+      name: new Date(today + 'T12:00:00').toLocaleDateString('ar-SA-u-nu-latn-ca-gregory', { month: 'long', year: 'numeric' }),
+      startDate: startOfMonth(today),
+      endDate: endOfMonth(today)
     };
     this.showNewPeriod.set(true);
   }
@@ -93,9 +93,9 @@ export class Settlements implements OnInit {
       this.toast.error('أكمل اسم الفترة والتواريخ');
       return;
     }
-    this.api.post<any>('/settlements/periods', this.newPeriod).subscribe({
+    this.api.post<ApiMessage>('/settlements/periods', this.newPeriod).subscribe({
       next: () => { this.toast.success('تم إنشاء الفترة المالية'); this.showNewPeriod.set(false); this.loadPeriods(); },
-      error: (e: any) => this.toast.error(e?.message ?? 'تعذّر إنشاء الفترة')
+      error: (e: ApiFailure) => this.toast.error(e?.message ?? 'تعذّر إنشاء الفترة')
     });
   }
 
@@ -103,13 +103,13 @@ export class Settlements implements OnInit {
     const p = this.selectedPeriod();
     if (!p) return;
     this.previewing.set(true);
-    this.api.post<any>(`/settlements/periods/${p.id}/preview`, {}).subscribe({
-      next: (res: any) => {
+    this.api.post<{ settlements?: Settlement[] }>(`/settlements/periods/${p.id}/preview`, {}).subscribe({
+      next: res => {
         this.settlements.set(res.settlements ?? []);
         this.previewing.set(false);
         this.toast.success(`تم حساب ${res.settlements?.length ?? 0} تسوية (مسودات)`);
       },
-      error: (e: any) => { this.previewing.set(false); this.toast.error(e?.message ?? 'تعذّر حساب التسويات'); }
+      error: (e: ApiFailure) => { this.previewing.set(false); this.toast.error(e?.message ?? 'تعذّر حساب التسويات'); }
     });
   }
 
@@ -121,7 +121,7 @@ export class Settlements implements OnInit {
         this.workingId.set(null);
         this.reload();
       },
-      error: (e: any) => { this.workingId.set(null); this.toast.error(e?.message ?? 'تعذّر اعتماد التسوية'); }
+      error: (e: ApiFailure) => { this.workingId.set(null); this.toast.error(e?.message ?? 'تعذّر اعتماد التسوية'); }
     });
   }
 
@@ -137,7 +137,7 @@ export class Settlements implements OnInit {
     this.workingId.set(s.id);
     this.api.post(`/settlements/${s.id}/pay`, { amount: this.payAmount, method: this.payMethod }).subscribe({
       next: () => { this.toast.success('تم تسجيل الدفعة'); this.payTarget.set(null); this.workingId.set(null); this.reload(); },
-      error: (e: any) => { this.workingId.set(null); this.toast.error(e?.message ?? 'تعذّر تسجيل الدفعة'); }
+      error: (e: ApiFailure) => { this.workingId.set(null); this.toast.error(e?.message ?? 'تعذّر تسجيل الدفعة'); }
     });
   }
 
@@ -149,7 +149,7 @@ export class Settlements implements OnInit {
     if (!this.cancelReason.trim()) { this.toast.error('اكتب سبب الإلغاء'); return; }
     this.api.post(`/settlements/${s.id}/cancel`, { reason: this.cancelReason.trim() }).subscribe({
       next: () => { this.toast.success('تم إلغاء التسوية'); this.cancelTarget.set(null); this.reload(); },
-      error: (e: any) => this.toast.error(e?.message ?? 'تعذّر إلغاء التسوية')
+      error: (e: ApiFailure) => this.toast.error(e?.message ?? 'تعذّر إلغاء التسوية')
     });
   }
 

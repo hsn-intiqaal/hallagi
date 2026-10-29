@@ -25,22 +25,22 @@
           </div>
         </div>
         <div class="field">
-          <label>اسم المنشأة <span class="req">*</span></label>
-          <input class="input" [(ngModel)]="form.name" placeholder="مثال: صالون الأمانة للحلاقة">
+          <label for="org-create-f1">اسم المنشأة <span class="req">*</span></label>
+          <input id="org-create-f1" class="input" [(ngModel)]="form.name" placeholder="مثال: صالون الأمانة للحلاقة">
         </div>
         <div class="flex gap-16 wrap">
           <div class="field grow">
-            <label>المدينة <span class="req">*</span></label>
-            <input class="input" [(ngModel)]="form.city" placeholder="الرياض">
+            <label for="org-create-f2">المدينة <span class="req">*</span></label>
+            <input id="org-create-f2" class="input" [(ngModel)]="form.city" placeholder="الرياض">
           </div>
           <div class="field grow">
-            <label>الفرع الأول</label>
-            <input class="input" [(ngModel)]="form.branchName" placeholder="الفرع الرئيسي">
+            <label for="org-create-f3">الفرع الأول</label>
+            <input id="org-create-f3" class="input" [(ngModel)]="form.branchName" placeholder="الفرع الرئيسي">
           </div>
         </div>
         <div class="field">
-          <label>العنوان (اختياري)</label>
-          <input class="input" [(ngModel)]="form.address" placeholder="الحي، الشارع">
+          <label for="org-create-f4">العنوان (اختياري)</label>
+          <input id="org-create-f4" class="input" [(ngModel)]="form.address" placeholder="الحي، الشارع">
         </div>
       </section>
 
@@ -55,7 +55,7 @@
         </div>
 
         <!-- شعار -->
-        <label class="picker-label">شعار المنشأة</label>
+        <span class="field-label" class="picker-label">شعار المنشأة</span>
         <div class="logo-picker">
           <div class="logo-preview" [style.border-color]="safePrimary()">
             <img *ngIf="logoUrl()" [src]="logoUrl()" alt="شعار المنشأة">
@@ -74,7 +74,7 @@
         </div>
 
         <!-- غلاف -->
-        <label class="picker-label mt-16">صورة الغلاف</label>
+        <span class="field-label" class="picker-label mt-16">صورة الغلاف</span>
         <div class="cover-picker" [class.has-image]="coverUrl()"
              [style.background-image]="coverUrl() ? 'url(' + coverUrl() + ')' : coverGradient()">
           <div class="cover-overlay">
@@ -93,14 +93,14 @@
         <!-- الألوان -->
         <div class="colors-row">
           <div class="color-field">
-            <label class="picker-label">اللون الأساسي</label>
+            <span class="field-label" class="picker-label">اللون الأساسي</span>
             <div class="color-inputs">
               <input type="color" class="color-swatch" [(ngModel)]="form.primaryColor" aria-label="اللون الأساسي">
               <input class="input hex-input" [(ngModel)]="form.primaryColor" dir="ltr" maxlength="7" spellcheck="false">
             </div>
           </div>
           <div class="color-field">
-            <label class="picker-label">اللون الثانوي</label>
+            <span class="field-label" class="picker-label">اللون الثانوي</span>
             <div class="color-inputs">
               <input type="color" class="color-swatch" [(ngModel)]="form.secondaryColor" aria-label="اللون الثانوي">
               <input class="input hex-input" [(ngModel)]="form.secondaryColor" dir="ltr" maxlength="7" spellcheck="false">
@@ -109,7 +109,7 @@
         </div>
 
         <!-- لوحات جاهزة -->
-        <label class="picker-label">لوحات ألوان جاهزة</label>
+        <span class="field-label" class="picker-label">لوحات ألوان جاهزة</span>
         <div class="palettes">
           <button *ngFor="let p of palettes" class="palette" type="button" (click)="applyPreset(p)">
             <span class="palette-dots">
@@ -131,19 +131,19 @@
           </div>
         </div>
         <div class="field">
-          <label>اسم المالك</label>
-          <input class="input" [(ngModel)]="form.ownerName" placeholder="مثال: عبدالله الدوسري">
+          <label for="org-create-f5">اسم المالك</label>
+          <input id="org-create-f5" class="input" [(ngModel)]="form.ownerName" placeholder="مثال: عبدالله الدوسري">
         </div>
         <div class="field">
-          <label>البريد الإلكتروني <span class="req">*</span></label>
-          <input class="input" type="email" [(ngModel)]="form.ownerEmail" dir="ltr" placeholder="owner@example.com">
+          <label for="org-create-f6">البريد الإلكتروني <span class="req">*</span></label>
+          <input id="org-create-f6" class="input" type="email" [(ngModel)]="form.ownerEmail" dir="ltr" placeholder="owner@example.com">
         </div>
         <div class="field">
-          <label>رقم الجوال (اختياري)</label>
-          <input class="input" [(ngModel)]="form.ownerPhone" dir="ltr" placeholder="05xxxxxxxx">
+          <label for="org-create-f7">رقم الجوال (اختياري)</label>
+          <input id="org-create-f7" class="input" [(ngModel)]="form.ownerPhone" dir="ltr" placeholder="05xxxxxxxx">
         </div>
         <div class="field">
-          <label>كلمة مرور مؤقتة <span class="req">*</span></label>
+          <span class="field-label">كلمة مرور مؤقتة <span class="req">*</span></span>
           <div class="flex gap-8">
             <input class="input grow" [(ngModel)]="form.ownerPassword" dir="ltr" placeholder="6 أحرف على الأقل">
             <button class="btn btn-outline" type="button" (click)="generatePassword()">

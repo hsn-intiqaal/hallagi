@@ -8,7 +8,7 @@
     </span>
     <span class="brand-text">
       <span class="org-name">{{ auth.me()?.organization?.name }}</span>
-      <span class="brand-sub">حلاقي</span>
+      <span class="brand-sub">{{ brand.name }}</span>
     </span>
   </div>
 
@@ -74,14 +74,15 @@
 
 <div class="body">
   <aside class="sidebar no-print">
-    <a *ngFor="let item of visibleItems()" class="side-link"
-       [routerLink]="item.path" routerLinkActive="active">
-      <app-icon class="nav-icon" [name]="item.icon" [size]="20"></app-icon>
-      <span>{{ item.label }}</span>
-    </a>
+    <ng-container *ngFor="let g of visibleGroups(); let first = first">
+      <div class="side-section" [class.first]="first">{{ g.label }}</div>
+      <a *ngFor="let item of g.items" class="side-link" [routerLink]="item.path" routerLinkActive="active">
+        <app-icon class="nav-icon" [name]="item.icon" [size]="20"></app-icon>
+        <span>{{ item.label }}</span>
+      </a>
+    </ng-container>
     <div class="grow"></div>
-    <div class="side-section">الإصدار التجريبي</div>
-    <div class="text-2 text-sm" style="padding: 0 14px 8px">حلاقي — محلك في يدك</div>
+    <div class="side-brand text-2 text-sm">{{ brand.name }} — {{ brand.tagline }}</div>
     <button *ngIf="auth.isLoggedIn()" class="side-link side-logout" (click)="requestLogout()">
       <app-icon class="nav-icon" name="logout" [size]="20"></app-icon>
       <span>تسجيل الخروج</span>
@@ -89,7 +90,15 @@
   </aside>
 
   <main class="main">
-    <router-outlet />
+    <!-- Pages render once the session and branch scope are known, and are re-created when the
+         branch changes so every screen reloads its data for the newly selected branch. -->
+    @if (branches.ready()) {
+      @for (scope of [branches.currentBranchId() ?? 'all']; track scope) {
+        <router-outlet />
+      }
+    } @else {
+      <app-loading message="جارٍ تجهيز حسابك…" />
+    }
   </main>
 </div>
 
@@ -106,7 +115,7 @@
   </a>
 </nav>
 
-<app-modal *ngIf="logoutConfirmOpen()" title="تأكيد تسجيل الخروج" [showFooter]="true" (close)="cancelLogout()">
+<app-modal *ngIf="logoutConfirmOpen()" title="تأكيد تسجيل الخروج" [showFooter]="true" (dismiss)="cancelLogout()">
   <div class="logout-confirm">
     <div class="logout-icon"><app-icon name="logout" [size]="28"></app-icon></div>
     <p class="logout-title">هل أنت متأكد من رغبتك في تسجيل الخروج؟</p>

@@ -20,3 +20,14 @@
 .b-row .comp { text-align: end; min-width: 130px; }
 .b-row .comp .l { font-size: .78rem; color: var(--text-2); }
 .b-row .comp .v { font-weight: 700; font-size: .92rem; }
+
+@media (max-width: 720px) {
+  .b-row { flex-wrap: wrap; row-gap: 10px; }
+  /* name on the first line, the three figures share the second */
+  .b-row .who { flex: 1 1 calc(100% - 60px); }
+  .b-row .stat, .b-row .comp {
+    flex: 1 1 28%; min-width: 0; text-align: start;
+    align-self: stretch; padding-top: 10px; border-top: 1px dashed var(--border);
+  }
+  .b-row > app-icon { display: none; }
+}

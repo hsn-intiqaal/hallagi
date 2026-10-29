@@ -2,18 +2,18 @@ import { NgIf, NgFor } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { ApiService } from '../../core/api.service';
-import { AuthService } from '../../core/auth.service';
-import { ToastService } from '../../core/toast.service';
-import { DateTimeArPipe, SarPipe, PctPipe, DateShortPipe } from '../../core/format.pipes';
-import { Icon } from '../../shared/icon';
-import { LoadingRow } from '../../shared/ui';
-import { BarberDetail, BarberFormModel, CompensationType, CompensationTypeLabel } from './models-barbers';
+import { ApiService, ApiFailure } from '@core/http/api.service';
+import { AuthService } from '@core/auth/auth.service';
+import { ToastService } from '@core/state/toast.service';
+import { SarPipe, PctPipe, DateShortPipe } from '@shared/pipes/format.pipes';
+import { Icon } from '@shared/ui/icon';
+import { LoadingRow } from '@shared/ui/ui';
+import { BarberDetail, BarberFormModel, CompensationType, CompensationTypeLabel } from '@features/barbers/models-barbers';
 
 @Component({
   selector: 'app-barber-detail',
   standalone: true,
-  imports: [FormsModule, Icon, DateTimeArPipe, SarPipe, PctPipe, DateShortPipe, LoadingRow, NgIf, NgFor],
+  imports: [FormsModule, Icon, SarPipe, PctPipe, DateShortPipe, LoadingRow, NgIf, NgFor],
   templateUrl: './barber-detail.html',
   styleUrl: './barber-detail.scss'
 })
@@ -40,16 +40,16 @@ export class BarberDetailPage implements OnInit {
     this.barberId = id;
     this.load();
     this.api.get<{ items: { id: string; name: string }[] }>('/branches').subscribe({
-      next: (res: any) => this.branches.set(res.items)
+      next: res => this.branches.set(res.items)
     });
-    this.api.get<any>('/auth/me').subscribe({ next: (m: any) => this.canManage.set(m.permissions?.['barber.manage'] === true) });
+    this.canManage.set(this.auth.can('barber.manage'));
   }
 
   load(): void {
     this.loading.set(true);
     this.api.get<BarberDetail>(`/barbers/${this.barberId}`).subscribe({
       next: d => { this.detail.set(d); this.loading.set(false); },
-      error: (e: any) => { this.toast.error(e?.message ?? 'تعذّر تحميل بيانات الحلاق'); this.loading.set(false); }
+      error: (e: ApiFailure) => { this.toast.error(e?.message ?? 'تعذّر تحميل بيانات الحلاق'); this.loading.set(false); }
     });
   }
 
@@ -71,7 +71,7 @@ export class BarberDetailPage implements OnInit {
     };
     this.api.put(`/barbers/${this.barberId}`, body).subscribe({
       next: () => { this.toast.success('تم تحديث بيانات الحلاق بنجاح'); this.editing.set(false); this.load(); },
-      error: (e: any) => this.toast.error(e?.message ?? 'تعذّر حفظ بيانات الحلاق')
+      error: (e: ApiFailure) => this.toast.error(e?.message ?? 'تعذّر حفظ بيانات الحلاق')
     });
   }
 
@@ -83,7 +83,7 @@ export class BarberDetailPage implements OnInit {
     });
   }
 
-  updateField(field: 'fullName' | 'phone' | 'startDate' | 'active', value: any): void {
+  updateField(field: 'fullName' | 'phone' | 'startDate' | 'active', value: string | boolean): void {
     this.form.update(f => f ? { ...f, [field]: value } : f);
   }
 

@@ -1,11 +1,12 @@
 import { NgIf, NgFor } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { ApiService } from '../../core/api.service';
-import { AuthService } from '../../core/auth.service';
-import { ToastService } from '../../core/toast.service';
-import { SarPipe, DateShortPipe, PctPipe } from '../../core/format.pipes';
-import { Icon } from '../../shared/icon';
-import { LoadingRow, EmptyState } from '../../shared/ui';
+import { ApiService, ApiFailure } from '@core/http/api.service';
+import { AuthService } from '@core/auth/auth.service';
+import { ToastService } from '@core/state/toast.service';
+import { SarPipe, DateShortPipe, PctPipe } from '@shared/pipes/format.pipes';
+import { Icon } from '@shared/ui/icon';
+import { LoadingRow, EmptyState } from '@shared/ui/ui';
+import { MeSummary } from '@core/models';
 
 @Component({
   selector: 'app-my-summary',
@@ -19,13 +20,13 @@ export class MySummary implements OnInit {
   readonly auth = inject(AuthService);
   private toast = inject(ToastService);
 
-  readonly summary = signal<any>(null);
+  readonly summary = signal<MeSummary | null>(null);
   readonly loading = signal(true);
 
   ngOnInit(): void {
-    this.api.get<any>('/me/summary').subscribe({
+    this.api.get<MeSummary>('/me/summary').subscribe({
       next: s => { this.summary.set(s); this.loading.set(false); },
-      error: (e: any) => { this.toast.error(e?.message ?? 'تعذّر تحميل بياناتك'); this.loading.set(false); }
+      error: (e: ApiFailure) => { this.toast.error(e?.message ?? 'تعذّر تحميل بياناتك'); this.loading.set(false); }
     });
   }
 }

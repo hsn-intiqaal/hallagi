@@ -29,3 +29,6 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
+
+# database backups (deploy/backup.sh)
+backups/

@@ -2,12 +2,13 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { NgIf, NgFor } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ApiService } from '../../core/api.service';
-import { BranchContext } from '../../core/branch-context';
-import { ToastService } from '../../core/toast.service';
-import { Icon } from '../../shared/icon';
-import { LoadingRow } from '../../shared/ui';
-import { CompensationType, CompensationTypeLabel } from './models-barbers';
+import { ApiService, ApiFailure } from '@core/http/api.service';
+import { BranchContext } from '@core/state/branch-context';
+import { ToastService } from '@core/state/toast.service';
+import { Icon } from '@shared/ui/icon';
+import { LoadingRow } from '@shared/ui/ui';
+import { CompensationType, CompensationTypeLabel } from '@features/barbers/models-barbers';
+import { BarberDetail, Branch, ItemsOf, ApiMessage } from '@core/models';
 
 @Component({
   selector: 'app-barber-form',
@@ -50,8 +51,8 @@ export class BarberForm implements OnInit {
     if (id) {
       this.barberId.set(id);
       this.loading.set(true);
-      this.api.get<any>(`/barbers/${id}`).subscribe({
-        next: (d: any) => {
+      this.api.get<BarberDetail>(`/barbers/${id}`).subscribe({
+        next: d => {
           this.form.fullName = d.barber.fullName ?? '';
           this.form.phone = d.barber.phone ?? '';
           this.form.startDate = d.barber.startDate ?? '';
@@ -67,16 +68,16 @@ export class BarberForm implements OnInit {
           }
           this.loading.set(false);
         },
-        error: (e: any) => { this.toast.error(e?.message ?? 'تعذّر تحميل بيانات الحلاق'); this.loading.set(false); }
+        error: (e: ApiFailure) => { this.toast.error(e?.message ?? 'تعذّر تحميل بيانات الحلاق'); this.loading.set(false); }
       });
     }
 
     // Owner sees all branches; others only the ones assigned to them
-    this.api.get<any>('/branches').subscribe({
-      next: (res: any) => {
+    this.api.get<ItemsOf<Branch>>('/branches').subscribe({
+      next: res => {
         this.allBranches = this.branches.showAllOption()
           ? res.items
-          : res.items.filter((b: any) => this.branches.branches().some(mb => mb.id === b.id));
+          : res.items.filter(b => this.branches.branches().some(mb => mb.id === b.id));
       }
     });
   }
@@ -114,14 +115,14 @@ export class BarberForm implements OnInit {
 
     this.saving.set(true);
     const id = this.barberId();
-    const req = id ? this.api.put(`/barbers/${id}`, body) : this.api.post('/barbers', body);
+    const req = id ? this.api.put<ApiMessage>(`/barbers/${id}`, body) : this.api.post<ApiMessage>('/barbers', body);
     req.subscribe({
-      next: (res: any) => {
+      next: res => {
         this.saving.set(false);
         this.toast.success(id ? 'تم تحديث بيانات الحلاق' : 'تمت إضافة الحلاق بنجاح');
         this.router.navigate(['/barbers', id ?? res?.id]);
       },
-      error: (e: any) => { this.saving.set(false); this.toast.error(e?.message ?? 'تعذّر حفظ بيانات الحلاق'); }
+      error: (e: ApiFailure) => { this.saving.set(false); this.toast.error(e?.message ?? 'تعذّر حفظ بيانات الحلاق'); }
     });
   }
 }

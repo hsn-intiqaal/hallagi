@@ -1,0 +1,150 @@
+<div class="page">
+  <div class="page-title">
+    <div>
+      <h1>المنتجات والمخزون</h1>
+      <p class="text-2 text-sm">منتجات البيع بالتجزئة مع مخزون مستقل لكل فرع وسجل حركة لا يُعدّل.</p>
+    </div>
+    <button class="btn btn-primary" *ngIf="canManage()" (click)="openAdd()">
+      <app-icon name="plus" [size]="18"></app-icon> إضافة منتج
+    </button>
+  </div>
+
+  <div class="stats-grid" *ngIf="list() as l">
+    <app-stat-card label="عدد المنتجات" [value]="l.summary.count" format="number" icon="package" tone="navy" hint="منتج" />
+    <app-stat-card label="قيمة المخزون (تكلفة)" [value]="l.summary.stockValue" icon="wallet" tone="blue" hint="بسعر التكلفة" />
+    <app-stat-card label="قيمة المخزون (بيع)" [value]="l.summary.retailValue" icon="tag" tone="green" hint="بسعر البيع" />
+  </div>
+  <div class="alert mb-16" *ngIf="list()?.summary?.lowStockCount">
+    <app-icon name="alert" [size]="18"></app-icon>
+    <span class="grow">{{ list()!.summary.lowStockCount }} منتج وصل لحد التنبيه أو نفد.</span>
+    <button class="btn btn-sm btn-outline" (click)="toggleLowStock()">{{ lowStockOnly() ? 'عرض الكل' : 'عرضها فقط' }}</button>
+  </div>
+
+  <div class="card mb-16 filter-row">
+    <input class="input grow" [(ngModel)]="search" (keydown.enter)="load()" placeholder="ابحث بالاسم أو SKU أو الباركود…">
+    <button class="btn btn-outline" (click)="load()"><app-icon name="search" [size]="16"></app-icon> بحث</button>
+  </div>
+
+  <div *ngIf="loading()"><app-loading message="جارٍ تحميل المنتجات…" /></div>
+
+  <app-empty *ngIf="!loading() && !list()?.items?.length" icon="package"
+    title="لا توجد منتجات" message="أضف منتجاتك (زيوت، واكس، شامبو…) لبيعها من شاشة البيع وتتبّع مخزونها."
+    [actionLabel]="canManage() ? 'إضافة منتج' : ''" (action)="openAdd()" />
+
+  <div class="card table-wrap" *ngIf="!loading() && list()?.items?.length">
+    <table class="table">
+      <thead>
+        <tr><th>المنتج</th><th>سعر البيع</th><th>التكلفة</th><th>الهامش</th><th>المخزون</th><th></th></tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let p of list()!.items" [class.inactive]="p.status !== 'Active'">
+          <td>
+            <b>{{ p.name }}</b>
+            <div class="text-2 text-sm" dir="ltr" *ngIf="p.sku || p.barcode">{{ p.sku }}<span *ngIf="p.sku && p.barcode"> · </span>{{ p.barcode }}</div>
+            <span class="badge badge-gray" *ngIf="p.status !== 'Active'">{{ p.statusText }}</span>
+          </td>
+          <td class="money">{{ p.price | sar }}</td>
+          <td class="money text-2">{{ p.cost | sar }}</td>
+          <td>{{ margin(p) }}</td>
+          <td>
+            <span class="badge" [class]="p.lowStock ? 'badge badge-red' : 'badge badge-green'">{{ p.quantity }}</span>
+            <div class="branch-stock" *ngIf="p.branches.length > 1">
+              <span *ngFor="let b of p.branches" [class.text-red]="b.quantity <= b.lowStockThreshold">{{ b.branchName }}: {{ b.quantity }}</span>
+            </div>
+          </td>
+          <td class="actions">
+            <button class="btn btn-success btn-sm" *ngIf="canAdjust()" (click)="openStock(p, 'Purchase')">
+              <app-icon name="plus" [size]="14"></app-icon> استلام
+            </button>
+            <button class="btn btn-outline btn-sm" *ngIf="canAdjust()" (click)="openStock(p, 'Adjustment')">جرد</button>
+            <button class="btn btn-ghost btn-sm" (click)="openHistory(p)">الحركة</button>
+            <button class="btn btn-ghost btn-sm" *ngIf="canManage()" (click)="openEdit(p)"><app-icon name="edit" [size]="14"></app-icon></button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- نموذج المنتج -->
+<app-modal *ngIf="form() as f" [title]="f.id ? 'تعديل المنتج' : 'إضافة منتج'" (dismiss)="form.set(null)">
+  <div class="field">
+    <label for="products-f1">اسم المنتج</label>
+    <input id="products-f1" class="input" [(ngModel)]="f.name" placeholder="مثال: زيت لحية 50 مل">
+  </div>
+  <div class="grid-2">
+    <div class="field">
+      <label for="products-f2">سعر البيع (ر.س)</label>
+      <input id="products-f2" class="input money" type="number" min="0" step="0.5" [(ngModel)]="f.price">
+    </div>
+    <div class="field">
+      <label for="products-f3">سعر التكلفة (ر.س)</label>
+      <input id="products-f3" class="input money" type="number" min="0" step="0.5" [(ngModel)]="f.cost">
+    </div>
+    <div class="field">
+      <label for="products-f4">SKU (اختياري)</label>
+      <input id="products-f4" class="input" dir="ltr" [(ngModel)]="f.sku">
+    </div>
+    <div class="field">
+      <label for="products-f5">الباركود (اختياري)</label>
+      <input id="products-f5" class="input" dir="ltr" [(ngModel)]="f.barcode" placeholder="امسح أو اكتب">
+    </div>
+  </div>
+  <label class="switch-row"><input type="checkbox" [(ngModel)]="f.active"> المنتج متاح للبيع</label>
+  <div footer class="flex gap-8">
+    <button class="btn btn-primary" [disabled]="saving()" (click)="saveProduct()">حفظ</button>
+    <button class="btn btn-outline" (click)="form.set(null)">إلغاء</button>
+  </div>
+</app-modal>
+
+<!-- استلام / جرد -->
+<app-modal *ngIf="stockForm() as f" [title]="(f.type === 'Purchase' ? 'استلام كمية — ' : 'جرد — ') + f.product.name" (dismiss)="stockForm.set(null)">
+  <div class="field">
+    <label for="products-f6">الفرع</label>
+    <select id="products-f6" class="input" [ngModel]="f.branchId" (ngModelChange)="patchStock({ branchId: $event })">
+      <option *ngFor="let b of branchOptions()" [value]="b.id">{{ b.name }}</option>
+    </select>
+    <div class="text-2 text-sm mt-8">الرصيد الحالي: <b>{{ currentQty(f) }}</b></div>
+  </div>
+  <div class="grid-2">
+    <div class="field">
+      <label for="products-f7">{{ f.type === 'Purchase' ? 'الكمية المستلمة' : 'الكمية الفعلية بعد العد' }}</label>
+      <input id="products-f7" class="input" type="number" min="0" step="1" [ngModel]="f.quantity" (ngModelChange)="patchStock({ quantity: $event })">
+    </div>
+    <div class="field" *ngIf="f.type === 'Purchase'">
+      <label for="products-f8">تكلفة الوحدة (ر.س)</label>
+      <input id="products-f8" class="input money" type="number" min="0" step="0.5" [ngModel]="f.unitCost" (ngModelChange)="patchStock({ unitCost: $event })">
+    </div>
+    <div class="field">
+      <label for="products-f9">حد التنبيه</label>
+      <input id="products-f9" class="input" type="number" min="0" step="1" [ngModel]="f.lowStockThreshold" (ngModelChange)="patchStock({ lowStockThreshold: $event })">
+    </div>
+  </div>
+  <div class="field">
+    <label for="products-f10">ملاحظة</label>
+    <input id="products-f10" class="input" [ngModel]="f.note" (ngModelChange)="patchStock({ note: $event })" [placeholder]="f.type === 'Purchase' ? 'رقم فاتورة المورد' : 'سبب الفرق (تالف، مفقود…)'">
+  </div>
+  <div footer class="flex gap-8">
+    <button class="btn btn-primary" [disabled]="saving()" (click)="saveStock()">حفظ</button>
+    <button class="btn btn-outline" (click)="stockForm.set(null)">إلغاء</button>
+  </div>
+</app-modal>
+
+<!-- سجل الحركة -->
+<app-modal *ngIf="history() as h" [title]="'حركة المخزون — ' + h.product.name" [showFooter]="false" (dismiss)="history.set(null)">
+  <p class="text-2" *ngIf="!h.items.length">لا توجد حركات بعد.</p>
+  <div class="table-wrap" *ngIf="h.items.length">
+    <table class="table">
+      <thead><tr><th>التاريخ</th><th>النوع</th><th>الكمية</th><th>الرصيد</th><th>الفرع</th></tr></thead>
+      <tbody>
+        <tr *ngFor="let m of h.items">
+          <td class="text-sm">{{ m.createdAt | dateTimeAr }}<div class="text-2" *ngIf="m.note">{{ m.note }}</div></td>
+          <td>{{ m.typeText }}</td>
+          <td [class.text-green]="m.quantity > 0" [class.text-red]="m.quantity < 0" dir="ltr">{{ m.quantity > 0 ? '+' : '' }}{{ m.quantity }}</td>
+          <td>{{ m.balanceAfter }}</td>
+          <td class="text-sm">{{ m.branchName }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</app-modal>

@@ -45,7 +45,7 @@
       <table class="table">
         <thead><tr><th>التاريخ</th><th>المبلغ</th><th>المتبقي</th><th>السبب</th><th>الحالة</th><th></th></tr></thead>
         <tbody>
-          <tr *ngFor="let a in advances()">
+          <tr *ngFor="let a of advances()">
             <td>{{ a.advanceDate | dateAr }}</td>
             <td class="money">{{ a.originalAmount | sar }}</td>
             <td class="money" [class.text-red]="a.outstanding > 0">{{ a.outstanding | sar }}</td>
@@ -61,14 +61,14 @@
   </ng-container>
 </div>
 
-<app-modal *ngIf="showAdvance()" title="تسجيل سلفة" (close)="showAdvance.set(false)">
+<app-modal *ngIf="showAdvance()" title="تسجيل سلفة" (dismiss)="showAdvance.set(false)">
   <div class="field">
-    <label>المبلغ (ريال)</label>
-    <input class="input" type="number" min="0" [(ngModel)]="advance.amount">
+    <label for="ledger-f1">المبلغ (ريال)</label>
+    <input id="ledger-f1" class="input" type="number" min="0" [(ngModel)]="advance.amount">
   </div>
   <div class="field">
-    <label>السبب</label>
-    <input class="input" [(ngModel)]="advance.reason" placeholder="مثال: سلفة شخصية">
+    <label for="ledger-f2">السبب</label>
+    <input id="ledger-f2" class="input" [(ngModel)]="advance.reason" placeholder="مثال: سلفة شخصية">
   </div>
   <div footer class="flex gap-8">
     <button class="btn btn-primary" (click)="saveAdvance()">حفظ</button>
@@ -76,7 +76,7 @@
   </div>
 </app-modal>
 
-<app-modal *ngIf="reversingId()" title="عكس حركة مالية" (close)="reversingId.set(null)">
+<app-modal *ngIf="reversingId()" title="عكس حركة مالية" (dismiss)="reversingId.set(null)">
   <p class="mb-16">سيتم تسجيل قيد عكسي موثق مع بقاء الحركة الأصلية ظاهرة في السجل.</p>
   <div footer class="flex gap-8">
     <button class="btn btn-danger" (click)="confirmReverse()">تأكيد العكس</button>

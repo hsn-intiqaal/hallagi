@@ -1,22 +1,26 @@
 import { NgIf, NgFor } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ApiService } from '../../core/api.service';
-import { ToastService } from '../../core/toast.service';
-import { Sale } from '../../core/models';
-import { Icon } from '../../shared/icon';
-import { DateTimeArPipe, SarPipe } from '../../core/format.pipes';
-import { LoadingRow } from '../../shared/ui';
+import { ApiFailure } from '@core/http/api.service';
+import { SalesApi } from '@core/api/sales.api';
+import { ToastService } from '@core/state/toast.service';
+import { Sale } from '@core/models';
+import { Icon } from '@shared/ui/icon';
+import { DateTimeArPipe, SarPipe } from '@shared/pipes/format.pipes';
+import { LoadingRow } from '@shared/ui/ui';
+import { QrCode } from '@shared/ui/qr-code';
+import { APP_CONFIG } from '@core/config/app-config';
 
 @Component({
   selector: 'app-sale-detail',
   standalone: true,
-  imports: [Icon, DateTimeArPipe, SarPipe, LoadingRow, NgIf, NgFor],
+  imports: [Icon, DateTimeArPipe, SarPipe, LoadingRow, QrCode, NgIf, NgFor],
   templateUrl: './sale-detail.html',
   styleUrl: './sale-detail.scss'
 })
 export class SaleDetail implements OnInit {
-  private api = inject(ApiService);
+  private salesApi = inject(SalesApi);
+  readonly brand = inject(APP_CONFIG).brand;
   private route = inject(ActivatedRoute);
   private toast = inject(ToastService);
   readonly router = inject(Router);
@@ -26,9 +30,9 @@ export class SaleDetail implements OnInit {
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id')!;
-    this.api.get<Sale>(`/sales/${id}`).subscribe({
+    this.salesApi.get(id).subscribe({
       next: s => { this.sale.set(s); this.loading.set(false); },
-      error: (e: any) => { this.toast.error(e?.message ?? 'تعذّر تحميل العملية'); this.loading.set(false); }
+      error: (e: ApiFailure) => { this.toast.error(e?.message ?? 'تعذّر تحميل العملية'); this.loading.set(false); }
     });
   }
 

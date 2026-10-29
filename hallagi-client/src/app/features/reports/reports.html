@@ -1,97 +1,291 @@
-<div class="page">
-  <div class="page-title"><h1>التقارير</h1></div>
-
-  <div class="card filters">
-    <div class="field" style="margin-bottom: 0">
-      <label>من تاريخ</label>
-      <input class="input" type="date" [(ngModel)]="from">
+<div class="page reports">
+  <div class="page-title">
+    <div>
+      <h1>التقارير</h1>
+      <p class="text-2 text-sm">{{ scopeLabel() }} · {{ from() | dateShort }} — {{ to() | dateShort }}</p>
     </div>
-    <div class="field" style="margin-bottom: 0">
-      <label>إلى تاريخ</label>
-      <input class="input" type="date" [(ngModel)]="to">
+    <div class="flex gap-8 no-print">
+      <button class="btn btn-outline btn-sm" (click)="exportCsv()">
+        <app-icon name="receipt" [size]="16"></app-icon> تصدير المبيعات CSV
+      </button>
+      <button class="btn btn-ghost btn-sm" (click)="print()">
+        <app-icon name="printer" [size]="16"></app-icon> طباعة
+      </button>
     </div>
-    <button class="btn btn-primary" (click)="load()"><app-icon name="search" [size]="17"></app-icon> عرض التقرير</button>
   </div>
 
-  <div *ngIf="loading()"><app-loading message="جارٍ تحميل التقارير…" /></div>
+  <!-- الفترة -->
+  <div class="card filters no-print">
+    <div class="seg presets">
+      <button *ngFor="let p of presets" [class.active]="preset() === p.id" (click)="applyPreset(p.id)">{{ p.label }}</button>
+    </div>
+    <div class="custom" *ngIf="preset() === 'custom'">
+      <input class="input" type="date" #f [value]="from()" (change)="setCustom(f.value, t.value)" aria-label="من تاريخ">
+      <span class="text-2">إلى</span>
+      <input class="input" type="date" #t [value]="to()" (change)="setCustom(f.value, t.value)" aria-label="إلى تاريخ">
+    </div>
+  </div>
 
-  <ng-container *ngIf="report() as r">
-    <div class="kpis">
-      <app-stat-card label="إجمالي المبيعات" [value]="r.summary.totalSales" icon="cash" tone="blue" />
-      <app-stat-card label="المدفوعات النقدية" [value]="r.summary.cashSales" icon="cash" tone="green" hint="تدخل رصيد الدرج" />
-      <app-stat-card label="المدفوعات بالبطاقة" [value]="r.summary.cardSales" icon="card" tone="navy" hint="لا تدخل رصيد الدرج" />
-      <app-stat-card label="المصروفات المسجلة" [value]="r.summary.expenses" icon="wallet" tone="orange" />
-      <app-stat-card label="نتيجة التشغيل التقديرية" [value]="r.summary.operatingResult" icon="chart" tone="green" [hint]="r.summary.hint" />
+  <!-- التبويبات -->
+  <nav class="tabs no-print" role="tablist">
+    <button *ngFor="let t of visibleTabs()" role="tab" [attr.aria-selected]="tab() === t.id" [class.active]="tab() === t.id" (click)="selectTab(t.id)">
+      <app-icon [name]="t.icon" [size]="17"></app-icon> {{ t.label }}
+    </button>
+  </nav>
+
+  <div *ngIf="loading()"><app-loading message="جارٍ إعداد التقرير…" /></div>
+
+  <!-- ===================== نظرة عامة ===================== -->
+  <ng-container *ngIf="tab() === 'overview' && sales() as r">
+    <div class="stats-grid">
+      <app-stat-card label="صافي المبيعات" [value]="r.summary.netSales" icon="chart" tone="blue"
+                     hint="بدون ضريبة القيمة المضافة" [sub]="changeText()" [subTone]="changeTone()" />
+      <app-stat-card label="المحصّل من العملاء" [value]="r.summary.collected" icon="cash" tone="navy"
+                     [hint]="'شامل الضريبة ' + (r.summary.vat | sar)" />
+      <app-stat-card label="عدد العمليات" [value]="r.summary.salesCount" format="number" icon="receipt" tone="orange"
+                     [hint]="'متوسط الفاتورة ' + (r.summary.averageTicket | sar)" />
+      <app-stat-card label="نتيجة التشغيل" [value]="r.summary.operatingResult" icon="wallet"
+                     [tone]="r.summary.operatingResult >= 0 ? 'green' : 'red'" hint="صافي المبيعات − تكلفة المنتجات − المصروفات" />
     </div>
 
-    <div class="hint">{{ r.summary.hint }}</div>
+    <app-empty *ngIf="r.summary.salesCount === 0" icon="chart" title="لا توجد مبيعات في هذه الفترة"
+      message="اختر فترة أخرى أو فرعًا آخر من الشريط العلوي." />
 
-    <div class="card">
-      <h2>المبيعات حسب اليوم</h2>
-      <div class="chart-box"><canvas #chartCanvas></canvas></div>
-    </div>
-
-    <div class="grid-2 mt-16">
-      <div class="card">
-        <h2 class="mb-16">المبيعات حسب الخدمة</h2>
-        <app-empty *ngIf="!svcGroups(report()).length" icon="tag" title="لا توجد مبيعات" message="خلال الفترة المحددة" />
-        <div *ngFor="let g of svcGroups(report())" class="mb-16">
-          <div class="flex-between mb-8">
-            <span style="font-weight: 600">{{ g.label }}</span>
-            <span class="money">{{ g.total | sar }}</span>
+    <ng-container *ngIf="r.summary.salesCount > 0">
+      <div class="layout-2">
+        <div class="card">
+          <div class="section-head">
+            <h2>صافي المبيعات حسب اليوم</h2>
+            <span class="text-2 text-sm">{{ r.days }} يوم</span>
           </div>
-          <div class="bar-track"><div class="bar-fill" [style.width.%]="g.total / maxSvc() * 100"></div></div>
+          <div class="chart-box"><canvas #dailyChart aria-label="صافي المبيعات حسب اليوم"></canvas></div>
+        </div>
+
+        <div class="card statement">
+          <h2 class="mb-16">ملخص الفترة</h2>
+          <div class="line"><span>قيمة الخدمات والمنتجات</span><b class="money">{{ r.summary.gross | sar }}</b></div>
+          <div class="line minus"><span>الخصومات</span><b class="money">−{{ r.summary.discounts | sar }}</b></div>
+          <div class="line minus"><span>ضريبة القيمة المضافة (للهيئة)</span><b class="money">−{{ r.summary.vat | sar }}</b></div>
+          <div class="line total"><span>صافي المبيعات</span><b class="money">{{ r.summary.netSales | sar }}</b></div>
+          <div class="line minus"><span>تكلفة المنتجات المباعة</span><b class="money">−{{ r.summary.productCost | sar }}</b></div>
+          <div class="line minus"><span>المصروفات</span><b class="money">−{{ r.summary.expenses | sar }}</b></div>
+          <div class="line result" [class.negative]="r.summary.operatingResult < 0">
+            <span>نتيجة التشغيل</span><b class="money">{{ r.summary.operatingResult | sar }}</b>
+          </div>
+          <p class="text-2 text-sm mt-8">قبل الرواتب والعمولات غير المسجلة كمصروفات — ليست صافي ربح محاسبي.</p>
         </div>
       </div>
 
-      <div class="card">
-        <h2 class="mb-16">المصروفات حسب الفئة</h2>
-        <app-empty *ngIf="!expensesReport()?.items?.length" icon="wallet" title="لا توجد مصروفات" message="خلال الفترة المحددة" />
-        <div *ngFor="let e of expensesReport()?.items ?? []" class="flex-between mb-16">
-          <span style="font-weight: 600">{{ e.categoryText }}</span>
-          <span>
-            <span class="money">{{ e.total | sar }}</span>
-            <span class="text-2 text-sm"> · {{ e.share | pct }}</span>
-          </span>
+      <div class="layout-3 mt-16">
+        <div class="card">
+          <h2 class="mb-16">طرق الدفع</h2>
+          <div class="pay-split">
+            <div class="pay cash">
+              <span>نقدي</span><b class="money">{{ r.summary.cashCollected | sar }}</b>
+              <small>{{ pct(r.summary.cashCollected, r.summary.collected) }}%</small>
+            </div>
+            <div class="pay card-pay">
+              <span>بطاقة</span><b class="money">{{ r.summary.cardCollected | sar }}</b>
+              <small>{{ pct(r.summary.cardCollected, r.summary.collected) }}%</small>
+            </div>
+          </div>
+          <div class="split-bar" aria-hidden="true">
+            <span class="cash" [style.width.%]="pct(r.summary.cashCollected, r.summary.collected)"></span>
+          </div>
+          <p class="text-2 text-sm mt-8">النقدي يُطابق مع الخزينة، والبطاقة مع كشف جهاز الدفع.</p>
+        </div>
+
+        <div class="card">
+          <h2 class="mb-16">أوقات الذروة</h2>
+          <div class="insights">
+            <div *ngIf="peakHour() as h"><app-icon name="clock" [size]="18"></app-icon> أكثر ساعة ازدحامًا <b>{{ hourLabel(h.hour) }}</b> ({{ operations(h.count) }})</div>
+            <div *ngIf="bestWeekday() as d"><app-icon name="calendar" [size]="18"></app-icon> أفضل يوم <b>{{ d.label }}</b> ({{ d.netSales | sar }})</div>
+          </div>
+          <div class="chart-box small"><canvas #hourChart aria-label="العمليات حسب الساعة"></canvas></div>
+        </div>
+
+        <div class="card">
+          <h2 class="mb-16">الخدمات والمنتجات</h2>
+          <div class="line"><span>إيراد الخدمات</span><b class="money">{{ r.summary.servicesRevenue | sar }}</b></div>
+          <div class="line"><span>عدد الخدمات المنفّذة</span><b>{{ r.summary.servicesCount }}</b></div>
+          <div class="line"><span>إيراد المنتجات</span><b class="money">{{ r.summary.productsRevenue | sar }}</b></div>
+          <div class="line"><span>ربح المنتجات</span><b class="money">{{ r.summary.productsRevenue - r.summary.productCost | sar }}</b></div>
+          <p class="text-2 text-sm mt-8">قيم البنود قبل الخصم وشاملة الضريبة.</p>
         </div>
       </div>
-    </div>
 
-    <div class="card mt-16" *ngIf="duesReport()">
-      <h2 class="mb-16">مستحقات الحلاقين التقديرية</h2>
-      <table class="table">
-        <thead><tr><th>الحلاق</th><th>الفروع</th><th>طريقة التعويض</th><th>مبيعات مؤهلة</th><th>العمولة التقديرية</th><th>راتب ثابت</th><th>إيجار كرسي</th></tr></thead>
-        <tbody>
-          <tr *ngFor="let b of duesReport().items">
-            <td>{{ b.barberName }}</td>
-            <td>{{ b.branchNames.join(' · ') }}</td>
-            <td>{{ b.compensationTypeText }}</td>
-            <td class="money">{{ b.eligibleSales | sar }}</td>
-            <td class="money">{{ b.estimatedCommission | sar }}</td>
-            <td class="money" *ngIf="b.monthlySalary">{{ b.monthlySalary | sar }}</td>
-            <td *ngIf="!b.monthlySalary">—</td>
-            <td class="money" *ngIf="b.chairRent">{{ b.chairRent | sar }}</td>
-            <td *ngIf="!b.chairRent">—</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+      <div class="layout-2 mt-16">
+        <div class="card">
+          <h2 class="mb-16">الخدمات الأعلى إيرادًا</h2>
+          <div class="rank" *ngFor="let s of r.byService; let i = index">
+            <span class="n">{{ i + 1 }}</span>
+            <div class="grow">
+              <div class="flex-between"><b>{{ s.label }}</b><span class="money">{{ s.total | sar }}</span></div>
+              <div class="bar-track"><div class="bar-fill" [style.width.%]="s.total / maxService() * 100"></div></div>
+              <span class="text-2 text-sm">{{ s.quantity }} مرة</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h2 class="mb-16">أداء الحلاقين</h2>
+          <div class="rank" *ngFor="let b of r.byBarber; let i = index">
+            <span class="n">{{ i + 1 }}</span>
+            <div class="grow">
+              <div class="flex-between"><b>{{ b.label }}</b><span class="money">{{ b.netSales | sar }}</span></div>
+              <div class="bar-track"><div class="bar-fill green" [style.width.%]="b.netSales / maxBarber() * 100"></div></div>
+              <span class="text-2 text-sm">{{ operations(b.count) }} · متوسط {{ b.averageTicket | sar }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+  </ng-container>
 
-    <div class="card mt-16" *ngIf="branchesReport()">
-      <h2 class="mb-16">مقارنة الفروع</h2>
+  <!-- ===================== الحلاقون ===================== -->
+  <ng-container *ngIf="tab() === 'barbers' && dues() as d">
+    <div class="alert alert-info mb-16">
+      <app-icon name="info" [size]="18"></app-icon>
+      <span>العمولة تُحسب على إيراد الخدمات بعد الخصم وبدون الضريبة والمنتجات. الأرقام تقديرية — الاعتماد النهائي من
+        <a routerLink="/finance/settlements">التسويات المالية</a>.</span>
+    </div>
+    <div class="card table-card">
       <table class="table">
-        <thead><tr><th>الفرع</th><th>المدينة</th><th>عدد العمليات</th><th>إجمالي المبيعات</th><th>المصروفات</th><th>نتيجة التشغيل التقديرية</th></tr></thead>
+        <thead>
+          <tr><th>الحلاق</th><th>الفروع</th><th>الاتفاق</th><th>العمليات</th><th>الخدمات المؤهلة</th><th>العمولة التقديرية</th><th>راتب</th><th>إيجار كرسي</th></tr>
+        </thead>
         <tbody>
-          <tr *ngFor="let b of branchesReport().items">
-            <td>{{ b.branchName }}</td>
-            <td>{{ b.city }}</td>
+          <tr *ngFor="let b of d.items" [class.inactive]="!b.active">
+            <td><b>{{ b.barberName }}</b><div class="text-2 text-sm">{{ b.explanation }}</div></td>
+            <td>{{ b.branchNames.join('، ') || '—' }}</td>
+            <td>{{ b.compensationTypeText }}<span *ngIf="b.commissionRate" class="text-2"> · {{ b.commissionRate * 100 }}%</span></td>
             <td>{{ b.salesCount }}</td>
-            <td class="money">{{ b.totalSales | sar }}</td>
-            <td class="money">{{ b.expenses | sar }}</td>
-            <td class="money">{{ b.operatingResult | sar }}</td>
+            <td class="money">{{ b.eligibleSales | sar }}</td>
+            <td class="money"><b>{{ b.estimatedCommission | sar }}</b></td>
+            <td class="money">{{ b.monthlySalary ? (b.monthlySalary | sar) : '—' }}</td>
+            <td class="money">{{ b.chairRent ? (b.chairRent | sar) : '—' }}</td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr><td colspan="5">إجمالي العمولات التقديرية</td><td class="money"><b>{{ d.totalCommission | sar }}</b></td><td colspan="2"></td></tr>
+        </tfoot>
+      </table>
+      <app-empty *ngIf="!d.items.length" icon="user" title="لا يوجد حلاقون في هذا النطاق" message="" />
+    </div>
+  </ng-container>
+
+  <!-- ===================== الفروع ===================== -->
+  <ng-container *ngIf="tab() === 'branches' && branchesReport() as b">
+    <div class="card table-card">
+      <table class="table">
+        <thead>
+          <tr><th>الفرع</th><th>العمليات</th><th>المحصّل</th><th>صافي المبيعات</th><th>الحصة</th><th>متوسط الفاتورة</th><th>المصروفات</th><th>نتيجة التشغيل</th></tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let r of b.items">
+            <td><b>{{ r.branchName }}</b><div class="text-2 text-sm">{{ r.city }}</div></td>
+            <td>{{ r.salesCount }}</td>
+            <td class="money">{{ r.collected | sar }}</td>
+            <td class="money">{{ r.netSales | sar }}</td>
+            <td class="share"><div class="bar-track"><div class="bar-fill" [style.width.%]="r.share"></div></div><span>{{ r.share }}%</span></td>
+            <td class="money">{{ r.averageTicket | sar }}</td>
+            <td class="money">{{ r.expenses | sar }}</td>
+            <td class="money" [class.text-red]="r.operatingResult < 0"><b>{{ r.operatingResult | sar }}</b></td>
           </tr>
         </tbody>
       </table>
+    </div>
+  </ng-container>
+
+  <!-- ===================== العملاء ===================== -->
+  <ng-container *ngIf="tab() === 'customers' && customers() as c">
+    <div class="stats-grid">
+      <app-stat-card label="عملاء مسجّلون" [value]="c.summary.uniqueCustomers" format="number" icon="users" tone="blue" hint="زاروا خلال الفترة" />
+      <app-stat-card label="عملاء جدد" [value]="c.summary.newCustomers" format="number" icon="plus" tone="green" hint="أول زيارة في الفترة" />
+      <app-stat-card label="عملاء عائدون" [value]="c.summary.returningCustomers" format="number" icon="refresh" tone="navy" hint="زاروا قبل الفترة" />
+      <app-stat-card label="زيارات بدون تسجيل" [value]="c.summary.walkInVisits" format="number" icon="user" tone="orange"
+                     [hint]="pct(c.summary.walkInVisits, c.summary.walkInVisits + c.summary.identifiedVisits) + '% من الزيارات'" />
+    </div>
+    <div class="alert mb-16" *ngIf="c.summary.walkInVisits > c.summary.identifiedVisits">
+      <app-icon name="star" [size]="18"></app-icon>
+      <span>أغلب الزيارات بدون تسجيل العميل — سجّل جوال العميل عند البيع لتفعيل نقاط الولاء والتذكير بالمواعيد.</span>
+    </div>
+    <div class="card table-card">
+      <h2 class="mb-16">أكثر العملاء زيارة</h2>
+      <table class="table">
+        <thead><tr><th>العميل</th><th>الجوال</th><th>الزيارات</th><th>الإنفاق</th><th>آخر زيارة</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let r of c.items">
+            <td><a [routerLink]="['/customers', r.customerId]"><b>{{ r.customerName }}</b></a></td>
+            <td dir="ltr" class="text-2">{{ r.phone || '—' }}</td>
+            <td>{{ r.visits }}</td>
+            <td class="money">{{ r.total | sar }}</td>
+            <td>{{ r.lastVisit | dateShort }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <app-empty *ngIf="!c.items.length" icon="users" title="لا توجد زيارات لعملاء مسجلين" message="" />
+    </div>
+  </ng-container>
+
+  <!-- ===================== الضريبة والمنتجات ===================== -->
+  <ng-container *ngIf="tab() === 'tax' && tax() as t">
+    <div class="stats-grid">
+      <app-stat-card label="الضريبة المستحقة للهيئة" [value]="t.tax.vat" icon="shield" tone="navy" [hint]="t.tax.invoices + ' فاتورة ضريبية'" />
+      <app-stat-card label="المبيعات الخاضعة للضريبة" [value]="t.tax.taxable" icon="chart" tone="blue" hint="الصافي بدون الضريبة" />
+      <app-stat-card label="الخصومات" [value]="t.tax.discount" icon="percent" tone="orange" hint="كوبونات ويدوي ونقاط" />
+      <app-stat-card label="مبيعات غير ضريبية" [value]="t.tax.nonTaxable" icon="receipt" tone="green" hint="قبل تفعيل الضريبة" />
+    </div>
+    <div class="layout-2">
+      <div class="card statement">
+        <h2 class="mb-16">مساعد إقرار ضريبة القيمة المضافة</h2>
+        <div class="line"><span>إجمالي المبيعات الخاضعة (الصافي)</span><b class="money">{{ t.tax.taxable | sar }}</b></div>
+        <div class="line"><span>ضريبة المخرجات</span><b class="money">{{ t.tax.vat | sar }}</b></div>
+        <div class="line total"><span>الإجمالي شامل الضريبة</span><b class="money">{{ t.tax.taxable + t.tax.vat | sar }}</b></div>
+        <p class="text-2 text-sm mt-8">ضريبة المدخلات (مشتريات بفواتير ضريبية) تُخصم في الإقرار ولا تُحتسب هنا.</p>
+      </div>
+      <div class="card">
+        <h2 class="mb-16">أكواد الخصم ونقاط الولاء</h2>
+        <div class="line"><span>نقاط مكتسبة</span><b>{{ t.loyalty.pointsEarned }}</b></div>
+        <div class="line mb-16"><span>نقاط مستبدلة</span><b>{{ t.loyalty.pointsRedeemed }}</b></div>
+        <table class="table" *ngIf="t.coupons.length">
+          <thead><tr><th>الكود</th><th>الاستخدام</th><th>إجمالي الخصم</th></tr></thead>
+          <tbody><tr *ngFor="let c of t.coupons"><td dir="ltr"><b>{{ c.code }}</b></td><td>{{ c.uses }}</td><td class="money">{{ c.discount | sar }}</td></tr></tbody>
+        </table>
+        <p class="text-2 text-sm" *ngIf="!t.coupons.length">لم تُستخدم أكواد خصم في هذه الفترة.</p>
+      </div>
+    </div>
+    <div class="card table-card mt-16">
+      <h2 class="mb-16">ربحية المنتجات</h2>
+      <table class="table" *ngIf="t.products.length">
+        <thead><tr><th>المنتج</th><th>الكمية</th><th>الإيراد</th><th>التكلفة</th><th>الربح</th><th>الهامش</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let p of t.products">
+            <td><b>{{ p.name }}</b></td><td>{{ p.quantity }}</td>
+            <td class="money">{{ p.revenue | sar }}</td><td class="money text-2">{{ p.cost | sar }}</td>
+            <td class="money" [class.text-green]="p.profit >= 0" [class.text-red]="p.profit < 0"><b>{{ p.profit | sar }}</b></td>
+            <td>{{ pct(p.profit, p.revenue) }}%</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="text-2 text-sm" *ngIf="!t.products.length">لم تُبع منتجات في هذه الفترة.</p>
+    </div>
+  </ng-container>
+
+  <!-- ===================== المصروفات ===================== -->
+  <ng-container *ngIf="tab() === 'expenses' && expenses() as e">
+    <div class="card">
+      <div class="section-head">
+        <h2>المصروفات حسب الفئة</h2>
+        <b class="money">{{ e.total | sar }}</b>
+      </div>
+      <app-empty *ngIf="!e.items.length" icon="wallet" title="لا توجد مصروفات" message="خلال الفترة المحددة" />
+      <div class="rank" *ngFor="let x of e.items">
+        <div class="grow">
+          <div class="flex-between"><b>{{ x.categoryText }}</b><span><span class="money">{{ x.total | sar }}</span> <span class="text-2 text-sm">· {{ x.share }}%</span></span></div>
+          <div class="bar-track"><div class="bar-fill orange" [style.width.%]="x.share"></div></div>
+          <span class="text-2 text-sm">{{ x.count }} مصروف</span>
+        </div>
+      </div>
     </div>
   </ng-container>
 </div>

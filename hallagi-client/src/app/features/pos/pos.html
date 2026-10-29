@@ -13,9 +13,21 @@
       <span class="text-2">{{ i.serviceName }}<span *ngIf="i.quantity > 1"> × {{ i.quantity }}</span></span>
       <span class="money">{{ i.lineTotal | sar }}</span>
     </div>
+    <div class="row" *ngIf="sale.discountAmount">
+      <span class="text-2">الخصم<span *ngIf="sale.couponCode"> ({{ sale.couponCode }})</span></span>
+      <span class="money text-red">-{{ sale.discountAmount | sar }}</span>
+    </div>
+    <div class="row" *ngIf="sale.isTaxInvoice">
+      <span class="text-2">ضريبة القيمة المضافة</span>
+      <span class="money">{{ sale.vatAmount | sar }}</span>
+    </div>
     <div class="total-row">
       <span class="t">الإجمالي</span>
       <span class="money">{{ sale.totalAmount | sar }}</span>
+    </div>
+    <div class="points-earned" *ngIf="sale.pointsEarned">
+      <app-icon name="star" [size]="16"></app-icon>
+      اكتسب العميل {{ sale.pointsEarned }} نقطة — الرصيد الآن {{ sale.customerPoints }}
     </div>
   </div>
 
@@ -24,7 +36,7 @@
       <app-icon name="plus" [size]="20"></app-icon> بيع جديد
     </button>
     <button class="btn btn-outline btn-lg" (click)="viewReceipt(sale)">
-      <app-icon name="receipt" [size]="19"></app-icon> عرض الإيصال
+      <app-icon name="receipt" [size]="19"></app-icon> {{ sale.isTaxInvoice ? 'عرض الفاتورة' : 'عرض الإيصال' }}
     </button>
     <button class="btn btn-ghost btn-lg" (click)="terminate()">
       العودة للرئيسية
@@ -38,26 +50,57 @@
     <div *ngIf="loading()"><app-loading message="جارٍ تحميل الخدمات…" /></div>
 
     <div class="pos-grid" *ngIf="!loading() && data() as d">
-      <!-- الخدمات -->
+      <!-- الكتالوج -->
       <section>
-        <div class="flex-between mb-16">
+        <div class="flex-between mb-16 wrap gap-8">
           <div>
             <h1>بيع جديد</h1>
-            <p class="text-2 text-sm">{{ d.branch.name }} — اختر الخدمات بالضغط عليها</p>
+            <p class="text-2 text-sm">{{ d.branch.name }} — اختر الخدمات أو المنتجات بالضغط عليها</p>
           </div>
           <button class="btn btn-ghost btn-sm" (click)="loadPosData(branchId()!)">
             <app-icon name="refresh" [size]="16"></app-icon> تحديث
           </button>
         </div>
 
-        <div class="services-grid">
-          <button class="svc-card" *ngFor="let s of d.services" (click)="add(s)">
-            <span class="count" *ngIf="cartQty(s.id) > 0">{{ cartQty(s.id) }}</span>
-            <span class="n">{{ s.name }}</span>
-            <span class="p">{{ s.price | sar }}</span>
-            <span class="add-hint">اضغط للإضافة</span>
+        <div class="alert alert-info mb-16" *ngIf="appointment() as a">
+          <app-icon name="calendar" [size]="18"></app-icon>
+          <span>تحصيل موعد <b>{{ a.customerName }}</b> ({{ a.startTime }}) — رقم الحجز {{ a.reference }}</span>
+        </div>
+
+        <div class="seg mb-16" *ngIf="d.products.length">
+          <button [class.active]="tab() === 'services'" (click)="tab.set('services')">
+            الخدمات ({{ d.services.length }})
+          </button>
+          <button [class.active]="tab() === 'products'" (click)="tab.set('products')">
+            المنتجات ({{ d.products.length }})
           </button>
         </div>
+
+        <div class="services-grid" *ngIf="tab() === 'services'">
+          <button class="svc-card" *ngFor="let s of d.services" (click)="addService(s)">
+            <span class="count" *ngIf="cartQty('Service', s.id) > 0">{{ cartQty('Service', s.id) }}</span>
+            <span class="n">{{ s.name }}</span>
+            <span class="p">{{ s.price | sar }}</span>
+            <span class="add-hint" *ngIf="s.durationMinutes">{{ s.durationMinutes }} دقيقة</span>
+          </button>
+        </div>
+
+        <ng-container *ngIf="tab() === 'products'">
+          <input class="input mb-16" [(ngModel)]="productSearch" (keydown.enter)="scanBarcode()"
+                 placeholder="ابحث باسم المنتج أو امسح الباركود…">
+          <div class="services-grid">
+            <button class="svc-card" *ngFor="let p of filteredProducts()" (click)="addProduct(p)"
+                    [disabled]="p.stock === 0" [class.out]="p.stock === 0">
+              <span class="count" *ngIf="cartQty('Product', p.id) > 0">{{ cartQty('Product', p.id) }}</span>
+              <app-icon name="package" [size]="20" class="text-2"></app-icon>
+              <span class="n">{{ p.name }}</span>
+              <span class="p">{{ p.price | sar }}</span>
+              <span class="add-hint" [class.text-red]="p.stock <= 3">
+                {{ p.stock === 0 ? 'نفدت الكمية' : 'المتوفر: ' + p.stock }}
+              </span>
+            </button>
+          </div>
+        </ng-container>
       </section>
 
       <!-- تفاصيل البيع -->
@@ -65,7 +108,7 @@
         <h2 class="mb-8">تفاصيل البيع</h2>
 
         <div class="field">
-          <label>الحلاق <span class="text-red">*</span></label>
+          <span class="field-label">الحلاق <span class="text-red">*</span></span>
 
           <!-- وضع الحلاق: نفسه تلقائيًا -->
           <div class="self-barber" *ngIf="selfBarberMode()">
@@ -87,12 +130,15 @@
         </div>
 
         <div class="field customer-picker">
-          <label>العميل (اختياري)</label>
-          <input *ngIf="!selectedCustomer()" class="input" [(ngModel)]="customerSearch"
+          <label for="pos-f1">العميل (اختياري)</label>
+          <input id="pos-f1" *ngIf="!selectedCustomer()" class="input" [(ngModel)]="customerSearch"
                  placeholder="ابحث بالاسم أو رقم الجوال…">
           <div class="selected-customer" *ngIf="selectedCustomer() as c">
             <app-icon name="user" [size]="16"></app-icon>
-            <span class="grow">{{ c.fullName }}<span *ngIf="c.phone"> — {{ c.phone }}</span></span>
+            <span class="grow">
+              {{ c.fullName }}<span *ngIf="c.phone"> — {{ c.phone }}</span>
+              <span class="pts" *ngIf="d.pricing.loyaltyEnabled"> · {{ c.loyaltyPoints ?? 0 }} نقطة</span>
+            </span>
             <button class="icon-btn" style="color: var(--green); width: 28px; height: 28px" (click)="clearCustomer()">
               <app-icon name="x" [size]="15"></app-icon>
             </button>
@@ -106,7 +152,7 @@
         </div>
 
         <div class="field">
-          <label>طريقة الدفع</label>
+          <span class="field-label">طريقة الدفع</span>
           <div class="pay-row">
             <button class="pay-btn" [class.selected]="payment() === 'Cash'"
                     [disabled]="!d.payment.cashEnabled" (click)="payment.set('Cash')">
@@ -119,31 +165,77 @@
           </div>
         </div>
 
-        <h3 class="mb-8">الخدمات المختارة</h3>
+        <h3 class="mb-8">البنود المختارة</h3>
         <div class="cart-lines" *ngIf="cart().length; else emptyCart">
           <div class="cart-line" *ngFor="let l of cart()">
             <div class="n">
-              {{ l.service.name }}
-              <span class="s">{{ l.service.price | sar }} × {{ l.qty }}</span>
+              <app-icon *ngIf="l.kind === 'Product'" name="package" [size]="14" class="text-2"></app-icon>
+              {{ l.name }}
+              <span class="s">{{ l.price | sar }} × {{ l.qty }}</span>
             </div>
             <div class="qty">
-              <button (click)="setQty(l.service.id, l.qty - 1)">−</button>
+              <button (click)="setQty(l, l.qty - 1)">−</button>
               <span class="v">{{ l.qty }}</span>
-              <button (click)="setQty(l.service.id, l.qty + 1)">+</button>
+              <button (click)="setQty(l, l.qty + 1)">+</button>
             </div>
-            <span class="lt money">{{ l.service.price * l.qty | sar }}</span>
-            <button class="icon-btn" style="color: var(--red); width: 32px; height: 32px" (click)="remove(l.service.id)">
+            <span class="lt money">{{ l.price * l.qty | sar }}</span>
+            <button class="icon-btn" style="color: var(--red); width: 32px; height: 32px" (click)="remove(l)">
               <app-icon name="trash" [size]="16"></app-icon>
             </button>
           </div>
         </div>
         <ng-template #emptyCart>
-          <div class="text-2 text-sm mb-16">لم تختر أي خدمة بعد — اضغط على الخدمات بالأعلى.</div>
+          <div class="text-2 text-sm mb-16">لم تختر أي بند بعد — اضغط على الخدمات أو المنتجات.</div>
         </ng-template>
 
+        <!-- الخصومات -->
+        <button class="discount-toggle" *ngIf="cart().length" (click)="showDiscounts.set(!showDiscounts())">
+          <app-icon name="percent" [size]="16"></app-icon>
+          <span class="grow">خصم / كود / نقاط</span>
+          <span class="money text-red" *ngIf="price().discount">-{{ price().discount | sar }}</span>
+          <app-icon name="chevronDown" [size]="16" [class.rotated]="showDiscounts()"></app-icon>
+        </button>
+
+        <div class="discounts" *ngIf="showDiscounts() && cart().length">
+          <div class="field">
+            <span class="field-label">كود الخصم</span>
+            <div class="flex gap-8">
+              <input class="input grow" dir="ltr" [(ngModel)]="couponInput" [disabled]="!!couponCode()"
+                     placeholder="WELCOME10" (keydown.enter)="applyCoupon()">
+              <button *ngIf="!couponCode()" class="btn btn-outline" [disabled]="checkingCoupon || !couponInput.trim()" (click)="applyCoupon()">تطبيق</button>
+              <button *ngIf="couponCode()" class="btn btn-ghost" (click)="resetCoupon(); couponInput = ''">إزالة</button>
+            </div>
+            <div class="hint text-green" *ngIf="couponCode()">خصم {{ couponDiscount() | sar }}</div>
+          </div>
+
+          <div class="field" *ngIf="d.pricing.canDiscount">
+            <label for="pos-f2">خصم يدوي (حتى {{ maxManualDiscount() | sar }})</label>
+            <input id="pos-f2" class="input money" type="number" min="0" step="0.5"
+                   [ngModel]="manualDiscount() || null" (ngModelChange)="setManualDiscount($event)" placeholder="0.00">
+          </div>
+
+          <div class="field" *ngIf="canRedeem()">
+            <label class="switch-row">
+              <input type="checkbox" [checked]="redeemPoints() > 0" (change)="toggleRedeemAll()">
+              استبدال نقاط الولاء
+            </label>
+            <div class="hint" *ngIf="redeemPoints() > 0">{{ redeemPoints() }} نقطة = {{ pointsValue() | sar }}</div>
+          </div>
+        </div>
+
+        <!-- الملخص المالي -->
+        <div class="breakdown" *ngIf="price().discount || d.pricing.vatEnabled">
+          <div class="row"><span>المجموع</span><span class="money">{{ price().gross | sar }}</span></div>
+          <div class="row" *ngIf="price().discount"><span>الخصم</span><span class="money text-red">-{{ price().discount | sar }}</span></div>
+          <ng-container *ngIf="d.pricing.vatEnabled">
+            <div class="row"><span>قبل الضريبة</span><span class="money">{{ price().subtotal | sar }}</span></div>
+            <div class="row"><span>ضريبة القيمة المضافة {{ d.pricing.vatRate * 100 }}%</span><span class="money">{{ price().vat | sar }}</span></div>
+          </ng-container>
+        </div>
+
         <div class="total-bar">
-          <span class="l">الإجمالي ({{ cartCount() }} خدمة)</span>
-          <span class="v money">{{ total() | sar }}</span>
+          <span class="l">الإجمالي ({{ cartCount() }} بند)</span>
+          <span class="v money">{{ price().total | sar }}</span>
         </div>
 
         <button class="btn btn-success btn-block btn-lg" (click)="save()" [disabled]="saving() || cart().length === 0">
@@ -152,5 +244,12 @@
         </button>
       </section>
     </div>
+
+    <!-- الجوال: ملخص ثابت يبقى ظاهرًا أثناء اختيار الخدمات -->
+    <button class="mobile-checkout" *ngIf="cart().length && data()" (click)="scrollToCart()">
+      <span class="count">{{ cartCount() }}</span>
+      <span class="grow">متابعة إلى الدفع</span>
+      <b class="money">{{ price().total | sar }}</b>
+    </button>
   </div>
 </ng-template>

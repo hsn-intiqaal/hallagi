@@ -29,8 +29,8 @@
         </button>
       </div>
       <div class="field mt-16">
-        <label>خدمات إضافية (افصل بينها بفاصلة)</label>
-        <textarea class="textarea" [(ngModel)]="customServices" placeholder="مثال: تمشيط، عناية باللحية"></textarea>
+        <label for="onboarding-f1">خدمات إضافية (افصل بينها بفاصلة)</label>
+        <textarea id="onboarding-f1" class="textarea" [(ngModel)]="customServices" placeholder="مثال: تمشيط، عناية باللحية"></textarea>
       </div>
     </div>
 
@@ -38,8 +38,8 @@
     <div class="card" *ngIf="step() === 2">
       <h2 class="mb-16">أضف حلاقًا واحدًا على الأقل</h2>
       <div class="field">
-        <label>اسم الحلاق</label>
-        <input class="input" [(ngModel)]="barberName" placeholder="مثال: أحمد العتيبي">
+        <label for="onboarding-f2">اسم الحلاق</label>
+        <input id="onboarding-f2" class="input" [(ngModel)]="barberName" placeholder="مثال: أحمد العتيبي">
       </div>
       <p class="text-2 text-sm">يمكنك إضافة بقية الحلاقين وطرق تعويضهم (راتب، عمولة، تأجير كرسي) لاحقًا من صفحة الحلاقين.</p>
     </div>

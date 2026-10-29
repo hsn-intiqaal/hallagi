@@ -51,7 +51,13 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-body { min-height: 100vh; }
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+  /* app-like feel in the installed PWA and the native shells */
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
 
 h1, h2, h3, h4 { margin: 0; font-weight: 700; color: var(--text); }
 h1 { font-size: 1.45rem; }
@@ -116,7 +122,7 @@ input, select, textarea {
 
 /* ===== Forms ===== */
 .field { display: block; margin-bottom: 14px; }
-.field > label {
+.field > label, .field > .field-label {
   display: block;
   margin-bottom: 6px;
   font-weight: 600;
@@ -163,6 +169,8 @@ input, select, textarea {
 .text-sm { font-size: .85rem; }
 .text-lg { font-size: 1.15rem; }
 .money { font-weight: 700; font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: embed; display: inline-block; }
+/* inside tables a money cell must stay a table cell (inline-block breaks column alignment) */
+td.money, th.money { display: table-cell; text-align: right; }
 .flex { display: flex; }
 .flex-between { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .flex-col { display: flex; flex-direction: column; }
@@ -291,4 +299,45 @@ input, select, textarea {
   .no-print { display: none !important; }
   body { background: #fff; }
   .receipt { box-shadow: none; border: none; max-width: 100%; }
+}
+
+/* ===== Shared page building blocks ===== */
+.alert {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--orange-soft); border: 1px solid #F0D9AE; color: #8A5A08;
+  padding: 12px 14px; border-radius: var(--radius-sm); font-weight: 600; font-size: .92rem;
+}
+.alert-info { background: var(--blue-soft); border-color: #C9DAFB; color: #1D4FB8; }
+.alert-success { background: var(--green-soft); border-color: #BFE3D1; color: var(--green); }
+.alert-danger { background: var(--red-soft); border-color: #F2C4C4; color: var(--red); }
+
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.grid-2 { display: grid; grid-template-columns: 1fr; gap: 12px 16px; }
+@media (min-width: 720px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
+
+.seg { display: inline-flex; background: var(--navy-soft); border-radius: var(--radius-sm); padding: 4px; gap: 2px; flex-wrap: wrap; }
+.seg button {
+  border: 0; background: transparent; padding: 8px 14px; border-radius: 8px;
+  font-weight: 700; color: var(--text-2); font-family: inherit; cursor: pointer;
+}
+.seg button.active { background: var(--card); color: var(--navy); box-shadow: var(--shadow); }
+
+.switch-row { display: flex; align-items: center; gap: 10px; font-weight: 600; cursor: pointer; }
+.switch-row input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--primary); }
+
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px;
+  border-radius: 999px; border: 1.5px solid var(--border); background: var(--card);
+  font-weight: 600; font-family: inherit; cursor: pointer; color: var(--text);
+}
+.chip.selected { border-color: var(--primary); background: var(--blue-soft); color: var(--primary-dark); }
+.chip:disabled { opacity: .45; cursor: not-allowed; }
+
+/* ===== Phones ===== */
+@media (max-width: 720px) {
+  /* wide tables scroll inside their card instead of stretching the page */
+  .table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; white-space: nowrap; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .page-title { flex-wrap: wrap; gap: 10px; }
 }

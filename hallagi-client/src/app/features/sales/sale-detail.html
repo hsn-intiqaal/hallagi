@@ -4,26 +4,34 @@
       <app-icon name="arrowRight" [size]="18"></app-icon> رجوع
     </button>
     <button class="btn btn-primary" (click)="print()">
-      <app-icon name="printer" [size]="18"></app-icon> طباعة الإيصال
+      <app-icon name="printer" [size]="18"></app-icon> طباعة
     </button>
   </div>
 
-  <div *ngIf="loading()"><app-loading message="جارٍ تحميل الإيصال…" /></div>
+  <div *ngIf="loading()"><app-loading message="جارٍ تحميل الفاتورة…" /></div>
 
   <div class="receipt" *ngIf="sale() as s">
+    <div class="r-cancelled" *ngIf="s.status === 'Cancelled'">
+      عملية ملغاة<span *ngIf="s.cancelReason"> — {{ s.cancelReason }}</span>
+    </div>
+
     <div class="r-head">
-      <div class="brand">حلاقي</div>
-      <div class="sub">محلك في يدك</div>
+      <img *ngIf="s.invoice?.logoUrl" class="logo" [src]="s.invoice!.logoUrl" alt="شعار المنشأة">
+      <div class="brand">{{ s.invoice?.sellerName ?? brand.name }}</div>
+      <div class="sub" *ngIf="s.invoice?.address">{{ s.invoice!.address }}</div>
+      <div class="sub" *ngIf="s.invoice?.phone" dir="ltr">{{ s.invoice!.phone }}</div>
+      <div class="doc-title">{{ s.invoice?.title ?? 'إيصال' }}</div>
     </div>
 
     <div class="r-meta">
-      <div class="row"><span>رقم العملية</span><b>#{{ s.receiptNo }}</b></div>
+      <div class="row" *ngIf="s.invoice?.vatNumber"><span>الرقم الضريبي</span><b dir="ltr">{{ s.invoice!.vatNumber }}</b></div>
+      <div class="row" *ngIf="s.invoice?.commercialRegistration"><span>السجل التجاري</span><span dir="ltr">{{ s.invoice!.commercialRegistration }}</span></div>
+      <div class="row"><span>رقم الفاتورة</span><b>#{{ s.receiptNo }}</b></div>
       <div class="row"><span>التاريخ</span><span>{{ s.createdAt | dateTimeAr }}</span></div>
       <div class="row"><span>الفرع</span><span>{{ s.branchName }}</span></div>
       <div class="row"><span>الحلاق</span><span>{{ s.barberName }}</span></div>
       <div class="row"><span>العميل</span><span>{{ s.customerName }}</span></div>
       <div class="row"><span>طريقة الدفع</span><span>{{ s.paymentText }}</span></div>
-      <div class="row"><span>الحالة</span><span>{{ s.statusText }}</span></div>
     </div>
 
     <div class="r-items">
@@ -33,14 +41,36 @@
       </div>
     </div>
 
+    <div class="r-sums">
+      <div class="row" *ngIf="s.discountAmount">
+        <span>المجموع</span><span class="money">{{ s.grossAmount | sar }}</span>
+      </div>
+      <div class="row" *ngIf="s.discountAmount">
+        <span>الخصم<span *ngIf="s.couponCode"> ({{ s.couponCode }})</span><span *ngIf="s.pointsRedeemed"> · {{ s.pointsRedeemed }} نقطة</span></span>
+        <span class="money">-{{ s.discountAmount | sar }}</span>
+      </div>
+      <ng-container *ngIf="s.isTaxInvoice">
+        <div class="row"><span>الإجمالي غير شامل الضريبة</span><span class="money">{{ s.subtotalAmount | sar }}</span></div>
+        <div class="row"><span>ضريبة القيمة المضافة ({{ (s.vatRate ?? 0) * 100 }}%)</span><span class="money">{{ s.vatAmount | sar }}</span></div>
+      </ng-container>
+    </div>
+
     <div class="r-total">
-      <span>الإجمالي</span>
+      <span>{{ s.isTaxInvoice ? 'الإجمالي شامل الضريبة' : 'الإجمالي' }}</span>
       <span class="money">{{ s.totalAmount | sar }}</span>
     </div>
 
+    <div class="r-qr" *ngIf="s.invoice?.zatcaQr as qr">
+      <app-qr-code [value]="qr" [size]="150" alt="رمز الفاتورة الإلكترونية"></app-qr-code>
+    </div>
+
+    <div class="r-points" *ngIf="s.pointsEarned">
+      نقاط مكتسبة: {{ s.pointsEarned }}
+    </div>
+
     <div class="r-foot">
-      إيصال داخلي غير ضريبي — هذا الإيصال ليس فاتورة ضريبية إلكترونية.
-      <br>شكرًا لزيارتكم
+      <ng-container *ngIf="!s.isTaxInvoice">إيصال داخلي — ليس فاتورة ضريبية.<br></ng-container>
+      {{ s.invoice?.footer || 'شكرًا لزيارتكم' }}
     </div>
   </div>
 </div>

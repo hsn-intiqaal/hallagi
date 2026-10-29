@@ -26,6 +26,7 @@
   display: inline-flex; align-items: center; justify-content: center;
   margin-bottom: 12px;
 }
+.brand .logo-img { object-fit: contain; background: #fff; padding: 8px; }
 .brand h1 { font-size: 1.6rem; }
 .brand .tagline { color: var(--text-2); font-weight: 600; margin-top: 2px; }
 .brand .demo {
@@ -46,6 +47,8 @@
 .tabs button.active { background: #fff; color: var(--navy); box-shadow: var(--shadow); }
 
 .password-wrap { position: relative; }
+/* the toggle sits at the left edge (RTL end) where the LTR password text starts */
+.password-wrap .input { padding-left: 46px; }
 .password-wrap .toggle {
   position: absolute;
   inset-inline-end: 8px; top: 50%;

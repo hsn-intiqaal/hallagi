@@ -1,12 +1,12 @@
 import { NgIf, NgFor } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService } from '../../core/api.service';
-import { BranchContext } from '../../core/branch-context';
-import { ToastService } from '../../core/toast.service';
-import { Branch } from '../../core/models';
-import { Icon } from '../../shared/icon';
-import { LoadingRow, Modal } from '../../shared/ui';
+import { ApiService, ApiFailure } from '@core/http/api.service';
+import { BranchContext } from '@core/state/branch-context';
+import { ToastService } from '@core/state/toast.service';
+import { Branch } from '@core/models';
+import { Icon } from '@shared/ui/icon';
+import { LoadingRow, Modal } from '@shared/ui/ui';
 
 @Component({
   selector: 'app-branches',
@@ -24,7 +24,7 @@ export class Branches implements OnInit {
   readonly loading = signal(true);
   readonly showForm = signal(false);
   readonly editing = signal<Branch | null>(null);
-  form = { name: '', city: '', address: '', active: true };
+  form = { name: '', city: '', address: '', phone: '', opensAt: '09:00', closesAt: '23:00', active: true };
   formError = '';
 
   ngOnInit(): void { this.load(); }
@@ -33,19 +33,22 @@ export class Branches implements OnInit {
     this.loading.set(true);
     this.api.get<{ items: Branch[] }>('/branches').subscribe({
       next: res => { this.items.set(res.items); this.loading.set(false); },
-      error: (e: any) => { this.toast.error(e?.message ?? 'تعذّر تحميل الفروع'); this.loading.set(false); }
+      error: (e: ApiFailure) => { this.toast.error(e?.message ?? 'تعذّر تحميل الفروع'); this.loading.set(false); }
     });
   }
 
   openAdd(): void {
-    this.form = { name: '', city: 'الرياض', address: '', active: true };
+    this.form = { name: '', city: 'الرياض', address: '', phone: '', opensAt: '09:00', closesAt: '23:00', active: true };
     this.formError = '';
     this.editing.set(null);
     this.showForm.set(true);
   }
 
   openEdit(b: Branch): void {
-    this.form = { name: b.name, city: b.city, address: b.address ?? '', active: (b.status ?? 'Active') === 'Active' };
+    this.form = {
+      name: b.name, city: b.city, address: b.address ?? '', phone: b.phone ?? '',
+      opensAt: b.opensAt ?? '09:00', closesAt: b.closesAt ?? '23:00', active: (b.status ?? 'Active') === 'Active'
+    };
     this.formError = '';
     this.editing.set(b);
     this.showForm.set(true);
@@ -54,7 +57,10 @@ export class Branches implements OnInit {
   save(): void {
     if (!this.form.name.trim()) { this.formError = 'اسم الفرع مطلوب'; return; }
     if (!this.form.city.trim()) { this.formError = 'المدينة مطلوبة'; return; }
-    const body = { name: this.form.name.trim(), city: this.form.city.trim(), address: this.form.address?.trim() || null, active: this.form.active };
+    const body = {
+      name: this.form.name.trim(), city: this.form.city.trim(), address: this.form.address?.trim() || null,
+      phone: this.form.phone?.trim() || null, opensAt: this.form.opensAt, closesAt: this.form.closesAt, active: this.form.active
+    };
     const editing = this.editing();
     const req = editing ? this.api.put(`/branches/${editing.id}`, body) : this.api.post('/branches', body);
     req.subscribe({
@@ -64,7 +70,7 @@ export class Branches implements OnInit {
         this.load();
         this.branches.init();
       },
-      error: (e: any) => this.toast.error(e?.message ?? 'تعذّر حفظ الفرع')
+      error: (e: ApiFailure) => this.toast.error(e?.message ?? 'تعذّر حفظ الفرع')
     });
   }
 

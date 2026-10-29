@@ -1,4 +1,3 @@
-using Hallagi.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Hallagi.Api.Controllers;
@@ -9,8 +8,8 @@ public class PlatformController(PlatformService platform, SubscriptionService su
 {
     private void EnsurePlatformOwner()
     {
-        if (CurrentUser.Role != Domain.UserRole.SuperAdmin)
-            throw ApiException.Forbidden("هذه الصفحة مخصصة لمالك المنصة فقط");
+        if (CurrentUser.Role != UserRole.SuperAdmin)
+            throw AppException.Forbidden("هذه الصفحة مخصصة لمالك المنصة فقط");
     }
 
     [HttpGet("stats")]

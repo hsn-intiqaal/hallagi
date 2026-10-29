@@ -2,11 +2,12 @@ import { NgIf, NgFor } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { ApiService } from '../../core/api.service';
-import { BranchContext } from '../../core/branch-context';
-import { ToastService } from '../../core/toast.service';
-import { Icon } from '../../shared/icon';
-import { SarPipe } from '../../core/format.pipes';
+import { ApiService } from '@core/http/api.service';
+import { BranchContext } from '@core/state/branch-context';
+import { ToastService } from '@core/state/toast.service';
+import { Icon } from '@shared/ui/icon';
+import { SarPipe } from '@shared/pipes/format.pipes';
+import { ApiMessage } from '@core/models';
 
 const SUGGESTED_SERVICES = [
   { name: 'حلاقة شعر', price: 25 },
@@ -44,7 +45,7 @@ export class Onboarding {
 
   saveAndFinish(): void {
     const names = [...this.selectedServices, ...this.customServices.split(/[،,\n]/).map(s => s.trim()).filter(Boolean)];
-    this.api.post<any>('/settings/onboarding', {
+    this.api.post<ApiMessage>('/settings/onboarding', {
       serviceNames: names,
       barbers: this.barberName.trim() ? [{
         fullName: this.barberName.trim(),

@@ -21,7 +21,7 @@
       <app-icon name="scissors" [size]="22" class="text-2"></app-icon>
       <div class="info">
         <div class="n">{{ s.name }}</div>
-        <div class="d">{{ s.description || 'بدون وصف' }}</div>
+        <div class="d">{{ s.description || 'بدون وصف' }}<span *ngIf="s.durationMinutes"> · {{ s.durationMinutes }} دقيقة</span></div>
       </div>
       <span class="badge" [class]="s.status === 'Active' ? 'badge-green' : 'badge-gray'">{{ s.statusText }}</span>
       <div class="price">
@@ -39,18 +39,24 @@
   </div>
 </div>
 
-<app-modal *ngIf="showForm()" [title]="editing() ? 'تعديل الخدمة' : 'إضافة خدمة'" (close)="showForm.set(false)">
+<app-modal *ngIf="showForm()" [title]="editing() ? 'تعديل الخدمة' : 'إضافة خدمة'" (dismiss)="showForm.set(false)">
   <div class="field">
-    <label>اسم الخدمة</label>
-    <input class="input" [class.invalid]="formError && !form.name.trim()" [(ngModel)]="form.name" placeholder="مثال: حلاقة شعر">
+    <label for="services-f1">اسم الخدمة</label>
+    <input id="services-f1" class="input" [class.invalid]="formError && !form.name.trim()" [(ngModel)]="form.name" placeholder="مثال: حلاقة شعر">
   </div>
   <div class="field">
-    <label>وصف مختصر (اختياري)</label>
-    <input class="input" [(ngModel)]="form.description" placeholder="وصف يظهر لفريق المحل">
+    <label for="services-f2">وصف مختصر (اختياري)</label>
+    <input id="services-f2" class="input" [(ngModel)]="form.description" placeholder="وصف يظهر لفريق المحل">
   </div>
   <div class="field">
-    <label>السعر الأساسي (ريال)</label>
-    <input class="input money" type="number" min="0" step="0.5" [class.invalid]="formError" [(ngModel)]="form.basePrice" placeholder="25">
+    <label for="services-f3">السعر الأساسي (ريال)</label>
+    <input id="services-f3" class="input money" type="number" min="0" step="0.5" [class.invalid]="formError" [(ngModel)]="form.basePrice" placeholder="25">
+  </div>
+  <div class="field">
+    <label for="services-f4">مدة الخدمة (دقيقة) — تُستخدم في المواعيد</label>
+    <select id="services-f4" class="input" [(ngModel)]="form.durationMinutes">
+      <option *ngFor="let m of [10, 15, 20, 30, 40, 45, 60, 75, 90, 120]" [ngValue]="m">{{ m }} دقيقة</option>
+    </select>
   </div>
   <div class="field flex gap-8" style="align-items: center">
     <input type="checkbox" id="svcActive" [(ngModel)]="form.active" style="width: 20px; height: 20px">

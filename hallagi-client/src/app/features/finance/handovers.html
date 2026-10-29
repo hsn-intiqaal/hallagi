@@ -31,28 +31,28 @@
   </div>
 </div>
 
-<app-modal *ngIf="showForm()" title="تسليم نقدي" (close)="showForm.set(false)">
+<app-modal *ngIf="showForm()" title="تسليم نقدي" (dismiss)="showForm.set(false)">
   <div class="field">
-    <label>من (المسلِّم)</label>
-    <select class="select" [(ngModel)]="form.fromUserId">
+    <label for="handovers-f1">من (المسلِّم)</label>
+    <select id="handovers-f1" class="select" [(ngModel)]="form.fromUserId">
       <option value="">اختر المستخدم</option>
       <option *ngFor="let u of users()" [value]="u.id">{{ u.fullName }}</option>
     </select>
   </div>
   <div class="field">
-    <label>إلى (المستلم)</label>
-    <select class="select" [(ngModel)]="form.toUserId">
+    <label for="handovers-f2">إلى (المستلم)</label>
+    <select id="handovers-f2" class="select" [(ngModel)]="form.toUserId">
       <option value="">اختر المستخدم</option>
       <option *ngFor="let u of users()" [value]="u.id">{{ u.fullName }}</option>
     </select>
   </div>
   <div class="field">
-    <label>المبلغ (ريال)</label>
-    <input class="input" type="number" min="0" [(ngModel)]="form.amount">
+    <label for="handovers-f3">المبلغ (ريال)</label>
+    <input id="handovers-f3" class="input" type="number" min="0" [(ngModel)]="form.amount">
   </div>
   <div class="field">
-    <label>ملاحظة (اختياري)</label>
-    <input class="input" [(ngModel)]="form.note" placeholder="مثال: تسليم نقدية الوردية">
+    <label for="handovers-f4">ملاحظة (اختياري)</label>
+    <input id="handovers-f4" class="input" [(ngModel)]="form.note" placeholder="مثال: تسليم نقدية الوردية">
   </div>
   <div footer class="flex gap-8">
     <button class="btn btn-primary" (click)="save()">تسجيل</button>

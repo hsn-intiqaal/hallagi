@@ -56,15 +56,15 @@
       <!-- edit form -->
       <div *ngIf="editing() && form() as f">
         <div class="field">
-          <label>الاسم الكامل</label>
-          <input class="input" [ngModel]="f.fullName" (ngModelChange)="updateField('fullName', $event)">
+          <label for="barber-detail-f1">الاسم الكامل</label>
+          <input id="barber-detail-f1" class="input" [ngModel]="f.fullName" (ngModelChange)="updateField('fullName', $event)">
         </div>
         <div class="field">
-          <label>رقم الجوال (اختياري)</label>
-          <input class="input" [ngModel]="f.phone" (ngModelChange)="updateField('phone', $event)" dir="ltr">
+          <label for="barber-detail-f2">رقم الجوال (اختياري)</label>
+          <input id="barber-detail-f2" class="input" [ngModel]="f.phone" (ngModelChange)="updateField('phone', $event)" dir="ltr">
         </div>
         <div class="field">
-          <label>الفروع</label>
+          <span class="field-label">الفروع</span>
           <div class="branch-chips">
             <button *ngFor="let b of branches()" class="branch-chip" [class.selected]="f.branchIds.includes(b.id)" (click)="toggleBranch(b.id)">
               {{ b.name }}
@@ -72,25 +72,25 @@
           </div>
         </div>
         <div class="field">
-          <label>طريقة التعويض</label>
+          <span class="field-label">طريقة التعويض</span>
           <div class="pay-row">
             <button *ngFor="let t of compTypes" class="pay-btn" [class.selected]="f.compensation?.type === t.value"
                     (click)="setCompType(t.value)">{{ t.label }}</button>
           </div>
         </div>
         <div class="field" *ngIf="f.compensation?.type === 'FixedSalary' || f.compensation?.type === 'FixedPlusCommission'">
-          <label>الراتب الشهري (ريال)</label>
-          <input class="input" type="number" min="0" [ngModel]="f.compensation?.monthlySalary ?? 0"
+          <label for="barber-detail-f3">الراتب الشهري (ريال)</label>
+          <input id="barber-detail-f3" class="input" type="number" min="0" [ngModel]="f.compensation?.monthlySalary ?? 0"
                  (ngModelChange)="updateComp('monthlySalary', $event)">
         </div>
         <div class="field" *ngIf="f.compensation?.type === 'Commission' || f.compensation?.type === 'FixedPlusCommission'">
-          <label>نسبة العمولة (%)</label>
-          <input class="input" type="number" min="0" max="100" [ngModel]="commissionInput()"
+          <label for="barber-detail-f4">نسبة العمولة (%)</label>
+          <input id="barber-detail-f4" class="input" type="number" min="0" max="100" [ngModel]="commissionInput()"
                  (ngModelChange)="setCommissionPercent($event)">
         </div>
         <div class="field" *ngIf="f.compensation?.type === 'ChairRental'">
-          <label>مبلغ إيجار الكرسي الدوري (ريال)</label>
-          <input class="input" type="number" min="0" [ngModel]="f.compensation?.chairRentAmount ?? 0"
+          <label for="barber-detail-f5">مبلغ إيجار الكرسي الدوري (ريال)</label>
+          <input id="barber-detail-f5" class="input" type="number" min="0" [ngModel]="f.compensation?.chairRentAmount ?? 0"
                  (ngModelChange)="updateComp('chairRentAmount', $event)">
         </div>
         <div class="flex gap-8">

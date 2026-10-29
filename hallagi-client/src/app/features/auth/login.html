@@ -1,9 +1,13 @@
 <div class="wrap">
   <div class="card">
     <div class="brand">
-      <div class="logo">حلاقي</div>
-      <h1>حلاقي</h1>
-      <div class="tagline">محلك في يدك</div>
+      @if (brand.logoUrl) {
+        <img class="logo logo-img" [src]="brand.logoUrl" [alt]="brand.name">
+      } @else {
+        <div class="logo">{{ brand.shortName }}</div>
+      }
+      <h1>{{ brand.name }}</h1>
+      <div class="tagline">{{ brand.tagline }}</div>
 
       <div class="demo" *ngIf="true">
         <b>الدخول للمصرح لهم فقط</b><br>
@@ -13,16 +17,17 @@
 
     <form (ngSubmit)="submit()">
       <div class="field">
-        <label>البريد الإلكتروني</label>
-        <input class="input" type="email" [(ngModel)]="email" name="email" placeholder="name&#64;example.com" autocomplete="email" dir="ltr">
+        <label for="login-f1">البريد الإلكتروني</label>
+        <input id="login-f1" class="input" type="email" [(ngModel)]="email" name="email" placeholder="name&#64;example.com" autocomplete="email" dir="ltr">
       </div>
 
       <div class="field">
-        <label>كلمة المرور</label>
+        <span class="field-label">كلمة المرور</span>
         <div class="password-wrap">
           <input class="input" [type]="showPassword() ? 'text' : 'password'" [(ngModel)]="password" name="password"
                  placeholder="••••••••" autocomplete="current-password" dir="ltr">
-          <button type="button" class="toggle" (click)="showPassword.set(!showPassword())">
+          <button type="button" class="toggle" (click)="showPassword.set(!showPassword())"
+                  [attr.aria-label]="showPassword() ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'">
             <app-icon name="eye" [size]="19"></app-icon>
           </button>
         </div>

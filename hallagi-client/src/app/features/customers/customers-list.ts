@@ -2,12 +2,12 @@ import { NgIf, NgFor } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { ApiService } from '../../core/api.service';
-import { ToastService } from '../../core/toast.service';
-import { CustomerRow } from '../../core/models';
-import { Icon } from '../../shared/icon';
-import { SarPipe, DateShortPipe } from '../../core/format.pipes';
-import { EmptyState, LoadingRow, Modal } from '../../shared/ui';
+import { ApiService, ApiFailure } from '@core/http/api.service';
+import { ToastService } from '@core/state/toast.service';
+import { CustomerRow, Paged, ApiMessage } from '@core/models';
+import { Icon } from '@shared/ui/icon';
+import { SarPipe, DateShortPipe } from '@shared/pipes/format.pipes';
+import { EmptyState, LoadingRow, Modal } from '@shared/ui/ui';
 
 @Component({
   selector: 'app-customers-list',
@@ -35,9 +35,9 @@ export class CustomersList implements OnInit {
 
   load(): void {
     this.loading.set(true);
-    this.api.get<any>('/customers', { search: this.search, page: this.page, pageSize: this.pageSize }).subscribe({
-      next: (res: any) => { this.customers.set(res.items); this.total.set(res.totalCount); this.loading.set(false); },
-      error: (e: any) => { this.toast.error(e?.message ?? 'تعذّر تحميل العملاء'); this.loading.set(false); }
+    this.api.get<Paged<CustomerRow>>('/customers', { search: this.search, page: this.page, pageSize: this.pageSize }).subscribe({
+      next: res => { this.customers.set(res.items); this.total.set(res.totalCount); this.loading.set(false); },
+      error: (e: ApiFailure) => { this.toast.error(e?.message ?? 'تعذّر تحميل العملاء'); this.loading.set(false); }
     });
   }
 
@@ -46,18 +46,18 @@ export class CustomersList implements OnInit {
 
   save(): void {
     if (!this.form.fullName.trim()) { this.toast.error('اسم العميل مطلوب'); return; }
-    this.api.post<any>('/customers', {
+    this.api.post<ApiMessage>('/customers', {
       fullName: this.form.fullName.trim(),
       phone: this.form.phone.trim() || null,
       notes: this.form.notes.trim() || null
     }).subscribe({
-      next: (res: any) => {
+      next: res => {
         this.toast.success('تمت إضافة العميل بنجاح');
         this.showAdd.set(false);
         this.form = { fullName: '', phone: '', notes: '' };
         this.router.navigate(['/customers', res.id]);
       },
-      error: (e: any) => this.toast.error(e?.message ?? 'تعذّر إضافة العميل')
+      error: (e: ApiFailure) => this.toast.error(e?.message ?? 'تعذّر إضافة العميل')
     });
   }
 

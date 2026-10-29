@@ -135,3 +135,39 @@
 .total-bar .v { font-size: 1.7rem; font-weight: 800; }
 
 .walkin-note { font-size: .82rem; color: var(--text-2); margin-top: 6px; }
+
+/* ===== Products, discounts & tax breakdown ===== */
+.svc-card.out { opacity: .5; cursor: not-allowed; }
+.selected-customer .pts { color: var(--orange); font-weight: 700; }
+
+.discount-toggle {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  margin: 10px 0 0; padding: 10px 12px;
+  border: 1px dashed var(--border); border-radius: var(--radius-sm);
+  background: var(--bg); font-family: inherit; font-weight: 700; color: var(--text); cursor: pointer;
+}
+.discount-toggle .rotated { transform: rotate(180deg); }
+.discounts { padding: 12px 2px 0; }
+.discounts .hint { font-size: .85rem; margin-top: 6px; font-weight: 600; }
+
+.breakdown { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 8px; }
+.breakdown .row { display: flex; justify-content: space-between; padding: 4px 0; font-size: .92rem; color: var(--text-2); }
+
+.points-earned {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  margin-top: 12px; color: var(--orange); font-weight: 700;
+}
+
+/* Phones: sticky checkout summary above the bottom navigation */
+.mobile-checkout { display: none; }
+@media (max-width: 1023px) {
+  .mobile-checkout {
+    position: fixed; z-index: 30; inset-inline: 12px; bottom: calc(var(--bottomnav-h) + 10px + env(safe-area-inset-bottom));
+    display: flex; align-items: center; gap: 10px; padding: 12px 16px;
+    border: 0; border-radius: var(--radius); background: var(--green); color: #fff;
+    font-family: inherit; font-weight: 800; font-size: 1rem; box-shadow: var(--shadow-lg); cursor: pointer;
+    .count { background: rgba(255,255,255,.22); border-radius: 999px; min-width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; }
+    .money { font-size: 1.1rem; }
+  }
+  .pos { padding-bottom: 90px; }
+}
